@@ -1,0 +1,15 @@
+<animation-list
+    android:oneshot="true"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+        <item android:drawable="@drawable/splash_screen_frame1" android:duration="1" />
+        <item android:drawable="@drawable/splash_screen_frame2" android:duration="1" />
+        <item android:drawable="@drawable/splash_screen_frame3" android:duration="1" />
+        <item android:drawable="@drawable/splash_screen_frame4" android:duration="1" />
+        <item android:drawable="@drawable/splash_screen_frame5" android:duration="1" />
+        <item android:drawable="@drawable/splash_screen_frame6" android:duration="1" />
+        <item android:drawable="@drawable/splash_screen_frame7" android:duration="1" />
+        <item android:drawable="@drawable/splash_screen_frame8" android:duration="1" />
+        <item android:drawable="@drawable/splash_screen_frame9" android:duration="1" />
+        <item android:drawable="@drawable/splash_screen_frame10" android:duration="1" />
+        <item android:drawable="@drawable/splash_screen_frame11" android:duration="5000" />
+    </animation-list>
