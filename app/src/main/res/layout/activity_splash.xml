@@ -8,6 +8,7 @@
     style="@style/SplashTheme">
     <ImageView
         android:id="@+id/splashView"
+        android:src="@drawable/splash_screen_frame1"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginBottom="8dp"

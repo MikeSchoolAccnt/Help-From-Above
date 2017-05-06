@@ -2,47 +2,64 @@ package com.helpfromabove.helpfromabove;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
 import android.view.MotionEvent;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 
 /**
- * Created by Michael on 5/5/2017.
+ * Created by Michael Purcell on 5/5/2017.
  */
 
 public class SplashActivity extends Activity{
 
-    AnimationDrawable splashAnimation;
+    Animation tempAnim;
+    ImageView splash;
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
 
-        ImageView splash = (ImageView) findViewById(R.id.splashView);
-        splash.setBackgroundResource(R.drawable.splash_anim);
-        splashAnimation = (AnimationDrawable) splash.getBackground();
+        splash = (ImageView) findViewById(R.id.splashView);
+        tempAnim = AnimationUtils.loadAnimation(getApplicationContext(),R.anim.splash_anim);
+
+
+        tempAnim.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                animation.start();
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                splash.setImageResource(R.drawable.splash_background);
+                transition();
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {}
+        });
 
     }
 
     @Override
     protected void onStart(){
         super.onStart();
-        splashAnimation.start();
+        splash.startAnimation(tempAnim);
     }
 
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        if(event.getAction() == MotionEvent.ACTION_DOWN) {
-            //Don't allow skipping the splash screen until its finished
-            //If this isn't wanted such as for testing comment this if out.
-            if(splashAnimation.getCurrent() == splashAnimation.getFrame(splashAnimation.getNumberOfFrames()-1)) {
-                transition();
-                return true;
-            }
-        }
-        return super.onTouchEvent(event);
-    }
+     /* Allows touching the screen to skip the splash screen
+      * NEEDS TO BE FIXED : Causes two instances of the MainActivity to launch
+      */
+//    @Override
+//    public boolean onTouchEvent(MotionEvent event) {
+//        if(event.getAction() == MotionEvent.ACTION_DOWN) {
+//            tempAnim.cancel();
+//            return true;
+//        }
+//        return super.onTouchEvent(event);
+//    }
 
     public void transition(){
         Intent i = new Intent(getApplicationContext(), MainActivity.class);
