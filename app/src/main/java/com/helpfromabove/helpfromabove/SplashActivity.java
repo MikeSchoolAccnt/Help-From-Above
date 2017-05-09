@@ -23,7 +23,7 @@ public class SplashActivity extends Activity{
 
         splash = (ImageView) findViewById(R.id.splashView);
         tempAnim = AnimationUtils.loadAnimation(getApplicationContext(),R.anim.splash_anim);
-
+        tempAnim.setFillAfter(true);
 
         tempAnim.setAnimationListener(new Animation.AnimationListener() {
             @Override
@@ -33,7 +33,7 @@ public class SplashActivity extends Activity{
 
             @Override
             public void onAnimationEnd(Animation animation) {
-                splash.setImageResource(R.drawable.splash_background);
+                //splash.setImageResource(R.drawable.splash_background);
                 transition();
             }
 
