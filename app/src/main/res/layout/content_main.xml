@@ -16,6 +16,7 @@
         android:layout_marginTop="0dp"
         android:contentDescription="@string/uas_image_view_description"
         android:minHeight="250dp"
+        android:onClick="uasImageViewOnClick"
         android:visibility="visible"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintLeft_toLeftOf="parent"

@@ -1,17 +1,20 @@
 package com.helpfromabove.helpfromabove;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SwitchCompat;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Switch;
+import android.view.View;
+import android.widget.ImageView;
+
+import java.io.ByteArrayOutputStream;
 
 /**
  * Created by Caleb Smithcs on 5/4/2017.
@@ -26,7 +29,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
     }
 
     @Override
@@ -52,6 +54,14 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * OnClick handler methods
+     */
+    public void uasImageViewOnClick(View view) {
+        Log.d(TAG, "uasImageViewOnClick: ");
+        fullscreenUasImage();
+    }
+
     public void emergencyButtonOnClick(View view) {
         Log.d(TAG, "emergencyButtonOnClick: ");
         emergency();
@@ -72,40 +82,68 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "uasHeightDownOnClick: ");
         uasHeightDown();
     }
-    
+
     public void sessionStartButtonOnCLick(View view) {
         Log.d(TAG, "sessionStartButtonOnCLick: ");
         sessionStart();
     }
 
-
     public void sessionEndButtonOnCLick(View view) {
         Log.d(TAG, "sessionEndButtonOnCLick: ");
         sessionEnd();
     }
-    
+
+    private void fullscreenUasImage() {
+        Log.d(TAG, "fullscreenUasImage: ");
+        byte[] imageByteArray = getUasImageByteArray();
+        Intent i = new Intent(getApplicationContext(), FullscreenUasImageActivity.class);
+        i.putExtra(TempConstants.IMAGE_BYTE_ARRAY, imageByteArray);
+        startActivity(i);
+    }
+
+    private byte[] getUasImageByteArray() {
+        Log.d(TAG, "getUasImageByteArray: ");
+        ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
+        Drawable drawableImage = imageView.getDrawable();
+        Bitmap bitmapImage;
+        if (drawableImage.getIntrinsicWidth() <= 0 || drawableImage.getIntrinsicHeight() <= 0) {
+            bitmapImage = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888); // Single color bitmap will be created of 1x1 pixel
+        } else {
+            bitmapImage = Bitmap.createBitmap(drawableImage.getIntrinsicWidth(), drawableImage.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        }
+        ByteArrayOutputStream baoStream = new ByteArrayOutputStream();
+        bitmapImage.compress(Bitmap.CompressFormat.JPEG, 100, baoStream);
+        return baoStream.toByteArray();
+    }
+
+    private void setUasImage(byte[] imageByteArray) {
+        Log.d(TAG, "setUasImage: ");
+        Bitmap imageBitmap = BitmapFactory.decodeByteArray(imageByteArray, 0, imageByteArray.length);
+        ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
+        imageView.setImageBitmap(imageBitmap);
+    }
+
+
     private void emergency() {
         Log.d(TAG, "emergency: ");
     }
-
 
     private void light(boolean isChecked) {
         Log.d(TAG, "light: isChecked=" + isChecked);
     }
 
-
     private void uasHeightUp() {
         Log.d(TAG, "uasHeightUp: ");
     }
-    
+
     private void uasHeightDown() {
         Log.d(TAG, "uasHeightDown: ");
     }
-    
+
     private void sessionStart() {
         Log.d(TAG, "sessionStart: ");
     }
-    
+
     private void sessionEnd() {
         Log.d(TAG, "sessionEnd: ");
     }
