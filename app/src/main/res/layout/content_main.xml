@@ -82,7 +82,7 @@
         android:layout_marginTop="8dp"
         android:layout_row="1"
         android:minWidth="110dp"
-        android:onClick="uasHeightDownOnClick"
+        android:onClick="uasHeightDownButtonOnClick"
         android:text="@string/uas_height_down_button_text"
         app:layout_constraintHorizontal_bias="0.489"
         app:layout_constraintLeft_toRightOf="@+id/light_switch"

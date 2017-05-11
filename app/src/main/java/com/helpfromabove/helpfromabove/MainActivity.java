@@ -78,8 +78,8 @@ public class MainActivity extends AppCompatActivity {
         uasHeightUp();
     }
 
-    public void uasHeightDownOnClick(View view) {
-        Log.d(TAG, "uasHeightDownOnClick: ");
+    public void uasHeightDownButtonOnClick(View view) {
+        Log.d(TAG, "uasHeightDownButtonOnClick: ");
         uasHeightDown();
     }
 
@@ -111,6 +111,12 @@ public class MainActivity extends AppCompatActivity {
         } else {
             bitmapImage = Bitmap.createBitmap(drawableImage.getIntrinsicWidth(), drawableImage.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
         }
+
+        return convertBitmapToByteArray(bitmapImage);
+    }
+
+    private byte[] convertBitmapToByteArray(Bitmap bitmapImage) {
+        Log.d(TAG, "convertBitmapToByteArray: ");
         ByteArrayOutputStream baoStream = new ByteArrayOutputStream();
         bitmapImage.compress(Bitmap.CompressFormat.JPEG, 100, baoStream);
         return baoStream.toByteArray();
