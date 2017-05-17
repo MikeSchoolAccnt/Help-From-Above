@@ -3,7 +3,7 @@ package com.helpfromabove.helpfromabove;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.MotionEvent;
+import android.util.Log;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
@@ -12,17 +12,19 @@ import android.widget.ImageView;
  * Created by Michael Purcell on 5/5/2017.
  */
 
-public class SplashActivity extends Activity{
+public class SplashActivity extends Activity {
+    private static final String TAG = "SplashActivity";
 
     Animation tempAnim;
     ImageView splash;
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
 
         splash = (ImageView) findViewById(R.id.splashView);
-        tempAnim = AnimationUtils.loadAnimation(getApplicationContext(),R.anim.splash_anim);
+        tempAnim = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.splash_anim);
         tempAnim.setFillAfter(true);
 
         tempAnim.setAnimationListener(new Animation.AnimationListener() {
@@ -38,15 +40,19 @@ public class SplashActivity extends Activity{
             }
 
             @Override
-            public void onAnimationRepeat(Animation animation) {}
+            public void onAnimationRepeat(Animation animation) {
+            }
         });
 
     }
 
     @Override
-    protected void onStart(){
+    protected void onStart() {
+        Log.d(TAG, "onStart: ");
         super.onStart();
         splash.startAnimation(tempAnim);
+
+        startService(new Intent(this, CommandService.class));
     }
 
      /* Allows touching the screen to skip the splash screen
@@ -61,7 +67,7 @@ public class SplashActivity extends Activity{
 //        return super.onTouchEvent(event);
 //    }
 
-    public void transition(){
+    public void transition() {
         Intent i = new Intent(getApplicationContext(), MainActivity.class);
         startActivity(i);
         finish();

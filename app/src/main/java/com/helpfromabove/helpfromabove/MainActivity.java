@@ -1,9 +1,11 @@
 package com.helpfromabove.helpfromabove;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SwitchCompat;
@@ -14,21 +16,62 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 
-import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 
 /**
- * Created by Caleb Smithcs on 5/4/2017.
+ * Created by Caleb Smith on 5/4/2017.
  */
 
 public class MainActivity extends AppCompatActivity {
     private final String TAG = "MainActivity";
 
+    private MainActivityBroadcastReceiver mABR = new MainActivityBroadcastReceiver();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d(TAG, "onCreate: ");
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+    }
+
+    @Override
+    protected void onStart() {
+        Log.d(TAG, "onStart: ");
+        super.onStart();
+    }
+
+    @Override
+    protected void onResume() {
+        Log.d(TAG, "onResume: ");
+        super.onResume();
+
+        registerReceiver(mABR, new IntentFilter(CommandService.ACTION_NEW_UAS_IMAGE));
+        sendBroadcast(new Intent(CommandService.REQUEST_UAS_IMAGE));
+    }
+
+    @Override
+    protected void onPause() {
+        Log.d(TAG, "onPause: ");
+        super.onPause();
+
+        unregisterReceiver(mABR);
+    }
+
+    @Override
+    protected void onStop() {
+        Log.d(TAG, "onStop: ");
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.d(TAG, "onDestroy: ");
+        super.onDestroy();
     }
 
     @Override
@@ -64,93 +107,83 @@ public class MainActivity extends AppCompatActivity {
 
     public void emergencyButtonOnClick(View view) {
         Log.d(TAG, "emergencyButtonOnClick: ");
-        emergency();
+        sendBroadcast(new Intent(CommandService.COMMAND_HHMD_EMERGENCY));
     }
 
     public void lightSwitchOnClick(View view) {
         Log.d(TAG, "lightSwitchOnClick: ");
         boolean isChecked = ((SwitchCompat) view).isChecked();
-        light(isChecked);
+        Intent lightIntent = new Intent(CommandService.COMMAND_HHMD_LIGHT);
+        lightIntent.putExtra(CommandService.EXTRA_LIGHT_ON_OFF, isChecked);
+        sendBroadcast(lightIntent);
     }
 
     public void uasHeightUpButtonOnClick(View view) {
         Log.d(TAG, "uasHeightUpButtonOnClick: ");
-        uasHeightUp();
+        sendBroadcast(new Intent(CommandService.COMMAND_HHMD_UAS_HEIGHT_UP));
     }
 
     public void uasHeightDownButtonOnClick(View view) {
         Log.d(TAG, "uasHeightDownButtonOnClick: ");
-        uasHeightDown();
+        sendBroadcast(new Intent(CommandService.COMMAND_HHMD_UAS_HEIGHT_DOWN));
     }
 
     public void sessionStartButtonOnCLick(View view) {
         Log.d(TAG, "sessionStartButtonOnCLick: ");
-        sessionStart();
+        sendBroadcast(new Intent(CommandService.COMMAND_HHMD_SESSION_START));
     }
 
     public void sessionEndButtonOnCLick(View view) {
         Log.d(TAG, "sessionEndButtonOnCLick: ");
-        sessionEnd();
+        sendBroadcast(new Intent(CommandService.COMMAND_HHMD_SESSION_END));
     }
 
     private void fullscreenUasImage() {
         Log.d(TAG, "fullscreenUasImage: ");
-        byte[] imageByteArray = getUasImageByteArray();
         Intent i = new Intent(getApplicationContext(), FullscreenUasImageActivity.class);
-        i.putExtra(TempConstants.IMAGE_BYTE_ARRAY, imageByteArray);
         startActivity(i);
     }
 
-    private byte[] getUasImageByteArray() {
-        Log.d(TAG, "getUasImageByteArray: ");
-        ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
-        Drawable drawableImage = imageView.getDrawable();
-        Bitmap bitmapImage;
-        if (drawableImage.getIntrinsicWidth() <= 0 || drawableImage.getIntrinsicHeight() <= 0) {
-            bitmapImage = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888); // Single color bitmap will be created of 1x1 pixel
-        } else {
-            bitmapImage = Bitmap.createBitmap(drawableImage.getIntrinsicWidth(), drawableImage.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+    private void updateUasImageView(String uasImageFileName) {
+        if (uasImageFileName != null) {
+            Log.d(TAG, "updateUasImageView: uasImageFileName=" + uasImageFileName);
+            try {
+                FileInputStream fis = openFileInput(uasImageFileName);
+                Bitmap imageBitmap = BitmapFactory.decodeStream(fis);
+
+                Log.d(TAG, "updateUasImageView: (" + imageBitmap.getWidth() + "," + imageBitmap.getHeight() + ")");
+
+                ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
+                imageView.setImageBitmap(imageBitmap);
+            } catch (FileNotFoundException fNFE) {
+                Log.e(TAG, "setUasImage: FileNotFoundException: ", fNFE);
+            } catch (NullPointerException nPE) {
+                Log.e(TAG, "setUasImage: NullPointerException: ", nPE);
+            }
+            Log.d(TAG, "updateUasImageView: image set");
         }
-
-        return convertBitmapToByteArray(bitmapImage);
     }
 
-    private byte[] convertBitmapToByteArray(Bitmap bitmapImage) {
-        Log.d(TAG, "convertBitmapToByteArray: ");
-        ByteArrayOutputStream baoStream = new ByteArrayOutputStream();
-        bitmapImage.compress(Bitmap.CompressFormat.JPEG, 100, baoStream);
-        return baoStream.toByteArray();
-    }
-
-    private void setUasImage(byte[] imageByteArray) {
-        Log.d(TAG, "setUasImage: ");
-        Bitmap imageBitmap = BitmapFactory.decodeByteArray(imageByteArray, 0, imageByteArray.length);
-        ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
-        imageView.setImageBitmap(imageBitmap);
-    }
-
-
-    private void emergency() {
-        Log.d(TAG, "emergency: ");
-    }
-
-    private void light(boolean isChecked) {
-        Log.d(TAG, "light: isChecked=" + isChecked);
-    }
-
-    private void uasHeightUp() {
-        Log.d(TAG, "uasHeightUp: ");
-    }
-
-    private void uasHeightDown() {
-        Log.d(TAG, "uasHeightDown: ");
-    }
-
-    private void sessionStart() {
-        Log.d(TAG, "sessionStart: ");
-    }
-
-    private void sessionEnd() {
-        Log.d(TAG, "sessionEnd: ");
+    private class MainActivityBroadcastReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "onReceive: ");
+            String action = intent.getAction();
+            if (intent != null && action != null) {
+                switch (action) {
+                    case CommandService.ACTION_NEW_UAS_IMAGE:
+                        Log.d(TAG, "onReceive: ACTION_NEW_UAS_IMAGE: ");
+                        String uasImageFileName = intent.getStringExtra(CommandService.EXTRA_IMAGE_FILE_NAME);
+                        updateUasImageView(uasImageFileName);
+                        break;
+                    case CommandService.ACTION_NEW_LOCATION:
+                        Log.d(TAG, "onReceive: ACTION_NEW_LOCATION: ");
+                        break;
+                    default:
+                        Log.d(TAG, "onReceive: default: ");
+                        break;
+                }
+            }
+        }
     }
 }
