@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
@@ -16,6 +17,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 
+import com.cloudrail.si.CloudRail;
+import com.cloudrail.si.interfaces.CloudStorage;
+import com.cloudrail.si.services.Dropbox;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -27,16 +32,27 @@ import java.io.FileNotFoundException;
 public class MainActivity extends AppCompatActivity {
     private final String TAG = "MainActivity";
 
+    /*
+     * These keys will change when we decide a group account. As of now they are
+     * my keys (Michael Purcell)
+     */
+    private final static String CLOUDRAIL_LICENSE_KEY = "591cadfabac9e94ae79c9711";
+    private final static String DROPBOX_APP_KEY = "5a95or0lhqau6y1";
+    private final static String DROPBOX_APP_SECRET = "g31z4opqpzpklri";
+
     private MainActivityBroadcastReceiver mABR = new MainActivityBroadcastReceiver();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate: ");
+        CloudRail.setAppKey(CLOUDRAIL_LICENSE_KEY);
+
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
     }
 
     @Override
@@ -92,6 +108,9 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_settings) {
             Log.d(TAG, "onOptionsItemSelected: action_settings");
             return true;
+        } else if(id == R.id.action_cloud) {
+            final CloudStorage DROPBOX = new Dropbox(this, DROPBOX_APP_KEY,DROPBOX_APP_SECRET);
+            createFolder(DROPBOX);
         }
 
         return super.onOptionsItemSelected(item);
@@ -142,6 +161,19 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "fullscreenUasImage: ");
         Intent i = new Intent(getApplicationContext(), FullscreenUasImageActivity.class);
         startActivity(i);
+    }
+
+    private void createFolder (final CloudStorage cs) {
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    cs.createFolder("/TestFolder");
+                } catch (Exception e) {
+                    Log.d(TAG, "ERROR: Folder already Created");
+                }
+            }
+        }.start();
     }
 
     private void updateUasImageView(String uasImageFileName) {
