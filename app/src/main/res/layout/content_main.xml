@@ -11,11 +11,10 @@
     <ImageView
         android:id="@+id/uas_image_view"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="250dp"
         android:layout_marginEnd="0dp"
         android:layout_marginTop="0dp"
         android:contentDescription="@string/uas_image_view_description"
-        android:minHeight="250dp"
         android:onClick="uasImageViewOnClick"
         android:visibility="visible"
         app:layout_constraintHorizontal_bias="0.0"
@@ -29,15 +28,17 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_column="0"
-        android:layout_margin="8dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginLeft="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         android:layout_row="0"
         android:minWidth="110dp"
         android:onClick="emergencyButtonOnClick"
         android:text="@string/emergency_button_text"
+        app:layout_constraintBottom_toBottomOf="@+id/uas_height_up_button"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/uas_image_view" />
+        app:layout_constraintTop_toTopOf="@+id/uas_height_up_button" />
 
     <Button
         android:id="@+id/uas_height_up_button"
@@ -51,7 +52,6 @@
         android:minWidth="110dp"
         android:onClick="uasHeightUpButtonOnClick"
         android:text="@string/uas_height_up_botton_text"
-        app:layout_constraintHorizontal_bias="0.51"
         app:layout_constraintLeft_toRightOf="@+id/emergency_button"
         app:layout_constraintRight_toLeftOf="@+id/session_start_button"
         app:layout_constraintTop_toBottomOf="@+id/uas_image_view" />
@@ -61,15 +61,17 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_column="2"
-        android:layout_margin="8dp"
+        android:layout_marginBottom="8dp"
         android:layout_marginEnd="8dp"
+        android:layout_marginRight="8dp"
         android:layout_marginTop="8dp"
         android:layout_row="0"
         android:minWidth="110dp"
         android:onClick="sessionStartButtonOnCLick"
         android:text="@string/session_start_button_text"
+        app:layout_constraintBottom_toBottomOf="@+id/uas_height_up_button"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/uas_image_view" />
+        app:layout_constraintTop_toTopOf="@+id/uas_height_up_button" />
 
     <Button
         android:id="@+id/uas_height_down_button"
@@ -78,15 +80,14 @@
         android:layout_column="1"
         android:layout_margin="8dp"
         android:layout_marginLeft="8dp"
-        android:layout_marginRight="8dp"
+        android:layout_marginRight="0dp"
         android:layout_marginTop="8dp"
         android:layout_row="1"
         android:minWidth="110dp"
         android:onClick="uasHeightDownButtonOnClick"
         android:text="@string/uas_height_down_button_text"
-        app:layout_constraintHorizontal_bias="0.489"
-        app:layout_constraintLeft_toRightOf="@+id/light_switch"
-        app:layout_constraintRight_toLeftOf="@+id/session_end_button"
+        app:layout_constraintLeft_toLeftOf="@+id/uas_height_up_button"
+        app:layout_constraintRight_toRightOf="@+id/uas_height_up_button"
         app:layout_constraintTop_toBottomOf="@+id/uas_height_up_button" />
 
     <Button
@@ -94,23 +95,28 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_column="2"
-        android:layout_margin="8dp"
+        android:layout_marginBottom="8dp"
         android:layout_marginEnd="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
         android:layout_marginTop="8dp"
         android:layout_row="1"
         android:minWidth="110dp"
         android:onClick="sessionEndButtonOnCLick"
         android:text="@string/session_end_button_text"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/session_start_button" />
+        app:layout_constraintBottom_toBottomOf="@+id/uas_height_down_button"
+        app:layout_constraintLeft_toLeftOf="@+id/session_start_button"
+        app:layout_constraintRight_toRightOf="@+id/session_start_button"
+        app:layout_constraintTop_toTopOf="@+id/uas_height_down_button" />
 
     <android.support.v7.widget.SwitchCompat
         android:id="@+id/light_switch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_column="0"
-        android:layout_margin="8dp"
-        android:layout_marginStart="8dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="0dp"
         android:layout_marginTop="8dp"
         android:layout_row="1"
         android:minWidth="110dp"
@@ -118,8 +124,10 @@
         android:padding="14dp"
         android:text="@string/light_switch_text"
         android:textAppearance="@style/TextAppearance.AppCompat.Widget.Button"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/emergency_button"
+        app:layout_constraintBottom_toBottomOf="@+id/uas_height_down_button"
+        app:layout_constraintLeft_toLeftOf="@+id/emergency_button"
+        app:layout_constraintRight_toRightOf="@+id/emergency_button"
+        app:layout_constraintTop_toTopOf="@+id/uas_height_down_button"
         tools:checked="false" />
 
 </android.support.constraint.ConstraintLayout>
