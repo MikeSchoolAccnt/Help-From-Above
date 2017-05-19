@@ -96,6 +96,10 @@ public class CommandService extends Service {
         cSIF.addAction(COMMAND_HHMD_LOCATION);
         cSIF.addAction(COMMAND_UAS_IMAGE);
         cSIF.addAction(COMMAND_UAS_LOCATION);
+        cSIF.addAction(SETTING_CHANGE_CLOUD);
+        cSIF.addAction(SETTING_CHANGE_START_HEIGHT);
+        cSIF.addAction(SETTING_EMERGENCY_ADD);
+        cSIF.addAction(SETTING_EMERGENCY_REMOVE);
         registerReceiver(cSBR, cSIF);
 
         Bitmap bm = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.imag4240);
@@ -295,7 +299,7 @@ public class CommandService extends Service {
                         handleCommandUasImage();
                         break;
                     case SETTING_CHANGE_CLOUD:
-                        String cloudType = intent.getExtras().getParcelable(EXTRA_CLOUD_TYPE);
+                        String cloudType = intent.getStringExtra(EXTRA_CLOUD_TYPE);
                         handleSettingChangeCloud(cloudType);
                         break;
                     case SETTING_CHANGE_START_HEIGHT:
