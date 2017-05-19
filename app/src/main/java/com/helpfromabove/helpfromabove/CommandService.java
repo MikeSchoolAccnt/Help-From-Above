@@ -182,6 +182,7 @@ public class CommandService extends Service {
                 switch (action) {
                     case REQUEST_UAS_IMAGE:
                         sendNewImageIntent();
+                        break;
                     case COMMAND_HHMD_EMERGENCY:
                         handleCommandHhmdEmergency();
                         break;

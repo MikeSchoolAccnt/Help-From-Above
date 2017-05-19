@@ -6,7 +6,7 @@
     <!--content_main strings-->
     <string name="uas_image_view_description">Images from UAS to display to user</string>
     <string name="emergency_button_text">Emergency</string>
-    <string name="uas_height_up_botton_text">Up</string>
+    <string name="uas_height_up_button_text">Up</string>
     <string name="uas_height_down_button_text">Down</string>
     <string name="session_start_button_text">Take Off</string>
     <string name="session_end_button_text">Land</string>
