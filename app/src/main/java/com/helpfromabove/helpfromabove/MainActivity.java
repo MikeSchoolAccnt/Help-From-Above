@@ -36,16 +36,13 @@ public class MainActivity extends AppCompatActivity {
      * These keys will change when we decide a group account. As of now they are
      * my keys (Michael Purcell)
      */
-    private final static String CLOUDRAIL_LICENSE_KEY = "591cadfabac9e94ae79c9711";
-    private final static String DROPBOX_APP_KEY = "5a95or0lhqau6y1";
-    private final static String DROPBOX_APP_SECRET = "g31z4opqpzpklri";
+
 
     private MainActivityBroadcastReceiver mABR = new MainActivityBroadcastReceiver();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate: ");
-        CloudRail.setAppKey(CLOUDRAIL_LICENSE_KEY);
 
         super.onCreate(savedInstanceState);
 
@@ -64,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         Log.d(TAG, "onResume: ");
+
         super.onResume();
 
         registerReceiver(mABR, new IntentFilter(CommandService.ACTION_NEW_UAS_IMAGE));
@@ -104,17 +102,15 @@ public class MainActivity extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
+        //Now goes to the SettingsActivity when clicked
         if (id == R.id.action_settings) {
             Log.d(TAG, "onOptionsItemSelected: action_settings");
+            startActivity(new Intent(this, SettingsActivity.class));
             return true;
-        } else if(id == R.id.action_cloud) {
-            final CloudStorage DROPBOX = new Dropbox(this, DROPBOX_APP_KEY,DROPBOX_APP_SECRET);
-            createFolder(DROPBOX);
         }
-
         return super.onOptionsItemSelected(item);
     }
+
 
     /**
      * OnClick handler methods
@@ -161,19 +157,6 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "fullscreenUasImage: ");
         Intent i = new Intent(getApplicationContext(), FullscreenUasImageActivity.class);
         startActivity(i);
-    }
-
-    private void createFolder (final CloudStorage cs) {
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    cs.createFolder("/TestFolder");
-                } catch (Exception e) {
-                    Log.d(TAG, "ERROR: Folder already Created");
-                }
-            }
-        }.start();
     }
 
     private void updateUasImageView(String uasImageFileName) {
