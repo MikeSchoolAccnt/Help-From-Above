@@ -95,6 +95,12 @@ public class MainActivity extends AppCompatActivity {
             startActivity(new Intent(this, SettingsActivity.class));
             return true;
         }
+        if (id == R.id.action_new_settings) {
+            Log.d(TAG, "onOptionsItemSelected: action_new_settings");
+            startActivity(new Intent(this, NewSettingsActivity.class));
+            return true;
+        }
+
         return super.onOptionsItemSelected(item);
     }
 

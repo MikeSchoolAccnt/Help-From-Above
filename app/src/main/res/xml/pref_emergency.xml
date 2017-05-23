@@ -1,0 +1,12 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <ListPreference
+        android:defaultValue="-1"
+        android:entries="@array/pref_titles_emergency_message"
+        android:entryValues="@array/pref_values_emergency_message"
+        android:key="emergency_message_key"
+        android:negativeButtonText="@null"
+        android:positiveButtonText="@null"
+        android:title="@string/pref_title_emergency_message" />
+
+</PreferenceScreen>
