@@ -42,10 +42,10 @@ public class SettingsActivity extends AppCompatActivity {
                     cloud.putExtra(CommandService.EXTRA_CLOUD_TYPE,CommandService.CONSTANT_CLOUD_DROPBOX);
                     sendBroadcast(cloud);
                 } else if (checked == R.id.radio_GOOGLEDRIVE) {
-                    cloud.putExtra(CommandService.EXTRA_CLOUD_TYPE,CommandService.CONSTANT_CLOUD_GOOGLEDRIVE);
+                    cloud.putExtra(CommandService.EXTRA_CLOUD_TYPE,CommandService.CONSTANT_CLOUD_GOOGLE_DRIVE);
                     sendBroadcast(cloud);
                 } else if (checked == R.id.radio_ONEDRIVE) {
-                    cloud.putExtra(CommandService.EXTRA_CLOUD_TYPE,CommandService.CONSTANT_CLOUD_ONEDRIVE);
+                    cloud.putExtra(CommandService.EXTRA_CLOUD_TYPE,CommandService.CONSTANT_CLOUD_ONE_DRIVE);
                     sendBroadcast(cloud);
                 } else {
                     /*
