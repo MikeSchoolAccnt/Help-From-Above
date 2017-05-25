@@ -18,20 +18,17 @@
             android:name=".FullscreenUasImageActivity"
             android:parentActivityName=".MainActivity"
             android:screenOrientation="landscape"
-            android:theme="@style/FullscreenUASImageTheme" />
+            android:theme="@style/AppTheme.Fullscreen" />
         <activity
             android:name=".SettingsActivity"
             android:parentActivityName=".MainActivity" />
         <activity
             android:name=".SplashActivity"
-            android:parentActivityName=".MainActivity"
-            android:theme="@style/SplashTheme">
+            android:theme="@style/AppTheme.Fullscreen">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".MainActivity" />
