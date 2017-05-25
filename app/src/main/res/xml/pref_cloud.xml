@@ -1,6 +1,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <ListPreference
+        android:id="@+id/cloud_storage_provider_preference"
         android:defaultValue="-1"
         android:entries="@array/pref_titles_cloud_storage"
         android:entryValues="@array/pref_values_cloud_storage"

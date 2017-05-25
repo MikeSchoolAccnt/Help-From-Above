@@ -19,6 +19,7 @@ import android.preference.PreferenceManager;
 import android.preference.RingtonePreference;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.support.v4.app.NavUtils;
 
@@ -45,8 +46,10 @@ public class NewSettingsActivity extends AppCompatPreferenceActivity {
     private static Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener = new Preference.OnPreferenceChangeListener() {
         @Override
         public boolean onPreferenceChange(Preference preference, Object value) {
-            Log.d(TAG, "onPreferenceChange: value.toString()=" + value.toString());
+            Log.d(TAG, "onPreferenceChange");
             Log.d(TAG, "onPreferenceChange: preference.getKey()=" + preference.getKey());
+            Log.d(TAG, "onPreferenceChange: value.toString()=" + value.toString());
+
             String stringValue = value.toString();
 
             if (preference instanceof ListPreference) {
@@ -60,68 +63,11 @@ public class NewSettingsActivity extends AppCompatPreferenceActivity {
                         index >= 0
                                 ? listPreference.getEntries()[index]
                                 : null);
-
-            } else if (preference instanceof RingtonePreference) {
-                // For ringtone preferences, look up the correct display value
-                // using RingtoneManager.
-                if (TextUtils.isEmpty(stringValue)) {
-                    // Empty values correspond to 'silent' (no ringtone).
-                    preference.setSummary(R.string.pref_ringtone_silent);
-
-                } else {
-                    Ringtone ringtone = RingtoneManager.getRingtone(
-                            preference.getContext(), Uri.parse(stringValue));
-
-                    if (ringtone == null) {
-                        // Clear the summary if there was a lookup error.
-                        preference.setSummary(null);
-                    } else {
-                        // Set the summary to reflect the new ringtone display
-                        // name.
-                        String name = ringtone.getTitle(preference.getContext());
-                        preference.setSummary(name);
-                    }
-                }
-
             } else {
                 // For all other preferences, set the summary to the value's
                 // simple string representation.
                 preference.setSummary(stringValue);
             }
-//
-//            if (preference.hasKey()) {
-//                switch (preference.getKey()) {
-//                    case "cloud_storage_provider_key":
-//                        Log.d(TAG, "onPreferenceChange: cloud_storage_provider_key");
-//                        Intent cloudIntent = new Intent(CommandService.SETTING_CHANGE_CLOUD);
-//                        switch (stringValue) {
-//                            case "0":
-//                                Log.d(TAG, "onPreferenceChange - cloud_storage_provider_key: 0");
-//                                cloudIntent.putExtra(CommandService.EXTRA_CLOUD_TYPE,CommandService.CONSTANT_CLOUD_DROPBOX);
-//                                break;
-//                            case "1":
-//                                Log.d(TAG, "onPreferenceChange - cloud_storage_provider_key: 1");
-//                                cloudIntent.putExtra(CommandService.EXTRA_CLOUD_TYPE,CommandService.CONSTANT_CLOUD_GOOGLE_DRIVE);
-//                                break;
-//                            case "2":
-//                                Log.d(TAG, "onPreferenceChange - cloud_storage_provider_key: 2");
-//                                cloudIntent.putExtra(CommandService.EXTRA_CLOUD_TYPE,CommandService.CONSTANT_CLOUD_ONE_DRIVE);
-//                                break;
-//                            default:
-//                                Log.d(TAG, "onPreferenceChange - cloud_storage_provider_key: default");
-//                                break;
-//
-//                        }
-//                        break;
-//                    case "emergency_message_key":
-//                        Log.d(TAG, "onPreferenceChange: emergency_message_key");
-//                        break;
-//                    default:
-//                        Log.d(TAG, "onPreferenceChange: default");
-//                        break;
-//                }
-//            }
-//
             return true;
         }
     };
@@ -145,6 +91,8 @@ public class NewSettingsActivity extends AppCompatPreferenceActivity {
      * @see #sBindPreferenceSummaryToValueListener
      */
     private static void bindPreferenceSummaryToValue(Preference preference) {
+        Log.d(TAG, "bindPreferenceSummaryToValue");
+
         // Set the listener to watch for value changes.
         preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
 
@@ -158,7 +106,9 @@ public class NewSettingsActivity extends AppCompatPreferenceActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
+
         setupActionBar();
     }
 
@@ -209,10 +159,7 @@ public class NewSettingsActivity extends AppCompatPreferenceActivity {
     protected boolean isValidFragment(String fragmentName) {
         return PreferenceFragment.class.getName().equals(fragmentName)
                 || CloudPreferenceFragment.class.getName().equals(fragmentName)
-                || EmergencyPreferenceFragment.class.getName().equals(fragmentName)
-                || GeneralPreferenceFragment.class.getName().equals(fragmentName)
-                || DataSyncPreferenceFragment.class.getName().equals(fragmentName)
-                || NotificationPreferenceFragment.class.getName().equals(fragmentName);
+                || EmergencyPreferenceFragment.class.getName().equals(fragmentName);
     }
 
     /**
@@ -221,6 +168,8 @@ public class NewSettingsActivity extends AppCompatPreferenceActivity {
      */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static class CloudPreferenceFragment extends PreferenceFragment {
+        private static final String TAG = "CloudPreferenceFragment";
+
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
@@ -231,8 +180,7 @@ public class NewSettingsActivity extends AppCompatPreferenceActivity {
             // to their values. When their values change, their summaries are
             // updated to reflect the new value, per the Android Design
             // guidelines.
-            Preference cloudPreference = findPreference(getString(R.string.cloud_storage_provider_key));
-            bindPreferenceSummaryToValue(cloudPreference);
+            bindPreferenceSummaryToValue(findPreference(getString(R.string.cloud_storage_provider_key)));
         }
 
         @Override
@@ -252,9 +200,13 @@ public class NewSettingsActivity extends AppCompatPreferenceActivity {
      */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static class EmergencyPreferenceFragment extends PreferenceFragment {
+        private static final String TAG = "EmergencyPreferenceF...";
+
         @Override
         public void onCreate(Bundle savedInstanceState) {
+            Log.d(TAG, "onCreate");
             super.onCreate(savedInstanceState);
+
             addPreferencesFromResource(R.xml.pref_emergency);
             setHasOptionsMenu(true);
 
@@ -262,98 +214,8 @@ public class NewSettingsActivity extends AppCompatPreferenceActivity {
             // to their values. When their values change, their summaries are
             // updated to reflect the new value, per the Android Design
             // guidelines.
-            bindPreferenceSummaryToValue(findPreference(getString(R.string.emergency_message_key)));
-        }
-
-        @Override
-        public boolean onOptionsItemSelected(MenuItem item) {
-            int id = item.getItemId();
-            if (id == android.R.id.home) {
-                startActivity(new Intent(getActivity(), NewSettingsActivity.class));
-                return true;
-            }
-            return super.onOptionsItemSelected(item);
-        }
-    }
-
-    /**
-     * This fragment shows general preferences only. It is used when the
-     * activity is showing a two-pane settings UI.
-     */
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    public static class GeneralPreferenceFragment extends PreferenceFragment {
-        @Override
-        public void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-            addPreferencesFromResource(R.xml.pref_general);
-            setHasOptionsMenu(true);
-
-            // Bind the summaries of EditText/List/Dialog/Ringtone preferences
-            // to their values. When their values change, their summaries are
-            // updated to reflect the new value, per the Android Design
-            // guidelines.
-            bindPreferenceSummaryToValue(findPreference("example_text"));
-            bindPreferenceSummaryToValue(findPreference("example_list"));
-        }
-
-        @Override
-        public boolean onOptionsItemSelected(MenuItem item) {
-            int id = item.getItemId();
-            if (id == android.R.id.home) {
-                startActivity(new Intent(getActivity(), NewSettingsActivity.class));
-                return true;
-            }
-            return super.onOptionsItemSelected(item);
-        }
-    }
-
-    /**
-     * This fragment shows notification preferences only. It is used when the
-     * activity is showing a two-pane settings UI.
-     */
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    public static class NotificationPreferenceFragment extends PreferenceFragment {
-        @Override
-        public void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-            addPreferencesFromResource(R.xml.pref_notification);
-            setHasOptionsMenu(true);
-
-            // Bind the summaries of EditText/List/Dialog/Ringtone preferences
-            // to their values. When their values change, their summaries are
-            // updated to reflect the new value, per the Android Design
-            // guidelines.
-            bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
-        }
-
-        @Override
-        public boolean onOptionsItemSelected(MenuItem item) {
-            int id = item.getItemId();
-            if (id == android.R.id.home) {
-                startActivity(new Intent(getActivity(), NewSettingsActivity.class));
-                return true;
-            }
-            return super.onOptionsItemSelected(item);
-        }
-    }
-
-    /**
-     * This fragment shows data and sync preferences only. It is used when the
-     * activity is showing a two-pane settings UI.
-     */
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    public static class DataSyncPreferenceFragment extends PreferenceFragment {
-        @Override
-        public void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-            addPreferencesFromResource(R.xml.pref_data_sync);
-            setHasOptionsMenu(true);
-
-            // Bind the summaries of EditText/List/Dialog/Ringtone preferences
-            // to their values. When their values change, their summaries are
-            // updated to reflect the new value, per the Android Design
-            // guidelines.
-            bindPreferenceSummaryToValue(findPreference("sync_frequency"));
+            bindPreferenceSummaryToValue(findPreference(getString(R.string.emergency_message_text_key)));
+            bindPreferenceSummaryToValue(findPreference(getString(R.string.emergency_message_name_key)));
         }
 
         @Override
