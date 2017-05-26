@@ -7,6 +7,7 @@
         android:entryValues="@array/pref_values_emergency_message"
         android:key="@string/emergency_message_text_key"
         android:negativeButtonText="@null"
+        android:persistent="true"
         android:positiveButtonText="@null"
         android:title="@string/pref_title_emergency_message" />
 
@@ -18,6 +19,7 @@
         android:inputType="textCapWords"
         android:key="@string/emergency_message_name_key"
         android:maxLines="1"
+        android:persistent="true"
         android:selectAllOnFocus="true"
         android:singleLine="true"
         android:title="@string/pref_title_emergency_message_name" />

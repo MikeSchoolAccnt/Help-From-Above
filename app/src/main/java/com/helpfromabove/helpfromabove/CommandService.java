@@ -5,10 +5,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
@@ -34,7 +36,7 @@ import java.util.Stack;
  * application, and perform calculations on locations for waypoints.
  */
 
-public class CommandService extends Service {
+public class CommandService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener {
     protected static final String ACTION_NEW_UAS_IMAGE = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_IMAGE";
     protected static final String ACTION_NEW_UAS_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_LOCATION";
     protected static final String ACTION_NEW_HHMD_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_HHMD_LOCATION";
@@ -105,6 +107,8 @@ public class CommandService extends Service {
         intentFilter.addAction(SETTING_EMERGENCY_CONTACT_REMOVE);
         registerReceiver(commandServiceBroadcastReceiver, intentFilter);
 
+        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).registerOnSharedPreferenceChangeListener(this);
+
         // This is for local image testing. Remove once local image testing is complete
         Bitmap bm = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.imag4240);
         ByteArrayOutputStream baoStream = new ByteArrayOutputStream();
@@ -124,7 +128,9 @@ public class CommandService extends Service {
     public void onDestroy() {
         Log.d(TAG, "onDestroy");
         super.onDestroy();
+
         unregisterReceiver(commandServiceBroadcastReceiver);
+        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).unregisterOnSharedPreferenceChangeListener(this);
     }
 
     @Nullable
@@ -142,6 +148,24 @@ public class CommandService extends Service {
             imageFileName = null;
         }
         return imageFileName;
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if (key.equals(getString(R.string.cloud_storage_provider_key))) {
+            Log.d(TAG, "onSharedPreferenceChanged: cloud_storage_provider_key");
+
+            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+            String cloudProvider = sharedPref.getString(getString(R.string.cloud_storage_provider_key), null);
+            Log.d(TAG, "onSharedPreferenceChanged: cloudProvider=" + cloudProvider);
+        } else if (key.equals(getString(R.string.emergency_message_name_key))) {
+            Log.d(TAG, "onSharedPreferenceChanged: emergency_message_name_key");
+        } else if (key.equals(getString(R.string.emergency_message_text_key))) {
+            Log.d(TAG, "onSharedPreferenceChanged: emergency_message_text_key");
+
+        } else {
+            Log.w(TAG, "onSharedPreferenceChanged: key=" + key);
+        }
     }
 
     public void addSessionImageFileName(String imageFileName) {

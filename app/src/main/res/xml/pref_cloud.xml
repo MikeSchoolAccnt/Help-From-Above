@@ -7,6 +7,7 @@
         android:entryValues="@array/pref_values_cloud_storage"
         android:key="@string/cloud_storage_provider_key"
         android:negativeButtonText="@null"
+        android:persistent="true"
         android:positiveButtonText="@null"
         android:title="@string/pref_title_cloud_storage" />
 
