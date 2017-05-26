@@ -158,6 +158,9 @@ public class CommandService extends Service implements SharedPreferences.OnShare
             SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
             String cloudProvider = sharedPref.getString(getString(R.string.cloud_storage_provider_key), null);
             Log.d(TAG, "onSharedPreferenceChanged: cloudProvider=" + cloudProvider);
+
+            handleSettingChangeCloud(cloudProvider);
+
         } else if (key.equals(getString(R.string.emergency_message_name_key))) {
             Log.d(TAG, "onSharedPreferenceChanged: emergency_message_name_key");
         } else if (key.equals(getString(R.string.emergency_message_text_key))) {
@@ -242,17 +245,17 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     private void handleSettingChangeCloud(String cloudType) {
 
         switch (cloudType) {
-            case CONSTANT_CLOUD_DROPBOX:
+            case "0":
                 cloudStorage = new Dropbox(this, DROPBOX_APP_KEY, DROPBOX_APP_SECRET);
                 createFolderCloud(cloudStorage);
                 Log.d(TAG, "handleSettingChangeCloud: Dropbox Specified");
                 break;
-            case CONSTANT_CLOUD_GOOGLE_DRIVE:
+            case "1":
                 //cloudStorage = new GoogleDrive();
                 // createFolderCloud(cloudStorage);
                 Log.d(TAG, "handleSettingChangeCloud: Google Drive Specified");
                 break;
-            case CONSTANT_CLOUD_ONE_DRIVE:
+            case "2":
                 //cloudStorage = new OneDrive(this,ONEDRIVE_APP_KEY,ONEDRIVE_APP_SECRET);
                 //createFolderCloud(cloudStorage);
                 Log.d(TAG, "handleSettingChangeCloud: OneDrive Specified");
@@ -291,7 +294,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
                 try {
                     cs.createFolder("/TestFolder");
                 } catch (Exception e) {
-                    Log.e(TAG, "createFolderCloud: Exception", e);
+                    Log.d(TAG, "createFolderCloud: Exception " + e.getMessage());
                 }
             }
         }.start();
