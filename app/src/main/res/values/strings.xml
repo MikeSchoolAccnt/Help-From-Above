@@ -56,4 +56,19 @@
         <item>2</item>
     </string-array>
 
+    <!-- Session Start -->
+    <string name="pref_header_session_start">Session Start</string>
+    <string name="pref_title_uas_start_height">UAS start height</string>
+    <string name="pref_key_uas_start_height">pref_key_uas_start_height</string>
+    <string-array name="pref_entries_uas_start_height">
+        <item>3 m</item>
+        <item>5 m</item>
+        <item>10 m</item>
+    </string-array>
+    <string-array name="pref_values_uas_start_height">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
 </resources>

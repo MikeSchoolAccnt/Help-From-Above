@@ -1,0 +1,14 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <ListPreference
+        android:id="@+id/pref_uas_start_height"
+        android:defaultValue="1"
+        android:entries="@array/pref_entries_uas_start_height"
+        android:entryValues="@array/pref_values_uas_start_height"
+        android:key="@string/pref_key_uas_start_height"
+        android:negativeButtonText="@null"
+        android:persistent="true"
+        android:positiveButtonText="@null"
+        android:title="@string/pref_title_uas_start_height" />
+    
+</PreferenceScreen>
