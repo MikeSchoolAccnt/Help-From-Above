@@ -78,6 +78,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        Log.d(TAG, "onCreateOptionsMenu");
+
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
@@ -85,6 +87,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        Log.d(TAG, "onOptionsItemSelected");
+
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
@@ -92,11 +96,13 @@ public class MainActivity extends AppCompatActivity {
 
         if (id == R.id.action_settings) {
             Log.d(TAG, "onOptionsItemSelected: action_settings");
+
             startActivity(new Intent(this, SettingsActivity.class));
             return true;
         }
         if (id == R.id.action_new_settings) {
             Log.d(TAG, "onOptionsItemSelected: action_new_settings");
+
             startActivity(new Intent(this, NewSettingsActivity.class));
             return true;
         }
@@ -110,16 +116,19 @@ public class MainActivity extends AppCompatActivity {
      */
     public void uasImageViewOnClick(View view) {
         Log.d(TAG, "uasImageViewOnClick");
+
         fullscreenUasImage();
     }
 
     public void emergencyButtonOnClick(View view) {
         Log.d(TAG, "emergencyButtonOnClick");
+
         sendBroadcast(new Intent(CommandService.COMMAND_HHMD_EMERGENCY));
     }
 
     public void lightSwitchOnClick(View view) {
         Log.d(TAG, "lightSwitchOnClick");
+
         boolean isChecked = ((SwitchCompat) view).isChecked();
         Intent lightIntent = new Intent(CommandService.COMMAND_HHMD_LIGHT);
         lightIntent.putExtra(CommandService.EXTRA_LIGHT_ON_OFF, isChecked);
@@ -128,21 +137,25 @@ public class MainActivity extends AppCompatActivity {
 
     public void uasHeightUpButtonOnClick(View view) {
         Log.d(TAG, "uasHeightUpButtonOnClick ");
+
         sendBroadcast(new Intent(CommandService.COMMAND_HHMD_UAS_HEIGHT_UP));
     }
 
     public void uasHeightDownButtonOnClick(View view) {
         Log.d(TAG, "uasHeightDownButtonOnClick");
+
         sendBroadcast(new Intent(CommandService.COMMAND_HHMD_UAS_HEIGHT_DOWN));
     }
 
     public void sessionStartButtonOnCLick(View view) {
         Log.d(TAG, "sessionStartButtonOnCLick");
+
         sendBroadcast(new Intent(CommandService.COMMAND_HHMD_SESSION_START));
     }
 
     public void sessionEndButtonOnCLick(View view) {
         Log.d(TAG, "sessionEndButtonOnCLick");
+
         sendBroadcast(new Intent(CommandService.COMMAND_HHMD_SESSION_END));
     }
 
@@ -151,6 +164,7 @@ public class MainActivity extends AppCompatActivity {
      */
     private void fullscreenUasImage() {
         Log.d(TAG, "fullscreenUasImage");
+
         Intent fullscreenUasImageActivityIntent = new Intent(getApplicationContext(), FullscreenUasImageActivity.class);
         startActivity(fullscreenUasImageActivityIntent);
     }
@@ -159,18 +173,17 @@ public class MainActivity extends AppCompatActivity {
      * Methods for handling events caused by receiving new broadcasts
      */
     private void updateUasImageView(String uasImageFileName) {
-        if (uasImageFileName != null) {
-            Log.d(TAG, "updateUasImageView: uasImageFileName=" + uasImageFileName);
-            try {
-                FileInputStream fis = openFileInput(uasImageFileName);
-                Bitmap imageBitmap = BitmapFactory.decodeStream(fis);
-                ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
-                imageView.setImageBitmap(imageBitmap);
-            } catch (FileNotFoundException fNFE) {
-                Log.e(TAG, "setUasImage: FileNotFoundException", fNFE);
-            } catch (NullPointerException nPE) {
-                Log.e(TAG, "setUasImage: NullPointerException", nPE);
-            }
+        Log.d(TAG, "updateUasImageView: uasImageFileName=" + uasImageFileName);
+
+        try {
+            FileInputStream fis = openFileInput(uasImageFileName);
+            Bitmap imageBitmap = BitmapFactory.decodeStream(fis);
+            ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
+            imageView.setImageBitmap(imageBitmap);
+        } catch (FileNotFoundException fNFE) {
+            Log.e(TAG, "setUasImage: FileNotFoundException: " + fNFE.getMessage(), fNFE);
+        } catch (NullPointerException nPE) {
+            Log.e(TAG, "setUasImage: NullPointerException: " + nPE.getMessage(), nPE);
         }
     }
 
@@ -182,16 +195,19 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.d(TAG, "onReceive");
+
             String action = intent.getAction();
             if (intent != null && action != null) {
                 switch (action) {
                     case CommandService.ACTION_NEW_UAS_IMAGE:
                         Log.d(TAG, "onReceive: ACTION_NEW_UAS_IMAGE");
+
                         String uasImageFileName = intent.getStringExtra(CommandService.EXTRA_IMAGE_FILE_NAME);
                         updateUasImageView(uasImageFileName);
                         break;
                     case CommandService.ACTION_NEW_UAS_LOCATION:
                         Log.d(TAG, "onReceive: ACTION_NEW_UAS_LOCATION");
+
                         /*
                          * If we add the Google maps overlay to the
                          * UAS image, this is where we would get the
@@ -200,6 +216,7 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case CommandService.ACTION_NEW_HHMD_LOCATION:
                         Log.d(TAG, "onReceive: ACTION_NEW_HHMD_LOCATION");
+
                         /*
                          * If we add the Google maps overlay to the
                          * UAS image, this is where we would receive
@@ -207,7 +224,7 @@ public class MainActivity extends AppCompatActivity {
                          */
                         break;
                     default:
-                        Log.wtf(TAG, "onReceive: default: action=" + action);
+                        Log.w(TAG, "onReceive: default: action=" + action);
                         break;
                 }
             }

@@ -14,14 +14,14 @@ import android.widget.ImageView;
 
 public class SplashActivity extends Activity {
     private static final String TAG = "SplashActivity";
-
-    Animation tempAnim;
-    ImageView splash;
+    private Animation tempAnim;
+    private ImageView splash;
 
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_splash);
 
+        setContentView(R.layout.activity_splash);
 
         splash = (ImageView) findViewById(R.id.splashView);
         tempAnim = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.splash_anim);
@@ -50,8 +50,8 @@ public class SplashActivity extends Activity {
     protected void onStart() {
         Log.d(TAG, "onStart: ");
         super.onStart();
-        splash.startAnimation(tempAnim);
 
+        splash.startAnimation(tempAnim);
         startService(new Intent(this, CommandService.class));
     }
 
@@ -68,6 +68,8 @@ public class SplashActivity extends Activity {
 //    }
 
     public void transition() {
+        Log.d(TAG, "transition");
+
         Intent i = new Intent(getApplicationContext(), MainActivity.class);
         startActivity(i);
         finish();

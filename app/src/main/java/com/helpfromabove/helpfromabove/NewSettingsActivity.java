@@ -46,12 +46,9 @@ public class NewSettingsActivity extends AppCompatPreferenceActivity {
     private static Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener = new Preference.OnPreferenceChangeListener() {
         @Override
         public boolean onPreferenceChange(Preference preference, Object value) {
-            Log.d(TAG, "onPreferenceChange");
-            Log.d(TAG, "onPreferenceChange: preference.getKey()=" + preference.getKey());
-            Log.d(TAG, "onPreferenceChange: value.toString()=" + value.toString());
+            Log.d(TAG, "onPreferenceChange: preference.getKey()=" + preference.getKey() + ", value.toString()=" + value.toString());
 
             String stringValue = value.toString();
-
             if (preference instanceof ListPreference) {
                 // For list preferences, look up the correct display value in
                 // the preference's 'entries' list.
@@ -116,6 +113,8 @@ public class NewSettingsActivity extends AppCompatPreferenceActivity {
      * Set up the {@link android.app.ActionBar}, if the API is available.
      */
     private void setupActionBar() {
+        Log.d(TAG, "setupActionBar");
+
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             // Show the Up button in the action bar.
@@ -125,6 +124,8 @@ public class NewSettingsActivity extends AppCompatPreferenceActivity {
 
     @Override
     public boolean onMenuItemSelected(int featureId, MenuItem item) {
+        Log.d(TAG, "onMenuItemSelected");
+
         int id = item.getItemId();
         if (id == android.R.id.home) {
             if (!super.onMenuItemSelected(featureId, item)) {
@@ -173,7 +174,9 @@ public class NewSettingsActivity extends AppCompatPreferenceActivity {
 
         @Override
         public void onCreate(Bundle savedInstanceState) {
+            Log.d(TAG, "onCreate");
             super.onCreate(savedInstanceState);
+
             addPreferencesFromResource(R.xml.pref_cloud);
             setHasOptionsMenu(true);
 
@@ -186,6 +189,8 @@ public class NewSettingsActivity extends AppCompatPreferenceActivity {
 
         @Override
         public boolean onOptionsItemSelected(MenuItem item) {
+            Log.d(TAG, "onOptionsItemSelected");
+
             int id = item.getItemId();
             if (id == android.R.id.home) {
                 startActivity(new Intent(getActivity(), NewSettingsActivity.class));
@@ -221,6 +226,8 @@ public class NewSettingsActivity extends AppCompatPreferenceActivity {
 
         @Override
         public boolean onOptionsItemSelected(MenuItem item) {
+            Log.d(TAG, "onOptionsItemSelected");
+
             int id = item.getItemId();
             if (id == android.R.id.home) {
                 startActivity(new Intent(getActivity(), NewSettingsActivity.class));
@@ -255,6 +262,8 @@ public class NewSettingsActivity extends AppCompatPreferenceActivity {
 
         @Override
         public boolean onOptionsItemSelected(MenuItem item) {
+            Log.d(TAG, "onOptionsItemSelected");
+
             int id = item.getItemId();
             if (id == android.R.id.home) {
                 startActivity(new Intent(getActivity(), NewSettingsActivity.class));

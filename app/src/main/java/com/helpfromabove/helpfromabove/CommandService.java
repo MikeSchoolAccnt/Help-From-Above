@@ -140,18 +140,25 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     }
 
     public String getLastSessionImageFileName() {
+        Log.d(TAG, "getLastSessionImageFileName");
+        
         String imageFileName;
         if (!mImageFileNamesStack.empty()) {
             imageFileName = mImageFileNamesStack.peek();
         } else {
             Log.d(TAG, "getLastSessionImageFileName: mImageFileNamesStack is empty.");
+
             imageFileName = null;
         }
+
+        Log.d(TAG, "getLastSessionImageFileName: imageFileName=" + imageFileName);
         return imageFileName;
     }
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        Log.d(TAG, "onSharedPreferenceChanged");
+
         if (key.equals(getString(R.string.cloud_storage_provider_key))) {
             Log.d(TAG, "onSharedPreferenceChanged: cloud_storage_provider_key");
 
@@ -172,6 +179,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     }
 
     public void addSessionImageFileName(String imageFileName) {
+        Log.d(TAG, "addSessionImageFileName");
+
         mImageFileNamesStack.push(imageFileName);
     }
 
@@ -181,8 +190,11 @@ public class CommandService extends Service implements SharedPreferences.OnShare
 
     protected void handleCommandHhmdLight(boolean lightOnOff) {
         Log.d(TAG, "handleCommandHhmdLight: lightOnOff=" + lightOnOff);
+
+        // This is for local image testing. Remove once local image testing is complete
         if (imageDebugCounter >= 2) {
             Log.d(TAG, "handleCommandHhmdLight: incoming image example");
+
             handleCommandUasImage();
         }
         imageDebugCounter++;
@@ -216,20 +228,19 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     // TODO : Parameter(s) for incoming UAS image need(s) to be added.
     private void handleCommandUasImage() {
         Log.d(TAG, "handleCommandUasImage");
+
         DateFormat df = new SimpleDateFormat("yyyyMMddHHmmssZ");
         String filename = df.format(Calendar.getInstance().getTime()) + ".jpg";
         FileOutputStream outputStream;
         try {
             outputStream = openFileOutput(filename, Context.MODE_PRIVATE);
-            /*
-             * The line below is for local image testing. Modify to
-             * correctly write the file once local image testing is
-             * complete.
-             */
+
+            // This is for local image testing. Modify once local image testing is complete
             outputStream.write(imageBytes.get(imageDebugCounter % 3));
+
             outputStream.close();
         } catch (IOException iOE) {
-            Log.e(TAG, "handleCommandUasImage: IOException", iOE);
+            Log.e(TAG, "handleCommandUasImage: IOException: " + iOE.getMessage(), iOE);
         }
 
         addSessionImageFileName(filename);
@@ -243,27 +254,32 @@ public class CommandService extends Service implements SharedPreferences.OnShare
      * cloud such as uploading/deleting.
      */
     private void handleSettingChangeCloud(String cloudType) {
+        Log.d(TAG, "handleSettingChangeCloud");
 
         switch (cloudType) {
             case "0":
+                Log.d(TAG, "handleSettingChangeCloud: Dropbox Specified");
+
                 cloudStorage = new Dropbox(this, DROPBOX_APP_KEY, DROPBOX_APP_SECRET);
                 createFolderCloud(cloudStorage);
-                Log.d(TAG, "handleSettingChangeCloud: Dropbox Specified");
                 break;
             case "1":
+                Log.d(TAG, "handleSettingChangeCloud: Google Drive Specified");
+
                 //cloudStorage = new GoogleDrive();
                 // createFolderCloud(cloudStorage);
-                Log.d(TAG, "handleSettingChangeCloud: Google Drive Specified");
                 break;
             case "2":
+                Log.d(TAG, "handleSettingChangeCloud: OneDrive Specified");
+
                 //cloudStorage = new OneDrive(this,ONEDRIVE_APP_KEY,ONEDRIVE_APP_SECRET);
                 //createFolderCloud(cloudStorage);
-                Log.d(TAG, "handleSettingChangeCloud: OneDrive Specified");
                 break;
             default:
                 Log.d(TAG, "handleSettingChangeCloud: No Cloud Specified");
                 //Possible set to device storage here
                 //Note: Most of the cloud services allowed for saving in offline mode
+                break;
         }
     }
 
@@ -271,16 +287,17 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         Log.d(TAG, "handleSettingChangeStartHeight");
     }
 
-    private void handleSettingEmergencyAdd() {
-        Log.d(TAG, "handleSettingEmergencyAdd");
+    private void handleSettingEmergencyContactAdd() {
+        Log.d(TAG, "handleSettingEmergencyContactAdd");
     }
 
-    private void handleSettingemergencyRemove() {
-        Log.d(TAG, "handleSettingemergencyRemove");
+    private void handleSettingEmergencyContactRemove() {
+        Log.d(TAG, "handleSettingEmergencyContactRemove");
     }
 
     private void sendNewImageIntent() {
         Log.d(TAG, "sendNewImageIntent");
+
         Intent newImageIntent = new Intent(ACTION_NEW_UAS_IMAGE);
         newImageIntent.putExtra(EXTRA_IMAGE_FILE_NAME, getLastSessionImageFileName());
         sendBroadcast(newImageIntent);
@@ -288,13 +305,15 @@ public class CommandService extends Service implements SharedPreferences.OnShare
 
 
     private void createFolderCloud(final CloudStorage cs) {
+        Log.d(TAG, "createFolderCloud");
+
         new Thread() {
             @Override
             public void run() {
                 try {
                     cs.createFolder("/TestFolder");
                 } catch (Exception e) {
-                    Log.d(TAG, "createFolderCloud: Exception " + e.getMessage());
+                    Log.e(TAG, "createFolderCloud: Exception " + e.getMessage(), e);
                 }
             }
         }.start();
@@ -304,6 +323,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.d(TAG, "onReceive");
+
             String action = intent.getAction();
             if (intent != null && action != null) {
                 switch (action) {
@@ -348,13 +368,14 @@ public class CommandService extends Service implements SharedPreferences.OnShare
                         handleSettingChangeStartHeight();
                         break;
                     case SETTING_EMERGENCY_CONTACT_ADD:
-                        handleSettingEmergencyAdd();
+                        handleSettingEmergencyContactAdd();
                         break;
                     case SETTING_EMERGENCY_CONTACT_REMOVE:
-                        handleSettingemergencyRemove();
+                        handleSettingEmergencyContactRemove();
                         break;
                     default:
-                        Log.wtf(TAG, "onReceive: default: action=" + action);
+                        Log.w(TAG, "onReceive: default: action=" + action);
+                        break;
                 }
             }
         }

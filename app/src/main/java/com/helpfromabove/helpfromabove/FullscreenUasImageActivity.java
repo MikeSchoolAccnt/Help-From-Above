@@ -66,6 +66,8 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
     }
 
     private void updateFullscreenUasImageView(String uasImageFileName) {
+        Log.d(TAG, "updateFullscreenUasImageView");
+
         if (uasImageFileName != null) {
             try {
                 FileInputStream fis = openFileInput(uasImageFileName);
@@ -74,11 +76,11 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
                 ImageView imageView = (ImageView) findViewById(R.id.fullscreen_uas_image_view);
                 imageView.setImageBitmap(imageBitmap);
             } catch (FileNotFoundException fNFE) {
-                Log.e(TAG, "setUasImage: FileNotFoundException", fNFE);
+                Log.e(TAG, "setUasImage: FileNotFoundException: " + fNFE.getMessage(), fNFE);
             } catch (IOException iOE) {
-                Log.e(TAG, "setUasImage: IOException", iOE);
+                Log.e(TAG, "setUasImage: IOException: " + iOE.getMessage(), iOE);
             } catch (NullPointerException nPE) {
-                Log.e(TAG, "setUasImage: NullPointerException", nPE);
+                Log.e(TAG, "setUasImage: NullPointerException: " + nPE.getMessage(), nPE);
             }
         }
     }
@@ -91,16 +93,18 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.d(TAG, "onReceive");
+
             String action = intent.getAction();
             if (intent != null && action != null) {
                 switch (action) {
                     case CommandService.ACTION_NEW_UAS_IMAGE:
                         Log.d(TAG, "onReceive: ACTION_NEW_UAS_IMAGE");
+
                         String imageFileName = intent.getStringExtra(CommandService.EXTRA_IMAGE_FILE_NAME);
                         updateFullscreenUasImageView(imageFileName);
                         break;
                     default:
-                        Log.wtf(TAG, "onReceive: default: action=" + action);
+                        Log.w(TAG, "onReceive: default: action=" + action);
                         break;
                 }
             }
