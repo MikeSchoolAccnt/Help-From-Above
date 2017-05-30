@@ -1,13 +1,9 @@
 package com.helpfromabove.helpfromabove;
 
-
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.media.Ringtone;
-import android.media.RingtoneManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.ListPreference;
@@ -16,10 +12,7 @@ import android.preference.PreferenceActivity;
 import android.support.v7.app.ActionBar;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
-import android.preference.RingtonePreference;
-import android.text.TextUtils;
 import android.util.Log;
-import android.view.Menu;
 import android.view.MenuItem;
 import android.support.v4.app.NavUtils;
 
@@ -184,7 +177,7 @@ public class NewSettingsActivity extends AppCompatPreferenceActivity {
             // to their values. When their values change, their summaries are
             // updated to reflect the new value, per the Android Design
             // guidelines.
-            bindPreferenceSummaryToValue(findPreference(getString(R.string.cloud_storage_provider_key)));
+            bindPreferenceSummaryToValue(findPreference(getString(R.string.pref_key_cloud_storage_provider)));
         }
 
         @Override
@@ -220,8 +213,8 @@ public class NewSettingsActivity extends AppCompatPreferenceActivity {
             // to their values. When their values change, their summaries are
             // updated to reflect the new value, per the Android Design
             // guidelines.
-            bindPreferenceSummaryToValue(findPreference(getString(R.string.emergency_message_text_key)));
-            bindPreferenceSummaryToValue(findPreference(getString(R.string.emergency_message_name_key)));
+            bindPreferenceSummaryToValue(findPreference(getString(R.string.pref_key_emergency_message_text)));
+            bindPreferenceSummaryToValue(findPreference(getString(R.string.pref_key_emergency_message_name)));
         }
 
         @Override

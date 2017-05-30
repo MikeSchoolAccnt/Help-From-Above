@@ -3,9 +3,9 @@
     <ListPreference
         android:id="@+id/cloud_storage_provider_preference"
         android:defaultValue="-1"
-        android:entries="@array/pref_titles_cloud_storage"
-        android:entryValues="@array/pref_values_cloud_storage"
-        android:key="@string/cloud_storage_provider_key"
+        android:entries="@array/pref_entries_cloud_storage_provider"
+        android:entryValues="@array/pref_values_cloud_storage_provider"
+        android:key="@string/pref_key_cloud_storage_provider"
         android:negativeButtonText="@null"
         android:persistent="true"
         android:positiveButtonText="@null"

@@ -3,13 +3,13 @@
     <ListPreference
         android:id="@+id/emergency_message_text_preference"
         android:defaultValue="-1"
-        android:entries="@array/pref_titles_emergency_message"
-        android:entryValues="@array/pref_values_emergency_message"
-        android:key="@string/emergency_message_text_key"
+        android:entries="@array/pref_entries_emergency_message_text"
+        android:entryValues="@array/pref_values_emergency_message_text"
+        android:key="@string/pref_key_emergency_message_text"
         android:negativeButtonText="@null"
         android:persistent="true"
         android:positiveButtonText="@null"
-        android:title="@string/pref_title_emergency_message" />
+        android:title="@string/pref_title_emergency_message_text" />
 
     <EditTextPreference
         android:id="@+id/emergency_message_name_preference"
@@ -17,7 +17,7 @@
         android:defaultValue="@string/pref_default_emergency_message_name"
         android:enabled="true"
         android:inputType="textCapWords"
-        android:key="@string/emergency_message_name_key"
+        android:key="@string/pref_key_emergency_message_name"
         android:maxLines="1"
         android:persistent="true"
         android:selectAllOnFocus="true"

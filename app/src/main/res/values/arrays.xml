@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="pref_entries_cloud_storage_provider">
+        <item>None</item>
+        <item>Dropbox</item>
+        <item>Google Drive</item>
+        <item>One Drive</item>
+    </string-array>
+    <string-array name="pref_values_cloud_storage_provider">
+        <item>-1</item>
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
+    <string-array name="pref_entries_emergency_message_text">
+        <item>Help!</item>
+        <item>Please help me!</item>
+        <item>
+            I\'m (Name), and I need Help!
+            \nLocation: (lat., long., alt.)
+            \nImages: (link to images on cloud)
+        </item>
+    </string-array>
+    <string-array name="pref_values_emergency_message_text">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
+    <string-array name="pref_entries_uas_start_height">
+        <item>3 m</item>
+        <item>5 m</item>
+        <item>10 m</item>
+    </string-array>
+    <string-array name="pref_values_uas_start_height">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
+</resources>

@@ -159,19 +159,19 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         Log.d(TAG, "onSharedPreferenceChanged");
 
-        if (key.equals(getString(R.string.cloud_storage_provider_key))) {
-            Log.d(TAG, "onSharedPreferenceChanged: cloud_storage_provider_key");
+        if (key.equals(getString(R.string.pref_key_cloud_storage_provider))) {
+            Log.d(TAG, "onSharedPreferenceChanged: pref_key_cloud_storage_provider");
 
             SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-            String cloudProvider = sharedPref.getString(getString(R.string.cloud_storage_provider_key), null);
+            String cloudProvider = sharedPref.getString(getString(R.string.pref_key_cloud_storage_provider), null);
             Log.d(TAG, "onSharedPreferenceChanged: cloudProvider=" + cloudProvider);
 
             handleSettingChangeCloud(cloudProvider);
 
-        } else if (key.equals(getString(R.string.emergency_message_name_key))) {
-            Log.d(TAG, "onSharedPreferenceChanged: emergency_message_name_key");
-        } else if (key.equals(getString(R.string.emergency_message_text_key))) {
-            Log.d(TAG, "onSharedPreferenceChanged: emergency_message_text_key");
+        } else if (key.equals(getString(R.string.pref_key_emergency_message_name))) {
+            Log.d(TAG, "onSharedPreferenceChanged: pref_key_emergency_message_name");
+        } else if (key.equals(getString(R.string.pref_key_emergency_message_text))) {
+            Log.d(TAG, "onSharedPreferenceChanged: pref_key_emergency_message_text");
 
         } else {
             Log.w(TAG, "onSharedPreferenceChanged: key=" + key);
