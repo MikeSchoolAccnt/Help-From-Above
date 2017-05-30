@@ -2,7 +2,7 @@
 
     <ListPreference
         android:id="@+id/emergency_message_text_preference"
-        android:defaultValue="-1"
+        android:defaultValue="@string/pref_value_emergency_message_text_medium"
         android:entries="@array/pref_entries_emergency_message_text"
         android:entryValues="@array/pref_values_emergency_message_text"
         android:key="@string/pref_key_emergency_message_text"

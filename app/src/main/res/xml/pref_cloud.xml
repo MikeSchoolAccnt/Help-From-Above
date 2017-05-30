@@ -2,7 +2,7 @@
 
     <ListPreference
         android:id="@+id/cloud_storage_provider_preference"
-        android:defaultValue="-1"
+        android:defaultValue="@string/pref_value_cloud_storage_provider_none"
         android:entries="@array/pref_entries_cloud_storage_provider"
         android:entryValues="@array/pref_values_cloud_storage_provider"
         android:key="@string/pref_key_cloud_storage_provider"

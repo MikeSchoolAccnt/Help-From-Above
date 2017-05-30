@@ -1,42 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string-array name="pref_entries_cloud_storage_provider">
-        <item>None</item>
-        <item>Dropbox</item>
-        <item>Google Drive</item>
-        <item>One Drive</item>
+        <item>@string/pref_entry_cloud_storage_provider_none</item>
+        <item>@string/pref_entry_cloud_storage_provider_dropbox</item>
+        <item>@string/pref_entry_cloud_storage_provider_google_drive</item>
+        <item>@string/pref_entry_cloud_storage_provider_one_drive</item>
     </string-array>
     <string-array name="pref_values_cloud_storage_provider">
-        <item>-1</item>
-        <item>0</item>
-        <item>1</item>
-        <item>2</item>
+        <item>@string/pref_value_cloud_storage_provider_none</item>
+        <item>@string/pref_value_cloud_storage_provider_dropbox</item>
+        <item>@string/pref_value_cloud_storage_provider_google_drive</item>
+        <item>@string/pref_value_cloud_storage_provider_one_drive</item>
     </string-array>
 
     <string-array name="pref_entries_emergency_message_text">
-        <item>Help!</item>
-        <item>Please help me!</item>
-        <item>
-            I\'m (Name), and I need Help!
-            \nLocation: (lat., long., alt.)
-            \nImages: (link to images on cloud)
-        </item>
+        <item>@string/pref_entry_emergency_message_text_short</item>
+        <item>@string/pref_entry_emergency_message_text_medium</item>
+        <item>@string/pref_entry_emergency_message_text_long</item>
     </string-array>
     <string-array name="pref_values_emergency_message_text">
-        <item>0</item>
-        <item>1</item>
-        <item>2</item>
+        <item>@string/pref_value_emergency_message_text_short</item>
+        <item>@string/pref_value_emergency_message_text_medium</item>
+        <item>@string/pref_value_emergency_message_text_long</item>
     </string-array>
 
     <string-array name="pref_entries_uas_start_height">
-        <item>3 m</item>
-        <item>5 m</item>
-        <item>10 m</item>
+        <item>@string/pref_entry_uas_start_height_3_m</item>
+        <item>@string/pref_entry_uas_start_height_5_m</item>
+        <item>@string/pref_entry_uas_start_height_10_m</item>
     </string-array>
     <string-array name="pref_values_uas_start_height">
-        <item>0</item>
-        <item>1</item>
-        <item>2</item>
+        <item>@string/pref_value_uas_start_height_3_m</item>
+        <item>@string/pref_value_uas_start_height_5_m</item>
+        <item>@string/pref_value_uas_start_height_10_m</item>
     </string-array>
 
 </resources>
