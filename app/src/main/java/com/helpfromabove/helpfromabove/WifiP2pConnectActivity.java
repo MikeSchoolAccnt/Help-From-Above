@@ -9,11 +9,16 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.ListAdapter;
+import android.widget.ListView;
 
 public class WifiP2pConnectActivity extends AppCompatActivity {
     private static final String TAG = "WifiP2pConnectActivity";
     private WifiP2pConnectActivityBroadcastReceiver broadcastReceiver = new WifiP2pConnectActivityBroadcastReceiver();
     private IntentFilter intentFilter = new IntentFilter();
+    private ListView devicesListView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,6 +32,22 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
+
+        ArrayAdapter adapter = new ArrayAdapter(getApplicationContext(), R.layout.wifi_p2p_device, R.id.wifi_p2p_device_name) {
+            @Override
+            public void notifyDataSetChanged() {
+                Log.d(TAG, "notifyDataSetChanged");
+                super.notifyDataSetChanged();
+
+                onArrayAdapterDataSetChanged();
+            }
+        };
+        try {
+            devicesListView = (ListView) findViewById(R.id.wifi_p2p_connect_listview);
+            devicesListView.setAdapter(adapter);
+        } catch (NullPointerException nPE) {
+            Log.e(TAG, "onCreate: NullPointerException: " + nPE.getMessage(), nPE);
+        }
     }
 
     @Override
@@ -43,6 +64,30 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         super.onPause();
 
         unregisterReceiver(broadcastReceiver);
+    }
+
+    private void onArrayAdapterDataSetChanged() {
+        Log.d(TAG, "onArrayAdapterDataSetChanged");
+
+        updateProgressBar();
+    }
+    
+    private void updateProgressBar() {
+        Log.d(TAG, "updateProgressBar");
+        
+        try {
+            View loadingProgressBar = findViewById(R.id.wifi_p2p_connect_progressbar);
+            ListAdapter adapter = devicesListView.getAdapter();
+            if (adapter.isEmpty()) {
+                Log.d(TAG, "updateProgressBar: Setting loadingProgressBar visibility to VISIBLE");
+                loadingProgressBar.setVisibility(View.VISIBLE);
+            } else {
+                Log.d(TAG, "updateProgressBar: Setting loadingProgressBar visibility to INVISIBLE");
+                loadingProgressBar.setVisibility(View.INVISIBLE);
+            }
+        } catch (NullPointerException nPE) {
+            Log.e(TAG, "updateProgressBar: NullPointerException: " + nPE.getMessage(), nPE);
+        }
     }
 
     private void handleWifiP2pStateChanged() {
