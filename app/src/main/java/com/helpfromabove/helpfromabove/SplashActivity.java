@@ -70,7 +70,8 @@ public class SplashActivity extends Activity {
     public void transition() {
         Log.d(TAG, "transition");
 
-        Intent i = new Intent(getApplicationContext(), MainActivity.class);
+//        Intent i = new Intent(getApplicationContext(), MainActivity.class);
+        Intent i = new Intent(getApplicationContext(), WifiP2pConnectActivity.class);
         startActivity(i);
         finish();
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);

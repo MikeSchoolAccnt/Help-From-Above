@@ -8,4 +8,10 @@
     tools:context="com.helpfromabove.helpfromabove.WifiP2pConnectActivity"
     tools:showIn="@layout/activity_wifi_p2p_connect">
 
+    <ListView
+        android:id="@+id/wifi_p2p_connect_listview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clickable="true" />
+
 </android.support.constraint.ConstraintLayout>
