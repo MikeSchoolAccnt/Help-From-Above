@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.Location;
+import android.net.wifi.p2p.WifiP2pManager;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
@@ -78,6 +79,33 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     private Stack<String> mImageFileNamesStack = new Stack<>();
     private CloudStorage cloudStorage;
 
+    private WifiP2pManager wifiP2pManager;
+    private WifiP2pManager.Channel wifiP2pChannel;
+    private WifiP2pManager.ActionListener wifiP2pListener = new WifiP2pManager.ActionListener() {
+        @Override
+        public void onSuccess() {
+            Log.d(TAG, "onSuccess");
+        }
+
+        @Override
+        public void onFailure(int reasonCode) {
+            Log.d(TAG, "onFailure: reasonCode=" + reasonCode);
+            switch (reasonCode) {
+                case WifiP2pManager.P2P_UNSUPPORTED:
+                    Log.w(TAG, "onFailure: P2P_UNSUPPORTED");
+                    break;
+                case WifiP2pManager.BUSY:
+                    Log.w(TAG, "onFailure: BUSY");
+                    break;
+                case WifiP2pManager.ERROR:
+                    Log.w(TAG, "onFailure: ERROR");
+                    break;
+                default:
+                    Log.w(TAG, "onFailure: default");
+            }
+        }
+    };
+
     // This is for local image testing. Remove once local image testing is complete
     private int imageDebugCounter = 0;
     private ArrayList<byte[]> imageBytes = new ArrayList<>();
@@ -90,6 +118,10 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         CloudRail.setAppKey(CLOUDRAIL_LICENSE_KEY);
 
         mImageFileNamesStack = new Stack<>();
+
+        wifiP2pManager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
+        wifiP2pChannel = wifiP2pManager.initialize(this, getMainLooper(), null);
+        wifiP2pManager.discoverPeers(wifiP2pChannel, wifiP2pListener);
 
         intentFilter.addAction(ACTION_REQUEST_LAST_IMAGE_FILENAME);
         intentFilter.addAction(COMMAND_HHMD_EMERGENCY);
@@ -141,7 +173,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
 
     public String getLastSessionImageFileName() {
         Log.d(TAG, "getLastSessionImageFileName");
-        
+
         String imageFileName;
         if (!mImageFileNamesStack.empty()) {
             imageFileName = mImageFileNamesStack.peek();
