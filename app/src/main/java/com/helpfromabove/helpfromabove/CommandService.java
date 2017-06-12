@@ -85,6 +85,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     private CloudStorage cloudStorage;
     private LocationManager locationManager;
     private Criteria locationCriteria = new Criteria();
+    private Stack<Location> hhmdLocations = new Stack<>();
+    private Stack<Location> uasLocations = new Stack<>();
 
     // This is for local image testing. Remove once local image testing is complete
     private int imageDebugCounter = 0;
@@ -166,6 +168,116 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         return imageFileName;
     }
 
+    private void pushUasLocation(Location uasLocation) {
+        Log.d(TAG, "pushUasLocation: uasLocation=" + uasLocation);
+        uasLocations.push(uasLocation);
+    }
+
+    private Location getLastUasLocation() {
+        Log.d(TAG, "getLastUasLocation");
+        
+        Location uasLocation = null;
+        if (!uasLocations.isEmpty()) {
+            uasLocation = uasLocations.peek();
+        } else {
+            Log.w(TAG, "getLastUasLocation: uasLocations is empty.");
+        }
+
+        return uasLocation;
+    }
+
+    private void pushHhmdLocation(Location hhmdLocation) {
+        Log.d(TAG, "pushHhmdLocation: hhmdLocation=" + hhmdLocation);
+        hhmdLocations.push(hhmdLocation);
+    }
+
+    private Location getLastHhmdLocation() {
+        Log.d(TAG, "getLastHhmdLocation");
+
+        Location hhmdLocation = null;
+        if (!hhmdLocations.isEmpty()) {
+            hhmdLocation = hhmdLocations.peek();
+        } else {
+            Log.w(TAG, "getLastUasLocation: hhmdLocations is empty.");
+        }
+
+        return hhmdLocation;
+    }
+
+    private Location getPreviousHhmdLocation() {
+        Log.d(TAG, "getPreviousHhmdLocation");
+
+        Location previousHhmdLocation = null;
+        if (hhmdLocations.size() >= 2) {
+            Location lastHhmdLocation = hhmdLocations.pop();
+            previousHhmdLocation = hhmdLocations.peek();
+            hhmdLocations.push(lastHhmdLocation);
+        } else {
+            Log.w(TAG, "getPreviousHhmdLocation: hhmdLocations does not have enough locations.");
+        }
+
+        return previousHhmdLocation;
+    }
+    
+
+    private Location getLocationDiff(Location newLocation, Location oldLocation) {
+        Log.d(TAG, "getLocationDiff");
+
+        Location diff = null;
+        if (newLocation != null && oldLocation != null) {
+            diff = new Location(getClass().getName());
+
+            double diffLong = newLocation.getLongitude() - oldLocation.getLongitude();
+            double diffLat = newLocation.getLatitude() - oldLocation.getLatitude();
+            double diffAlt = newLocation.getAltitude() - oldLocation.getAltitude();
+            float diffAcc = newLocation.getAccuracy() + newLocation.getAccuracy();
+
+            diff.setLongitude(diffLong);
+            diff.setLatitude(diffLat);
+            diff.setAltitude(diffAlt);
+            diff.setAccuracy(diffAcc);
+        } else {
+            Log.e(TAG, "getLocationSum: Locations cannot be subtracted because a location object is null.");
+        }
+
+        return diff;
+    }
+
+    private Location getLocationSum(Location location1, Location location2) {
+        Log.d(TAG, "getLocationSum");
+
+        Location sum = null;
+        if (location1 != null && location2 != null) {
+            sum = new Location(getClass().getName());
+            double retLong = location1.getLongitude() + location2.getLongitude();
+            double retLat = location1.getLatitude() + location2.getLatitude();
+            double retAlt = location1.getAltitude() + location2.getAltitude();
+            float retAcc = location1.getAccuracy() + location2.getAccuracy();
+
+            sum.setLongitude(retLong);
+            sum.setLatitude(retLat);
+            sum.setAltitude(retAlt);
+            sum.setAccuracy(retAcc);
+
+        } else {
+            Log.e(TAG, "getLocationSum: Locations cannot be added because a location object is null.");
+        }
+
+        return sum;
+    }
+    
+    
+    private Location generateWaypoint() {
+        Log.d(TAG, "generateWaypoint");
+
+        Location diff;
+        Location lastHhmd = getLastHhmdLocation();
+        Location previousHhmd = getPreviousHhmdLocation();
+        Location lastUas = getLastUasLocation();
+        diff = getLocationDiff(lastHhmd, previousHhmd);
+        return getLocationSum(lastUas, diff);
+    }
+
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         Log.d(TAG, "onSharedPreferenceChanged");
@@ -229,12 +341,16 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         Log.d(TAG, "handleCommandHhmdSessionEnd");
     }
 
-    private void handleCommandHhmdLocation(Location location) {
-        Log.d(TAG, "handleCommandHhmdLocation: location=" + location);
+    private void handleCommandHhmdLocation(Location hhmdLocation) {
+        Log.d(TAG, "handleCommandHhmdLocation: location=" + hhmdLocation);
+        pushHhmdLocation(hhmdLocation);
+        
+        Location waypoint = generateWaypoint();
     }
 
-    private void handleCommandUasLocation(Location location) {
-        Log.d(TAG, "handleCommandUasLocation: location=" + location);
+    private void handleCommandUasLocation(Location uasLocation) {
+        Log.d(TAG, "handleCommandUasLocation: uasLocation=" + uasLocation);
+        pushUasLocation(uasLocation);
     }
 
     // TODO: 5/19/2017 Make sure the image is saved to the cloud as well
