@@ -6,9 +6,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Criteria;
 import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Build;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
@@ -50,7 +56,6 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     protected static final String COMMAND_HHMD_UAS_HEIGHT_DOWN = "com.helpfromabove.helpfromabove.command.COMMAND_HHMD_UAS_HEIGHT_DOWN";
     protected static final String COMMAND_HHMD_SESSION_START = "com.helpfromabove.helpfromabove.command.COMMAND_HHMD_SESSION_START";
     protected static final String COMMAND_HHMD_SESSION_END = "com.helpfromabove.helpfromabove.command.COMMAND_HHMD_SESSION_END";
-    protected static final String COMMAND_HHMD_LOCATION = "com.helpfromabove.helpfromabove.command.COMMAND_HHMD_LOCATION";
     protected static final String COMMAND_UAS_IMAGE = "com.helpfromabove.helpfromabove.command.COMMAND_UAS_IMAGE";
     protected static final String COMMAND_UAS_LOCATION = "com.helpfromabove.helpfromabove.command.COMMAND_UAS_LOCATION";
     protected static final String SETTING_CHANGE_CLOUD = "com.helpfromabove.helpfromabove.setting.SETTING_CHANGE_CLOUD";
@@ -61,6 +66,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     protected static final String CONSTANT_CLOUD_DROPBOX = "com.helpfromabove.helpfromabove.constant.CONSTANT_CLOUD_DROPBOX";
     protected static final String CONSTANT_CLOUD_GOOGLE_DRIVE = "com.helpfromabove.helpfromabove.constant.CONSTANT_CLOUD_GOOGLE_DRIVE";
     protected static final String CONSTANT_CLOUD_ONE_DRIVE = "com.helpfromabove.helpfromabove.constant.CONSTANT_CLOUD_ONE_DRIVE";
+    protected static final int CONSTANT_LOCATION_UPDATE_SECONDS = 3;
 
     //App keys needed for CloudRail and other Cloud Services
     private final static String CLOUDRAIL_LICENSE_KEY = "591cadfabac9e94ae79c9711";
@@ -77,6 +83,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     private IntentFilter intentFilter = new IntentFilter();
     private Stack<String> mImageFileNamesStack = new Stack<>();
     private CloudStorage cloudStorage;
+    private LocationManager locationManager;
+    private Criteria locationCriteria = new Criteria();
 
     // This is for local image testing. Remove once local image testing is complete
     private int imageDebugCounter = 0;
@@ -98,7 +106,6 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         intentFilter.addAction(COMMAND_HHMD_UAS_HEIGHT_DOWN);
         intentFilter.addAction(COMMAND_HHMD_SESSION_START);
         intentFilter.addAction(COMMAND_HHMD_SESSION_END);
-        intentFilter.addAction(COMMAND_HHMD_LOCATION);
         intentFilter.addAction(COMMAND_UAS_IMAGE);
         intentFilter.addAction(COMMAND_UAS_LOCATION);
         intentFilter.addAction(SETTING_CHANGE_CLOUD);
@@ -108,6 +115,10 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         registerReceiver(commandServiceBroadcastReceiver, intentFilter);
 
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).registerOnSharedPreferenceChangeListener(this);
+
+        locationCriteria.setAccuracy(Criteria.ACCURACY_FINE);
+        locationCriteria.setVerticalAccuracy(Criteria.ACCURACY_HIGH);
+        locationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
 
         // This is for local image testing. Remove once local image testing is complete
         Bitmap bm = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.imag4240);
@@ -210,6 +221,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
 
     protected void handleCommandHhmdSessionStart() {
         Log.d(TAG, "handleCommandHhmdSessionStart");
+
+        requestLocationUpdates();
     }
 
     protected void handleCommandHhmdSessionEnd() {
@@ -303,6 +316,27 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         sendBroadcast(newImageIntent);
     }
 
+    private void requestLocationUpdates() {
+        Log.d(TAG, "requestLocationUpdates");
+
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            int response = getApplicationContext().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION);
+            if (response == PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "onCreate: permission FEATURE_LOCATION is GRANTED");
+                locationManager.requestLocationUpdates(1000 * 3, 0, locationCriteria, new CommandLocationListener(), getMainLooper());
+            } else {
+                Log.w(TAG, "onCreate: permission FEATURE_LOCATION is DENIED");
+                // TODO : Request permission from user on devices at or above Android M
+                // Because the user can explicitly modify the permissions of apps, if the
+                // user denies Location from this app, then a dialog box should be shown
+                // to the user to give this access to Location. This should send a
+                // broadcast that gets received from all activities. When an activity
+                // gets the broadcast, it should then request the permission.
+            }
+        } else {
+            locationManager.requestLocationUpdates(1000 * CONSTANT_LOCATION_UPDATE_SECONDS, 0, locationCriteria, new CommandLocationListener(), getMainLooper());
+        }
+    }
 
     private void createFolderCloud(final CloudStorage cs) {
         Log.d(TAG, "createFolderCloud");
@@ -349,10 +383,6 @@ public class CommandService extends Service implements SharedPreferences.OnShare
                     case COMMAND_HHMD_SESSION_END:
                         handleCommandHhmdSessionEnd();
                         break;
-                    case COMMAND_HHMD_LOCATION:
-                        final Location hhmdLocation = intent.getExtras().getParcelable(EXTRA_LOCATION);
-                        handleCommandHhmdLocation(hhmdLocation);
-                        break;
                     case COMMAND_UAS_LOCATION:
                         final Location uasLocation = intent.getExtras().getParcelable(EXTRA_LOCATION);
                         handleCommandUasLocation(uasLocation);
@@ -378,6 +408,35 @@ public class CommandService extends Service implements SharedPreferences.OnShare
                         break;
                 }
             }
+        }
+    }
+
+    private class CommandLocationListener implements LocationListener {
+        private static final String TAG = "CommandLocationListener";
+
+        CommandLocationListener() {
+            Log.d(TAG, "CommandLocationListener");
+        }
+
+        @Override
+        public void onLocationChanged(Location location) {
+            Log.d(TAG, "onLocationChanged");
+            handleCommandHhmdLocation(location);
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+            Log.d(TAG, "onStatusChanged: status=" + status);
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+            Log.d(TAG, "onProviderEnabled: provider=" + provider);
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+            Log.d(TAG, "onProviderDisabled: provider=" + provider);
         }
     }
 }
