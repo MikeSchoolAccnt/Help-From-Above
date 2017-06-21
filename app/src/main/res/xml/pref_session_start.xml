@@ -2,7 +2,7 @@
 
     <ListPreference
         android:id="@+id/pref_uas_start_height"
-        android:defaultValue="@string/pref_value_uas_start_height_5_m"
+        android:defaultValue="@string/pref_value_uas_start_height_default"
         android:entries="@array/pref_entries_uas_start_height"
         android:entryValues="@array/pref_values_uas_start_height"
         android:key="@string/pref_key_uas_start_height"

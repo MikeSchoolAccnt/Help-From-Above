@@ -243,7 +243,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         Log.d(TAG, "resetHeightOffset");
 
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        int startHeight = sharedPref.getInt(getString(R.string.pref_key_uas_start_height), R.string.pref_value_uas_start_height_5_m);
+        int startHeight = sharedPref.getInt(getString(R.string.pref_key_uas_start_height), R.string.pref_value_uas_start_height_default);
         setHeightOffset(startHeight);
     }
 
