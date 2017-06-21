@@ -84,6 +84,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     private Stack<String> mImageFileNamesStack = new Stack<>();
     private CloudStorage cloudStorage;
     private LocationManager locationManager;
+    private LocationListener commandLocationListener;
     private Criteria locationCriteria = new Criteria();
     private Stack<Location> hhmdLocations = new Stack<>();
     private Stack<Location> uasLocations = new Stack<>();
@@ -339,6 +340,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
 
     protected void handleCommandHhmdSessionEnd() {
         Log.d(TAG, "handleCommandHhmdSessionEnd");
+
+        stopLocationUpdates();
     }
 
     private void handleCommandHhmdLocation(Location hhmdLocation) {
@@ -435,11 +438,13 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     private void requestLocationUpdates() {
         Log.d(TAG, "requestLocationUpdates");
 
+        commandLocationListener = new CommandLocationListener();
+
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             int response = getApplicationContext().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION);
             if (response == PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "onCreate: permission FEATURE_LOCATION is GRANTED");
-                locationManager.requestLocationUpdates(1000 * 3, 0, locationCriteria, new CommandLocationListener(), getMainLooper());
+                locationManager.requestLocationUpdates(1000 * 3, 0, locationCriteria, commandLocationListener, getMainLooper());
             } else {
                 Log.w(TAG, "onCreate: permission FEATURE_LOCATION is DENIED");
                 // TODO : Request permission from user on devices at or above Android M
@@ -450,8 +455,14 @@ public class CommandService extends Service implements SharedPreferences.OnShare
                 // gets the broadcast, it should then request the permission.
             }
         } else {
-            locationManager.requestLocationUpdates(1000 * CONSTANT_LOCATION_UPDATE_SECONDS, 0, locationCriteria, new CommandLocationListener(), getMainLooper());
+            locationManager.requestLocationUpdates(1000 * CONSTANT_LOCATION_UPDATE_SECONDS, 0, locationCriteria, commandLocationListener, getMainLooper());
         }
+    }
+
+    private void stopLocationUpdates() {
+        Log.d(TAG, "stopLocationUpdates");
+
+        locationManager.removeUpdates(commandLocationListener);
     }
 
     private void createFolderCloud(final CloudStorage cs) {
