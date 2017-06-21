@@ -88,6 +88,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     private Criteria locationCriteria = new Criteria();
     private Stack<Location> hhmdLocations = new Stack<>();
     private Stack<Location> uasLocations = new Stack<>();
+    private int heightOffset;
 
     // This is for local image testing. Remove once local image testing is complete
     private int imageDebugCounter = 0;
@@ -219,7 +220,44 @@ public class CommandService extends Service implements SharedPreferences.OnShare
 
         return previousHhmdLocation;
     }
-    
+
+    private synchronized int getHeightOffset() {
+        Log.d(TAG, "getHeightOffset");
+
+        return heightOffset;
+    }
+
+    private synchronized void setHeightOffset(int i) {
+        Log.d(TAG, "setHeightOffset: i=" + i);
+
+        heightOffset = i;
+    }
+
+    private synchronized void clearHeightOffset() {
+        Log.d(TAG, "clearHeightOffset");
+
+        setHeightOffset(0);
+    }
+
+    private void resetHeightOffset() {
+        Log.d(TAG, "resetHeightOffset");
+
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        int startHeight = sharedPref.getInt(getString(R.string.pref_key_uas_start_height), R.string.pref_value_uas_start_height_5_m);
+        setHeightOffset(startHeight);
+    }
+
+    private void incrementHeightOffset() {
+        Log.d(TAG, "incrementHeightOffset");
+
+        setHeightOffset(heightOffset++);
+    }
+
+    private void decrementHeightOffset() {
+        Log.d(TAG, "decrementHeightOffset");
+
+        setHeightOffset(heightOffset--);
+    }
 
     private Location getLocationDiff(Location newLocation, Location oldLocation) {
         Log.d(TAG, "getLocationDiff");
@@ -244,8 +282,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         return diff;
     }
 
-    private Location getLocationSum(Location location1, Location location2) {
-        Log.d(TAG, "getLocationSum");
+    private Location addLocations(Location location1, Location location2) {
+        Log.d(TAG, "addLocations");
 
         Location sum = null;
         if (location1 != null && location2 != null) {
@@ -261,22 +299,30 @@ public class CommandService extends Service implements SharedPreferences.OnShare
             sum.setAccuracy(retAcc);
 
         } else {
-            Log.e(TAG, "getLocationSum: Locations cannot be added because a location object is null.");
+            Log.e(TAG, "addLocations: Locations cannot be added because a location object is null.");
         }
 
         return sum;
     }
-    
-    
+
+    private Location addHeightOffset(Location location) {
+        Log.d(TAG, "addHeightOffset");
+
+        location.setAltitude(location.getAltitude() + getHeightOffset());
+        clearHeightOffset();
+        return location;
+    }
+
     private Location generateWaypoint() {
         Log.d(TAG, "generateWaypoint");
 
-        Location diff;
         Location lastHhmd = getLastHhmdLocation();
         Location previousHhmd = getPreviousHhmdLocation();
         Location lastUas = getLastUasLocation();
-        diff = getLocationDiff(lastHhmd, previousHhmd);
-        return getLocationSum(lastUas, diff);
+        Location diff = getLocationDiff(lastHhmd, previousHhmd);
+        Location waypoint = addLocations(lastUas, diff);
+
+        return addHeightOffset(waypoint);
     }
 
     @Override
@@ -291,12 +337,10 @@ public class CommandService extends Service implements SharedPreferences.OnShare
             Log.d(TAG, "onSharedPreferenceChanged: cloudProvider=" + cloudProvider);
 
             handleSettingChangeCloud(cloudProvider);
-
         } else if (key.equals(getString(R.string.pref_key_emergency_message_name))) {
             Log.d(TAG, "onSharedPreferenceChanged: pref_key_emergency_message_name");
         } else if (key.equals(getString(R.string.pref_key_emergency_message_text))) {
             Log.d(TAG, "onSharedPreferenceChanged: pref_key_emergency_message_text");
-
         } else {
             Log.w(TAG, "onSharedPreferenceChanged: key=" + key);
         }
@@ -326,16 +370,21 @@ public class CommandService extends Service implements SharedPreferences.OnShare
 
     protected void handleCommandHhmdUasHeightUp() {
         Log.d(TAG, "handleCommandHhmdUasHeightUp");
+
+        incrementHeightOffset();
     }
 
     protected void handleCommandHhmdUasHeightDown() {
         Log.d(TAG, "handleCommandHhmdUasHeightDown");
+
+        decrementHeightOffset();
     }
 
     protected void handleCommandHhmdSessionStart() {
         Log.d(TAG, "handleCommandHhmdSessionStart");
 
         requestLocationUpdates();
+        resetHeightOffset();
     }
 
     protected void handleCommandHhmdSessionEnd() {
@@ -444,7 +493,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
             int response = getApplicationContext().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION);
             if (response == PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "onCreate: permission FEATURE_LOCATION is GRANTED");
-                locationManager.requestLocationUpdates(1000 * 3, 0, locationCriteria, commandLocationListener, getMainLooper());
+                locationManager.requestLocationUpdates(1000 * CONSTANT_LOCATION_UPDATE_SECONDS, 0, locationCriteria, commandLocationListener, getMainLooper());
             } else {
                 Log.w(TAG, "onCreate: permission FEATURE_LOCATION is DENIED");
                 // TODO : Request permission from user on devices at or above Android M
