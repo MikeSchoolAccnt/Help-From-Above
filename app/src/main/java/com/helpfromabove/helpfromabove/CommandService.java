@@ -27,10 +27,12 @@ import com.cloudrail.si.services.Dropbox;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Locale;
 import java.util.Stack;
 
 /**
@@ -79,6 +81,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     private final static String ONE_DRIVE_APP_SECRET = "";
 
     private final static String TAG = "CommandService";
+    private final String CLOUD_APP_FOLDER = "/" + this.getString(R.string.app_name);
+    private String cloudSessionFolder;
     private CommandServiceBroadcastReceiver commandServiceBroadcastReceiver = new CommandServiceBroadcastReceiver();
     private IntentFilter intentFilter = new IntentFilter();
     private Stack<String> mImageFileNamesStack = new Stack<>();
@@ -156,7 +160,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
 
     public String getLastSessionImageFileName() {
         Log.d(TAG, "getLastSessionImageFileName");
-        
+
         String imageFileName;
         if (!mImageFileNamesStack.empty()) {
             imageFileName = mImageFileNamesStack.peek();
@@ -177,7 +181,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
 
     private Location getLastUasLocation() {
         Log.d(TAG, "getLastUasLocation");
-        
+
         Location uasLocation = null;
         if (!uasLocations.isEmpty()) {
             uasLocation = uasLocations.peek();
@@ -383,6 +387,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     protected void handleCommandHhmdSessionStart() {
         Log.d(TAG, "handleCommandHhmdSessionStart");
 
+        createCloudSessionFolder();
+
         requestLocationUpdates();
         resetHeightOffset();
     }
@@ -396,7 +402,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     private void handleCommandHhmdLocation(Location hhmdLocation) {
         Log.d(TAG, "handleCommandHhmdLocation: location=" + hhmdLocation);
         pushHhmdLocation(hhmdLocation);
-        
+
         Location waypoint = generateWaypoint();
     }
 
@@ -410,30 +416,13 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     private void handleCommandUasImage() {
         Log.d(TAG, "handleCommandUasImage");
 
-        DateFormat df = new SimpleDateFormat("yyyyMMddHHmmssZ");
-        String filename = df.format(Calendar.getInstance().getTime()) + ".jpg";
-        FileOutputStream outputStream;
-        try {
-            outputStream = openFileOutput(filename, Context.MODE_PRIVATE);
-
-            // This is for local image testing. Modify once local image testing is complete
-            outputStream.write(imageBytes.get(imageDebugCounter % 3));
-
-            outputStream.close();
-        } catch (IOException iOE) {
-            Log.e(TAG, "handleCommandUasImage: IOException: " + iOE.getMessage(), iOE);
-        }
-
+        String filename = getDateTime() + ".jpg";
+        saveImage(filename);
+        uploadImage(filename);
         addSessionImageFileName(filename);
         sendNewImageIntent();
     }
 
-    /*
-     * This is being done inside of the CommandService because
-     * passing around the CloudStorage Object doesn't make sense.
-     * It allows for one place to handle all operations to the
-     * cloud such as uploading/deleting.
-     */
     private void handleSettingChangeCloud(String cloudType) {
         Log.d(TAG, "handleSettingChangeCloud");
 
@@ -442,19 +431,19 @@ public class CommandService extends Service implements SharedPreferences.OnShare
                 Log.d(TAG, "handleSettingChangeCloud: Dropbox Specified");
 
                 cloudStorage = new Dropbox(this, DROPBOX_APP_KEY, DROPBOX_APP_SECRET);
-                createFolderCloud(cloudStorage);
+                createCloudAppFolder();
                 break;
             case "1":
                 Log.d(TAG, "handleSettingChangeCloud: Google Drive Specified");
 
-                //cloudStorage = new GoogleDrive();
-                // createFolderCloud(cloudStorage);
+//                cloudStorage = new GoogleDrive();
+//                createCloudAppFolder();
                 break;
             case "2":
                 Log.d(TAG, "handleSettingChangeCloud: OneDrive Specified");
 
-                //cloudStorage = new OneDrive(this,ONEDRIVE_APP_KEY,ONEDRIVE_APP_SECRET);
-                //createFolderCloud(cloudStorage);
+//                cloudStorage = new OneDrive(this,ONE_DRIVE_APP_KEY,ONE_DRIVE_APP_SECRET);
+//                createCloudAppFolder();
                 break;
             default:
                 Log.d(TAG, "handleSettingChangeCloud: No Cloud Specified");
@@ -514,19 +503,87 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         locationManager.removeUpdates(commandLocationListener);
     }
 
-    private void createFolderCloud(final CloudStorage cs) {
-        Log.d(TAG, "createFolderCloud");
+    private void saveImage(String filename) {
+        Log.d(TAG, "saveImage");
+
+        try {
+            FileOutputStream outputStream = openFileOutput(filename, Context.MODE_PRIVATE);
+
+            // This is for local image testing. Modify once local image testing is complete
+            outputStream.write(imageBytes.get(imageDebugCounter % 3));
+
+            outputStream.close();
+        } catch (IOException iOE) {
+            Log.e(TAG, "handleCommandUasImage: IOException: " + iOE.getMessage(), iOE);
+        }
+    }
+
+    private void createCloudAppFolder() {
+        Log.d(TAG, "createCloudAppFolder");
 
         new Thread() {
             @Override
             public void run() {
                 try {
-                    cs.createFolder("/TestFolder");
+                    cloudStorage.createFolder(CLOUD_APP_FOLDER);
                 } catch (Exception e) {
-                    Log.e(TAG, "createFolderCloud: Exception " + e.getMessage(), e);
+                    Log.e(TAG, "createCloudAppFolder: Exception " + e.getMessage(), e);
                 }
             }
         }.start();
+    }
+
+    private void createCloudSessionFolder() {
+        Log.d(TAG, "createCloudSessionFolder");
+
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    cloudSessionFolder = CLOUD_APP_FOLDER + "/" + getDateTime();
+
+                    cloudStorage.createFolder(cloudSessionFolder);
+                } catch (Exception e) {
+                    Log.e(TAG, "createCloudSessionFolder: Exception " + e.getMessage(), e);
+                }
+            }
+        }.start();
+    }
+
+    private void uploadImage(final String filename) {
+        Log.d(TAG, "uploadImage");
+
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    final InputStream inputStream = openFileInput(filename);
+                    final String filePath = cloudSessionFolder + "/" + filename;
+                    cloudStorage.upload(filePath, inputStream, 0, false);
+                } catch (Exception e) {
+                    Log.e(TAG, "uploadImage: Exception " + e.getMessage(), e);
+                }
+            }
+        }.start();
+    }
+
+    private String getSessionCloudLink() {
+        Log.d(TAG, "getSessionCloudLink");
+
+        String link;
+        if (cloudStorage != null) {
+            link = cloudStorage.createShareLink(cloudSessionFolder);
+        } else {
+            Log.w(TAG, "getSessionCloudLink: No cloud storage");
+            link = null;
+        }
+
+        return link;
+    }
+
+    private String getDateTime() {
+        DateFormat df = new SimpleDateFormat("yyyyMMddHHmmssZ", Locale.getDefault());
+        return df.format(Calendar.getInstance().getTime());
     }
 
     private class CommandServiceBroadcastReceiver extends BroadcastReceiver {
