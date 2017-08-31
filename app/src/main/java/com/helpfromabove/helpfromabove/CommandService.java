@@ -81,7 +81,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     private final static String ONE_DRIVE_APP_SECRET = "";
 
     private final static String TAG = "CommandService";
-    private final String CLOUD_APP_FOLDER = "/" + this.getString(R.string.app_name);
+    private final String CLOUD_APP_FOLDER = "/" + "Help_From_Above";
     private String cloudSessionFolder;
     private CommandServiceBroadcastReceiver commandServiceBroadcastReceiver = new CommandServiceBroadcastReceiver();
     private IntentFilter intentFilter = new IntentFilter();
@@ -247,7 +247,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         Log.d(TAG, "resetHeightOffset");
 
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        int startHeight = sharedPref.getInt(getString(R.string.pref_key_uas_start_height), R.string.pref_value_uas_start_height_default);
+        int startHeight = Integer.parseInt(sharedPref.getString(getString(R.string.pref_key_uas_start_height), getString(R.string.pref_value_uas_start_height_default)));
         setHeightOffset(startHeight);
     }
 
