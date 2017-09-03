@@ -38,6 +38,7 @@
     <string name="pref_title_emergency_message_name">Name</string>
     <string name="pref_key_emergency_message_name">emergency_message_name_key</string>
     <string name="pref_default_emergency_message_name">a \"Help From Above\" user</string>
+
     <!--Emergency message text entries and values-->
     <string name="pref_entry_emergency_message_text_short">Help!</string>
     <string name="pref_entry_emergency_message_text_medium">Please help me!</string>
@@ -48,6 +49,9 @@
     <string name="pref_value_emergency_message_text_medium">1</string>
     <string name="pref_value_emergency_message_text_long">2</string>
     <string name="pref_value_emergency_message_text_default">@string/pref_value_emergency_message_text_medium</string>
+
+    <!--EmergencyContacts-->
+    <string name="pref_header_emergency_contacts">Emergency Contacts</string>
 
     <!-- Session Start -->
     <string name="pref_header_session_start">Session Start</string>

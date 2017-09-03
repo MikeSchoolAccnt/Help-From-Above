@@ -1,18 +1,24 @@
 package com.helpfromabove.helpfromabove;
 
 import android.annotation.TargetApi;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.database.Cursor;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
+import android.preference.PreferenceScreen;
+import android.provider.ContactsContract;
 import android.support.v7.app.ActionBar;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.support.v4.app.NavUtils;
 
@@ -31,7 +37,8 @@ import java.util.List;
  */
 public class SettingsActivity extends AppCompatPreferenceActivity {
     private static final String TAG = "SettingsActivity";
-
+    //This is needed for getting contact information.
+    public static ContentResolver resolver;
     /**
      * A preference value change listener that updates the preference's summary
      * to reflect its new value.
@@ -98,7 +105,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
-
+        resolver = getContentResolver();
         setupActionBar();
     }
 
@@ -154,7 +161,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         return PreferenceFragment.class.getName().equals(fragmentName)
                 || CloudPreferenceFragment.class.getName().equals(fragmentName)
                 || EmergencyPreferenceFragment.class.getName().equals(fragmentName)
-                || SessionStartPreferenceFragment.class.getName().equals(fragmentName);
+                || SessionStartPreferenceFragment.class.getName().equals(fragmentName)
+                || EmergencyContactsPreferenceFragment.class.getName().equals(fragmentName);
     }
 
     /**
@@ -230,6 +238,97 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    public static class EmergencyContactsPreferenceFragment extends PreferenceFragment {
+        private static final String TAG = "EmergencyContactsPre...";
+        private static boolean collectedContacts = false;
+        //These two arrays are connected in data where contactNames[x] matches to contactNumbers[x]
+        private String[] contactNames = new String[50];    //Need to do something about the size
+        private String[] contactNumbers = new String[50];  //Need to do something about the size
+
+        @Override
+        public void onCreate(Bundle savedInstanceState) {
+            Log.d(TAG, "onCreate");
+            super.onCreate(savedInstanceState);
+
+            addPreferencesFromResource(R.xml.pref_contacts);
+            setHasOptionsMenu(true);
+
+            //Need to handle these different so it's not overwriting itself every time
+            collectContactInformation();
+            fillContactData();
+
+            // Bind the summaries of EditText/List/Dialog/Ringtone preferences
+            // to their values. When their values change, their summaries are
+            // updated to reflect the new value, per the Android Design
+            // guidelines.
+
+            //Haven't done anything here and not sure if I need to.
+
+        }
+
+        @Override
+        public boolean onOptionsItemSelected(MenuItem item) {
+            Log.d(TAG, "onOptionsItemSelected");
+
+            int id = item.getItemId();
+            if (id == android.R.id.home) {
+                startActivity(new Intent(getActivity(), SettingsActivity.class));
+                return true;
+            }
+            return super.onOptionsItemSelected(item);
+        }
+
+        //Collects the contact information form the users contact list.
+        private void collectContactInformation(){
+
+            ContentResolver resolver = SettingsActivity.resolver;
+            Cursor cursor = resolver.query(ContactsContract.Contacts.CONTENT_URI,null,null,null,null);
+
+            int numberOfContacts = 0;
+            while(cursor.moveToNext()){
+
+                //to errors because how the storage arrays are set up right now.
+                if(numberOfContacts == 50)
+                    break;
+
+
+                String currentID = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
+
+                Cursor phoneNumberCursor = resolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,null,
+                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",new String[]{currentID},null);
+
+                while(phoneNumberCursor.moveToNext()){
+                    contactNames[numberOfContacts] = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                    contactNumbers[numberOfContacts] = phoneNumberCursor.getString(phoneNumberCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+
+                    numberOfContacts++;
+                }
+
+            }
+
+        }
+
+        //Creates and fills this preference with names and numbers from the users contacts.
+        //TODO: Handle how to access the numbers of checked contacts and keep contacts checked.
+        //TODO: Get the images of contacts and add them in.
+        private void fillContactData(){
+            PreferenceScreen screen = getPreferenceScreen();
+            for(int i = 0; i < contactNames.length; i++) {
+                Log.d(TAG, "ContactName: " + contactNames[i] + ": " + contactNumbers[i]);
+
+                CheckBoxPreference box = new CheckBoxPreference(screen.getContext());
+                box.setTitle(contactNames[i]);
+                box.setSummary(contactNumbers[i]);
+                box.setIcon(R.mipmap.ic_launcher_round); //Temp icon.
+                screen.addItemFromInflater(box);
+
+            }
+            setPreferenceScreen(screen);
+        }
+
+    }
+
     /**
      * This fragment shows session start preferences only. It is used when the
      * activity is showing a two-pane settings UI.
@@ -265,5 +364,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             return super.onOptionsItemSelected(item);
         }
     }
+
+
 
 }
