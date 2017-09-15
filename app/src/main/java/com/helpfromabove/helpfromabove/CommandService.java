@@ -13,6 +13,10 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.wifi.WpsInfo;
+import android.net.wifi.p2p.WifiP2pConfig;
+import android.net.wifi.p2p.WifiP2pDevice;
+import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -49,6 +53,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     protected static final String ACTION_NEW_UAS_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_LOCATION";
     protected static final String ACTION_NEW_HHMD_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_HHMD_LOCATION";
     protected static final String ACTION_REQUEST_LAST_IMAGE_FILENAME = "com.helpfromabove.helpfromabove.action.ACTION_REQUEST_LAST_IMAGE_FILENAME";
+    protected static final String ACTION_CONNECT_WIFI_P2P = "com.helpfromabove.helpfromabove.action.ACTION_CONNECT_WIFI_P2P";
     protected static final String EXTRA_LIGHT_ON_OFF = "com.helpfromabove.helpfromabove.extra.EXTRA_LIGHT_ON_OFF";
     protected static final String EXTRA_IMAGE_FILE_NAME = "com.helpfromabove.helpfromabove.extra.EXTRA_IMAGE_FILE_NAME";
     protected static final String EXTRA_LOCATION = "com.helpfromabove.helpfromabove.extra.EXTRA_LOCATION";
@@ -94,6 +99,33 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     private Stack<Location> uasLocations = new Stack<>();
     private int heightOffset;
 
+    private WifiP2pManager wifiP2pManager;
+    private WifiP2pManager.Channel wifiP2pChannel;
+    private WifiP2pManager.ActionListener wifiP2pListener = new WifiP2pManager.ActionListener() {
+        @Override
+        public void onSuccess() {
+            Log.d(TAG, "WifiP2pManager.ActionListener: onSuccess");
+        }
+
+        @Override
+        public void onFailure(int reasonCode) {
+            Log.d(TAG, "WifiP2pManager.ActionListener: onFailure: reasonCode=" + reasonCode);
+            switch (reasonCode) {
+                case WifiP2pManager.P2P_UNSUPPORTED:
+                    Log.w(TAG, "onFailure: P2P_UNSUPPORTED");
+                    break;
+                case WifiP2pManager.BUSY:
+                    Log.w(TAG, "onFailure: BUSY");
+                    break;
+                case WifiP2pManager.ERROR:
+                    Log.w(TAG, "onFailure: ERROR");
+                    break;
+                default:
+                    Log.w(TAG, "onFailure: default");
+            }
+        }
+    };
+
     // This is for local image testing. Remove once local image testing is complete
     private int imageDebugCounter = 0;
     private ArrayList<byte[]> imageBytes = new ArrayList<>();
@@ -107,7 +139,12 @@ public class CommandService extends Service implements SharedPreferences.OnShare
 
         mImageFileNamesStack = new Stack<>();
 
+        wifiP2pManager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
+        wifiP2pChannel = wifiP2pManager.initialize(this, getMainLooper(), null);
+        wifiP2pManager.discoverPeers(wifiP2pChannel, wifiP2pListener);
+
         intentFilter.addAction(ACTION_REQUEST_LAST_IMAGE_FILENAME);
+        intentFilter.addAction(ACTION_CONNECT_WIFI_P2P);
         intentFilter.addAction(COMMAND_HHMD_EMERGENCY);
         intentFilter.addAction(COMMAND_HHMD_LIGHT);
         intentFilter.addAction(COMMAND_HHMD_UAS_HEIGHT_UP);
@@ -356,6 +393,16 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         mImageFileNamesStack.push(imageFileName);
     }
 
+    private void connectToDevice(WifiP2pDevice device) {
+        Log.d(TAG, "connectToDevice: device.toString()=" + device.toString());
+
+        WifiP2pConfig config = new WifiP2pConfig();
+        config.deviceAddress = device.deviceAddress;
+        config.wps.setup = WpsInfo.PBC;
+
+        wifiP2pManager.connect(wifiP2pChannel, config, wifiP2pListener);
+    }
+
     protected void handleCommandHhmdEmergency() {
         Log.d(TAG, "handleCommandHhmdEmergency");
     }
@@ -596,6 +643,10 @@ public class CommandService extends Service implements SharedPreferences.OnShare
                 switch (action) {
                     case ACTION_REQUEST_LAST_IMAGE_FILENAME:
                         sendNewImageIntent();
+                        break;
+                    case ACTION_CONNECT_WIFI_P2P:
+                        WifiP2pDevice device = intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_DEVICE);
+                        connectToDevice(device);
                         break;
                     case COMMAND_HHMD_EMERGENCY:
                         handleCommandHhmdEmergency();

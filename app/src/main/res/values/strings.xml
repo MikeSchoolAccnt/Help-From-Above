@@ -12,6 +12,9 @@
     <string name="session_end_button_text">Land</string>
     <string name="light_switch_text">Light</string>
 
+    <!--content_wifi_p2p_connect strings-->
+    <string name="title_activity_wifi_p2p_connect">Wi-Fi Connect</string>
+
     <!--Settings-->
     <string name="title_activity_settings">Settings</string>
 
