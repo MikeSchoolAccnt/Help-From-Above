@@ -19,10 +19,13 @@ import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.support.v4.app.NavUtils;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.Inflater;
 
 /**
  * A {@link PreferenceActivity} that presents a set of application settings. On
@@ -39,6 +42,10 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     private static final String TAG = "SettingsActivity";
     //This is needed for getting contact information.
     public static ContentResolver resolver;
+    //This is used to keep the Emergency Contacts Setting screen after leaving it.
+    //It also gives the ability to grab the data such as numbers from it.
+    public static PreferenceScreen emergencyContactsPreferenceScreen;
+
     /**
      * A preference value change listener that updates the preference's summary
      * to reflect its new value.
@@ -241,10 +248,9 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static class EmergencyContactsPreferenceFragment extends PreferenceFragment {
         private static final String TAG = "EmergencyContactsPre...";
-        private static boolean collectedContacts = false;
         //These two arrays are connected in data where contactNames[x] matches to contactNumbers[x]
-        private String[] contactNames = new String[50];    //Need to do something about the size
-        private String[] contactNumbers = new String[50];  //Need to do something about the size
+        private ArrayList<String> contactNames = new ArrayList<String>();    //Need to do something about the size
+        private ArrayList<String> contactNumbers = new ArrayList<String>();  //Need to do something about the size
 
         @Override
         public void onCreate(Bundle savedInstanceState) {
@@ -255,8 +261,12 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             setHasOptionsMenu(true);
 
             //Need to handle these different so it's not overwriting itself every time
-            collectContactInformation();
-            fillContactData();
+            if(emergencyContactsPreferenceScreen == null) {
+                collectContactInformation();
+                fillContactData();
+            } else {
+                setPreferenceScreen(emergencyContactsPreferenceScreen);
+            }
 
             // Bind the summaries of EditText/List/Dialog/Ringtone preferences
             // to their values. When their values change, their summaries are
@@ -266,6 +276,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             //Haven't done anything here and not sure if I need to.
 
         }
+
+
 
         @Override
         public boolean onOptionsItemSelected(MenuItem item) {
@@ -299,8 +311,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                         ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",new String[]{currentID},null);
 
                 while(phoneNumberCursor.moveToNext()){
-                    contactNames[numberOfContacts] = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-                    contactNumbers[numberOfContacts] = phoneNumberCursor.getString(phoneNumberCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                    contactNames.add(cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)));
+                    contactNumbers.add(phoneNumberCursor.getString(phoneNumberCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)));
 
                     numberOfContacts++;
                 }
@@ -313,18 +325,21 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         //TODO: Handle how to access the numbers of checked contacts and keep contacts checked.
         //TODO: Get the images of contacts and add them in.
         private void fillContactData(){
-            PreferenceScreen screen = getPreferenceScreen();
-            for(int i = 0; i < contactNames.length; i++) {
-                Log.d(TAG, "ContactName: " + contactNames[i] + ": " + contactNumbers[i]);
 
-                CheckBoxPreference box = new CheckBoxPreference(screen.getContext());
-                box.setTitle(contactNames[i]);
-                box.setSummary(contactNumbers[i]);
+            emergencyContactsPreferenceScreen = getPreferenceScreen();
+
+            for(int i = 0; i < contactNames.size(); i++) {
+                Log.d(TAG, "ContactName: " + contactNames.get(i) + ": " + contactNumbers.get(i));
+
+                CheckBoxPreference box = new CheckBoxPreference(emergencyContactsPreferenceScreen.getContext());
+                box.setTitle(contactNames.get(i));
+                box.setSummary(contactNumbers.get(i));
                 box.setIcon(R.mipmap.ic_launcher_round); //Temp icon.
-                screen.addItemFromInflater(box);
+                emergencyContactsPreferenceScreen.addItemFromInflater(box);
 
             }
-            setPreferenceScreen(screen);
+            setPreferenceScreen(emergencyContactsPreferenceScreen);
+            Log.d(TAG, "Test Get Number [0]: " + getPreferenceScreen().getPreference(0).getSummary());
         }
 
     }

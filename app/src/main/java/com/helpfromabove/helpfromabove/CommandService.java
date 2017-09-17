@@ -20,7 +20,9 @@ import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.preference.CheckBoxPreference;
 import android.preference.PreferenceManager;
+import android.preference.PreferenceScreen;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
@@ -401,10 +403,30 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         config.wps.setup = WpsInfo.PBC;
 
         wifiP2pManager.connect(wifiP2pChannel, config, wifiP2pListener);
+
+        startActivity(new Intent(getApplicationContext(),MainActivity.class));
     }
 
     protected void handleCommandHhmdEmergency() {
+
         Log.d(TAG, "handleCommandHhmdEmergency");
+
+        PreferenceScreen screen = SettingsActivity.emergencyContactsPreferenceScreen;
+
+        if(screen == null){
+            Log.d(TAG,"Implement a way to grab contacts is not already done.");
+        }
+        //Lists all contacts that are checked as active. Can be used later for making messages.
+        else {
+            for (int i = 0; i < screen.getPreferenceCount(); i++){
+                CheckBoxPreference box = (CheckBoxPreference) screen.getPreference(i);
+
+                if(box.isChecked()) {
+                    Log.d(TAG, box.getTitle() + " : " + box.getSummary());
+                }
+            }
+        }
+
     }
 
     protected void handleCommandHhmdLight(boolean lightOnOff) {
