@@ -29,6 +29,7 @@ import android.util.Log;
 import com.cloudrail.si.CloudRail;
 import com.cloudrail.si.interfaces.CloudStorage;
 import com.cloudrail.si.services.Dropbox;
+import com.cloudrail.si.services.OneDrive;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
@@ -78,14 +79,14 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     protected static final int CONSTANT_LOCATION_UPDATE_SECONDS = 3;
 
     //App keys needed for CloudRail and other Cloud Services
-    private final static String CLOUDRAIL_LICENSE_KEY = "591cadfabac9e94ae79c9711";
-    private final static String DROPBOX_APP_KEY = "5a95or0lhqau6y1";
-    private final static String DROPBOX_APP_SECRET = "g31z4opqpzpklri";
+    private final static String CLOUDRAIL_LICENSE_KEY = "59c031993d7042599787c8a8";
+    private final static String DROPBOX_APP_KEY = "th6i7dbzxmnzbu5";
+    private final static String DROPBOX_APP_SECRET = "22vq1tpd68tm28l";
     //Still need application keys for GoogleDrive and OneDrive
     private final static String GOOGLE_DRIVE_APP_KEY = "";
     private final static String GOOGLE_DRIVE_APP_SECRET = "";
-    private final static String ONE_DRIVE_APP_KEY = "";
-    private final static String ONE_DRIVE_APP_SECRET = "";
+    private final static String ONE_DRIVE_APP_KEY = "8c273966-c62c-48b0-8500-d42b849bbf18";
+    private final static String ONE_DRIVE_APP_SECRET = "3tGij2AmL0dGx7pHkukgK9o";
 
     private final static String TAG = "CommandService";
     private final String CLOUD_APP_FOLDER = "/" + "Help_From_Above";
@@ -511,8 +512,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
             case "2":
                 Log.d(TAG, "handleSettingChangeCloud: OneDrive Specified");
 
-//                cloudStorage = new OneDrive(this,ONE_DRIVE_APP_KEY,ONE_DRIVE_APP_SECRET);
-//                createCloudAppFolder();
+                cloudStorage = new OneDrive(this,ONE_DRIVE_APP_KEY,ONE_DRIVE_APP_SECRET);
+                createCloudAppFolder();
                 break;
             default:
                 Log.d(TAG, "handleSettingChangeCloud: No Cloud Specified");
