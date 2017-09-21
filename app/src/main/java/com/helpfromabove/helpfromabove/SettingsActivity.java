@@ -2,18 +2,24 @@ package com.helpfromabove.helpfromabove;
 
 import android.annotation.TargetApi;
 import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
+import android.preference.MultiSelectListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
+import android.preference.PreferenceFragment;
+import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.provider.ContactsContract;
+import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBar;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
@@ -23,6 +29,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.support.v4.app.NavUtils;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.Inflater;
@@ -243,6 +250,86 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             }
             return super.onOptionsItemSelected(item);
         }
+
+        @Override
+        public void onStart() {
+            Log.d(TAG, "onStart");
+            super.onStart();
+            refreshContactsList();
+        }
+
+        private void refreshContactsList() {
+            Log.d(TAG, "refreshContactsList");
+            MultiSelectListPreference contactsListPreference = (MultiSelectListPreference) findPreference(getString(R.string.pref_key_emergency_contacts));
+            contactsListPreference.setEntries(getContactInfoCharSequenceArray());
+            contactsListPreference.setEntryValues(getContactIdCharSequenceArray());
+        }
+
+        private ContactInfo[] getContactsArray() {
+            Log.d(TAG, "getContactsArray");
+            ArrayList<ContactInfo> contacts = new ArrayList<>();
+
+            ContentResolver resolver = SettingsActivity.resolver;
+            Cursor cursor = resolver.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
+
+            while (cursor.moveToNext()) {
+                String currentID = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
+                Cursor phoneNumberCursor = resolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
+                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?", new String[]{currentID}, null);
+
+                while (phoneNumberCursor.moveToNext()) {
+                    Long id = phoneNumberCursor.getLong(phoneNumberCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.CONTACT_ID));
+                    String name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                    String number = phoneNumberCursor.getString(phoneNumberCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                    Uri uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, id);
+                    InputStream photo = ContactsContract.Contacts.openContactPhotoInputStream(resolver, uri);
+                    contacts.add(new ContactInfo(id, name, number, photo));
+                }
+            }
+
+            return contacts.toArray(new ContactInfo[contacts.size()]);
+        }
+
+        private CharSequence[] getContactInfoCharSequenceArray() {
+            Log.d(TAG, "getContactInfoCharSequenceArray");
+            ContactInfo[] contactInfos = getContactsArray();
+            CharSequence[] contactCharSequences = new CharSequence[contactInfos.length];
+            for (int i = 0; i < contactInfos.length; i++) {
+                contactCharSequences[i] = contactInfos[i].toString();
+            }
+
+            return contactCharSequences;
+        }
+
+        private CharSequence[] getContactIdCharSequenceArray() {
+            Log.d(TAG, "getContactIdCharSequenceArray");
+            ContactInfo[] contactInfos = getContactsArray();
+            CharSequence[] contactCharSequences = new CharSequence[contactInfos.length];
+            for (int i = 0; i < contactInfos.length; i++) {
+                contactCharSequences[i] = contactInfos[i].contactId.toString();
+            }
+
+            return contactCharSequences;
+        }
+
+        private class ContactInfo {
+            private Long contactId;
+            private String name;
+            private String number;
+            private InputStream contactPhoto;
+
+            ContactInfo(Long _contactId, String _name, String _number, InputStream _contactPhoto) {
+                contactId = _contactId;
+                name = _name;
+                number = _number;
+                contactPhoto = _contactPhoto;
+            }
+
+            @Override
+            public String toString() {
+                return name + "\n" + number;
+            }
+        }
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
@@ -379,7 +466,4 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             return super.onOptionsItemSelected(item);
         }
     }
-
-
-
 }

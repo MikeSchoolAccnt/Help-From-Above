@@ -39,7 +39,9 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 import java.util.Stack;
 
 /**
@@ -385,6 +387,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
             Log.d(TAG, "onSharedPreferenceChanged: pref_key_emergency_message_name");
         } else if (key.equals(getString(R.string.pref_key_emergency_message_text))) {
             Log.d(TAG, "onSharedPreferenceChanged: pref_key_emergency_message_text");
+        } else if (key.equals(getString(R.string.pref_key_emergency_contacts))) {
+            Log.d(TAG, "onSharedPreferenceChanged: pref_key_emergency_contacts");
         } else {
             Log.w(TAG, "onSharedPreferenceChanged: key=" + key);
         }
@@ -428,6 +432,11 @@ public class CommandService extends Service implements SharedPreferences.OnShare
             }
         }
 
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        Set<String> set = sharedPref.getStringSet(getString(R.string.pref_key_emergency_contacts), new HashSet<String>());
+        for (String id : set) {
+            Log.d(TAG, "emergencyContactId=" + id);
+        }
     }
 
     protected void handleCommandHhmdLight(boolean lightOnOff) {
