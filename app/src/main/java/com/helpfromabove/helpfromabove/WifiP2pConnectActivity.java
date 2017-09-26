@@ -1,14 +1,17 @@
 package com.helpfromabove.helpfromabove;
 
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -23,8 +26,12 @@ import java.util.Collection;
 
 public class WifiP2pConnectActivity extends AppCompatActivity {
     private static final String TAG = "WifiP2pConnectActivity";
-    private WifiP2pConnectActivityBroadcastReceiver broadcastReceiver = new WifiP2pConnectActivityBroadcastReceiver();
-    private IntentFilter intentFilter = new IntentFilter();
+
+    CommandService commandService;
+    ServiceConnection commandServiceConnection;
+
+    private WifiP2pConnectActivityBroadcastReceiver broadcastReceiver;
+    private IntentFilter intentFilter ;
     private ListView devicesListView;
     private ArrayAdapter adapter;
 
@@ -36,11 +43,13 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        intentFilter = new IntentFilter();
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
+        intentFilter.addAction(CommandService.ACTION_UI_WIFI_P2P_CONNECTED);
 
         adapter = new ArrayAdapter(getApplicationContext(), R.layout.wifi_p2p_device, R.id.wifi_p2p_device_name) {
             @Override
@@ -51,6 +60,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
                 onArrayAdapterDataSetChanged();
             }
         };
+
         try {
             devicesListView = (ListView) findViewById(R.id.wifi_p2p_connect_listview);
             devicesListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -82,11 +92,21 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStart() {
+        Log.d(TAG, "onStart");
+        super.onStart();
+
+        bindCommandService();
+    }
+
+    @Override
     protected void onResume() {
         Log.d(TAG, "onResume");
         super.onResume();
 
+        broadcastReceiver = new WifiP2pConnectActivityBroadcastReceiver();
         registerReceiver(broadcastReceiver, intentFilter);
+
         adapter.notifyDataSetChanged();
     }
 
@@ -96,6 +116,42 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         super.onPause();
 
         unregisterReceiver(broadcastReceiver);
+    }
+
+    @Override
+    protected void onStop() {
+        Log.d(TAG, "onStart");
+        super.onStop();
+
+        unbindCommandService();
+    }
+
+    private void bindCommandService() {
+        Log.d(TAG, "bindCommandService");
+        Intent commandServiceIntent = new Intent(getApplicationContext(), CommandService.class);
+        startService(commandServiceIntent);
+        commandServiceConnection = new WifiP2PCOnnectActivityConnection();
+        bindService(commandServiceIntent, commandServiceConnection, Context.BIND_NOT_FOREGROUND);
+    }
+
+    private void unbindCommandService() {
+        Log.d(TAG, "unbindCommandService");
+
+        unbindService(commandServiceConnection);
+    }
+
+
+
+    private void setConnectedService(IBinder service) {
+        Log.d(TAG, "setConnectedService");
+
+        String serviceClassName = service.getClass().getName();
+        Log.d(TAG, serviceClassName + " vs.");
+        Log.d(TAG, CommandService.CommandServiceBinder.class.getName());
+        if (serviceClassName.equals(CommandService.CommandServiceBinder.class.getName())) {
+            commandService = ((CommandService.CommandServiceBinder) service).getService();
+            commandService.startWifiP2pScanning();
+        }
     }
 
     public void wifiP2pDeviceOnClick(int position) {
@@ -119,19 +175,11 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        connectTo(device);
+                        commandService.connectToWifiP2pDevice(device);
                     }
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
-    }
-
-    private void connectTo(WifiP2pDevice device) {
-        Log.d(TAG, "connectTo: device.toString()=" + device.toString());
-
-        Intent i = new Intent(CommandService.ACTION_CONNECT_WIFI_P2P);
-        i.putExtra(WifiP2pManager.EXTRA_WIFI_P2P_DEVICE, device);
-        sendBroadcast(i);
     }
 
     private void onArrayAdapterDataSetChanged() {
@@ -167,10 +215,11 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
     }
 
     private void handleWifiP2pPeersChanged(Collection<WifiP2pDevice> devices) {
+        Log.d(TAG, "handleWifiP2pPeersChanged");
+
+        adapter.clear();
         for (WifiP2pDevice device : devices) {
             Log.d(TAG, "handleWifiP2pPeersChanged: device.toString()=" + device.toString());
-
-            // TODO : Test to make sure that this displays properly
             adapter.add(device);
         }
     }
@@ -207,11 +256,29 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
                     case WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION:
                         handleWifiP2pThisDeviceChanged();
                         break;
+                    case CommandService.ACTION_UI_WIFI_P2P_CONNECTED:
+                        startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                        break;
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);
                         break;
                 }
             }
+        }
+    }
+
+    protected class WifiP2PCOnnectActivityConnection implements ServiceConnection {
+        private static final String TAG = "CommandServiceConnec...";
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(TAG, "onServiceConnected");
+            setConnectedService(service);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d(TAG, "onServiceDisconnected");
         }
     }
 }

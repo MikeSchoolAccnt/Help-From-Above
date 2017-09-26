@@ -1,7 +1,10 @@
 package com.helpfromabove.helpfromabove;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.animation.Animation;
@@ -14,14 +17,20 @@ import android.widget.ImageView;
 
 public class SplashActivity extends Activity {
     private static final String TAG = "SplashActivity";
+    private BroadcastReceiver splashActivityBroadcastReceiver;
     private Animation tempAnim;
     private ImageView splash;
+    private boolean servicesReady = false;
+    private boolean animationComplete = false;
 
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_splash);
+
+        servicesReady = false;
+        animationComplete = false;
 
         splash = (ImageView) findViewById(R.id.splashView);
         tempAnim = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.splash_anim);
@@ -35,7 +44,7 @@ public class SplashActivity extends Activity {
 
             @Override
             public void onAnimationEnd(Animation animation) {
-                //splash.setImageResource(R.drawable.splash_background);
+                animationComplete = true;
                 transition();
             }
 
@@ -44,6 +53,7 @@ public class SplashActivity extends Activity {
             }
         });
 
+        splashActivityBroadcastReceiver = new SplashActivityBroadcastReceiver();
     }
 
     @Override
@@ -55,25 +65,51 @@ public class SplashActivity extends Activity {
         startService(new Intent(this, CommandService.class));
     }
 
-     /* Allows touching the screen to skip the splash screen
-      * NEEDS TO BE FIXED : Causes two instances of the MainActivity to launch
-      */
-//    @Override
-//    public boolean onTouchEvent(MotionEvent event) {
-//        if(event.getAction() == MotionEvent.ACTION_DOWN) {
-//            tempAnim.cancel();
-//            return true;
-//        }
-//        return super.onTouchEvent(event);
-//    }
+    @Override
+    protected void onResume() {
+        Log.d(TAG, "onResume");
+        super.onResume();
+        registerReceiver(splashActivityBroadcastReceiver, new IntentFilter(CommandService.ACTION_UI_SERVICES_READY));
+    }
+
+    @Override
+    protected void onPause() {
+        Log.d(TAG, "onPause");
+        super.onPause();
+        unregisterReceiver(splashActivityBroadcastReceiver);
+    }
 
     public void transition() {
         Log.d(TAG, "transition");
 
-//        Intent i = new Intent(getApplicationContext(), MainActivity.class);
-        Intent i = new Intent(getApplicationContext(), WifiP2pConnectActivity.class);
-        startActivity(i);
-        finish();
-        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+        if (servicesReady && animationComplete) {
+            Intent i = new Intent(getApplicationContext(), WifiP2pConnectActivity.class);
+            startActivity(i);
+            finish();
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+        }
+        else {
+            Log.d(TAG, "transition: not ready to start WifiP2pConnectActivity");
+        }
+    }
+
+    private class SplashActivityBroadcastReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "onReceive");
+
+            String action = intent.getAction();
+            if (action != null) {
+                switch (action) {
+                    case CommandService.ACTION_UI_SERVICES_READY:
+                        servicesReady = true;
+                        transition();
+                        break;
+                    default:
+                        Log.w(TAG, "onReceive: default: action=" + action);
+                        break;
+                }
+            }
+        }
     }
 }
