@@ -1,5 +1,6 @@
 package com.helpfromabove.helpfromabove;
 
+import android.app.Activity;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -24,6 +25,8 @@ import android.preference.CheckBoxPreference;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.telephony.SmsManager;
 import android.util.Log;
 
 import com.cloudrail.si.CloudRail;
@@ -437,6 +440,41 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         for (String id : set) {
             Log.d(TAG, "emergencyContactId=" + id);
         }
+
+        String userName = sharedPref.getString(getString(R.string.pref_key_emergency_message_name),getString(R.string.pref_default_emergency_message_name));
+        String emergencyMessage = sharedPref.getString(getString(R.string.pref_key_emergency_message_text),"Should no happen");
+
+        //TODO: replace the default GPS string and CloudLink String in third emergency_message_text
+        emergencyMessage = emergencyMessage.replace("(Name)",userName);
+
+        //Input your own information here for testing
+        //sendSMSMessage("Your test number",emergencyMessage);
+    }
+
+    //Allows for sending a message to someone through the application
+    //The message passed in this might not be needed instead it can be grabbed from shared preferences.
+    //TODO: Figure a way to request permisions since this is not an activity.
+    private void sendSMSMessage(String recipientNumber, String message){
+
+//        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+//            int response = getApplicationContext().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION);
+//              if (response == PackageManager.PERMISSION_GRANTED) {
+
+                //This try catch is only for if an invalid number or message is trying to be sent.
+                try {
+                    SmsManager smsManager = SmsManager.getDefault();
+                    smsManager.sendTextMessage(recipientNumber, null, message, null, null);
+                } catch (IllegalArgumentException e){
+                    Log.e(TAG,"sendSMSMessage:" + e.getMessage());
+                }
+
+
+//            } else {
+//                  ActivityCompat.requestPermissions("Need Activity Here",new String[]{android.Manifest.permission.SEND_SMS},0);
+//            }
+//        }
+
+
     }
 
     protected void handleCommandHhmdLight(boolean lightOnOff) {
