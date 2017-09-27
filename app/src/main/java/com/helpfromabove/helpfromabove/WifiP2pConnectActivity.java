@@ -120,7 +120,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
 
     @Override
     protected void onStop() {
-        Log.d(TAG, "onStart");
+        Log.d(TAG, "onStop");
         super.onStop();
 
         unbindCommandService();

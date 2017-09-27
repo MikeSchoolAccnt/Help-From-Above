@@ -18,7 +18,6 @@ import android.location.LocationManager;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.os.Binder;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.CheckBoxPreference;
 import android.preference.PreferenceManager;
@@ -56,6 +55,7 @@ import java.util.Stack;
 public class CommandService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener {
     protected static final String ACTION_UI_SERVICES_READY = "com.helpfromabove.helpfromabove.action.ACTION_UI_SERVICES_READY";
     protected static final String ACTION_UI_WIFI_P2P_CONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_UI_WIFI_P2P_CONNECTED";
+    protected static final String SEND_WAYPOINT = "com.helpfromabove.helpfromabove.command.SEND_WAYPOINT";
 
     protected static final String ACTION_NEW_UAS_IMAGE = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_IMAGE";
     protected static final String ACTION_NEW_UAS_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_LOCATION";
@@ -80,7 +80,6 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     protected static final String CONSTANT_CLOUD_DROPBOX = "com.helpfromabove.helpfromabove.constant.CONSTANT_CLOUD_DROPBOX";
     protected static final String CONSTANT_CLOUD_GOOGLE_DRIVE = "com.helpfromabove.helpfromabove.constant.CONSTANT_CLOUD_GOOGLE_DRIVE";
     protected static final String CONSTANT_CLOUD_ONE_DRIVE = "com.helpfromabove.helpfromabove.constant.CONSTANT_CLOUD_ONE_DRIVE";
-    protected static final int CONSTANT_LOCATION_UPDATE_SECONDS = 3;
 
     //App keys needed for CloudRail and other Cloud Services
     private final static String CLOUDRAIL_LICENSE_KEY = "59c031993d7042599787c8a8";
@@ -97,6 +96,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     private final IBinder mBinder = new CommandServiceBinder();
     ServiceConnection uasCommunicationServiceConnection;
     UasCommunicationService uasCommunicationService;
+    ServiceConnection locationServiceConnection;
+    LocationService locationService;
 
 
     private final String CLOUD_APP_FOLDER = "/" + "Help_From_Above";
@@ -105,12 +106,6 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     private IntentFilter intentFilter;
     private Stack<String> mImageFileNamesStack = new Stack<>();
     private CloudStorage cloudStorage;
-    private LocationManager locationManager;
-    private LocationListener commandLocationListener;
-    private Criteria locationCriteria = new Criteria();
-    private Stack<Location> hhmdLocations = new Stack<>();
-    private Stack<Location> uasLocations = new Stack<>();
-    private int heightOffset;
 
     // This is for local image testing. Remove once local image testing is complete
     private int imageDebugCounter = 0;
@@ -126,6 +121,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         mImageFileNamesStack = new Stack<>();
 
         intentFilter = new IntentFilter();
+        intentFilter.addAction(SEND_WAYPOINT);
         intentFilter.addAction(ACTION_REQUEST_LAST_IMAGE_FILENAME);
         intentFilter.addAction(COMMAND_HHMD_EMERGENCY);
         intentFilter.addAction(COMMAND_HHMD_LIGHT);
@@ -145,10 +141,6 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         startServices();
 
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).registerOnSharedPreferenceChangeListener(this);
-
-        locationCriteria.setAccuracy(Criteria.ACCURACY_FINE);
-        locationCriteria.setVerticalAccuracy(Criteria.ACCURACY_HIGH);
-        locationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
 
         // This is for local image testing. Remove once local image testing is complete
         Bitmap bm = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.imag4240);
@@ -189,6 +181,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     }
 
     private void startUasCommunicationService() {
+        Log.d(TAG, "startUasCommunicationService");
+
         Intent uasCommunicationServiceIntent = new Intent(getApplicationContext(), UasCommunicationService.class);
         startService(uasCommunicationServiceIntent);
         uasCommunicationServiceConnection = new CommandServiceConnection();
@@ -196,7 +190,12 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     }
 
     private void startLocationService() {
-        Log.d(TAG, "startLocationService: NOT IMPLEMENTED!");
+        Log.d(TAG, "startLocationService");
+
+        Intent locationServiceIntent = new Intent(getApplicationContext(), LocationService.class);
+        startService(locationServiceIntent);
+        locationServiceConnection = new CommandServiceConnection();
+        bindService(locationServiceIntent, locationServiceConnection, Context.BIND_NOT_FOREGROUND);
     }
 
     private void startEmergencyService() {
@@ -211,8 +210,12 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         Log.d(TAG, "setConnectedService");
 
         String serviceClassName = service.getClass().getName();
+        Log.d(TAG, "setConnectedService: check if the class name is the class of the emergencyServiceBinder and set emergencyService reference here");
+        Log.d(TAG, "setConnectedService: check if the class name is the class of the networkServiceBinder and set networkService reference here");
         if (serviceClassName.equals(UasCommunicationService.UasCommunicationServiceBinder.class.getName())) {
             uasCommunicationService = ((UasCommunicationService.UasCommunicationServiceBinder) service).getService();
+        } else if (serviceClassName.equals(LocationService.LocationServiceBinder.class.getName())) {
+            locationService = ((LocationService.LocationServiceBinder) service).getService();
         } else {
             Log.w(TAG, "Unrecognized service class name: " + serviceClassName);
         }
@@ -221,7 +224,9 @@ public class CommandService extends Service implements SharedPreferences.OnShare
 
     private void onServiceConnected() {
         Log.d(TAG, "onServiceConnected");
-        if ((uasCommunicationService != null)) {
+        Log.d(TAG, "onServiceConnected: check if emergencyService  is null here");
+        Log.d(TAG, "onServiceConnected: check if networkService is null here");
+        if ((uasCommunicationService != null) && (locationService != null)) {
             sendBroadcast(new Intent(ACTION_UI_SERVICES_READY));
         }
     }
@@ -230,9 +235,11 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         Log.d(TAG, "stopServices");
 
         unbindService(uasCommunicationServiceConnection);
-        Log.d(TAG, "stopServices: unbind LocationService here");
-        Log.d(TAG, "stopServices: unbind EmergencyService here");
-        Log.d(TAG, "stopServices: unbind NetworkService here");
+        uasCommunicationService = null;
+        unbindService(locationServiceConnection);
+        locationService = null;
+        Log.d(TAG, "stopServices: unbind emergencyServiceConnection and set emergencyService reference to null here");
+        Log.d(TAG, "stopServices: unbind networkServiceConnection and set networkService reference to null here");
     }
 
     protected void startWifiP2pScanning() {
@@ -245,8 +252,34 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         uasCommunicationService.connectToDevice(device);
     }
 
+    /******************************************************
+     * In the future, we might want all static methods to
+     * only send action intents (without extras, or very
+     * little data [like ints or strings]). That way when
+     * the dynamic methods are called, they have to get
+     * the latest data values from the service instances.
+     * That would reduce the amount of data sent, and
+     * restrictions on size of data sent through intents
+     ******************************************************/
+
     protected static void notifyUiWifiP2pConnected(Context contest) {
+        Log.d(TAG, "notifyUiWifiP2pConnected");
+
         contest.sendBroadcast(new Intent(ACTION_UI_WIFI_P2P_CONNECTED));
+    }
+
+    protected static void sendUasWaypoint(Context context, Location waypoint) {
+        Log.d(TAG, "sendUasWaypoint");
+
+        Intent sendWaypointIntent = new Intent(SEND_WAYPOINT);
+        sendWaypointIntent.putExtra(EXTRA_LOCATION, waypoint);
+        context.sendBroadcast(sendWaypointIntent);
+    }
+
+    private void handleSendWaypoint(Location waypoint) {
+        Log.d(TAG, "handleSendWaypoint");
+
+        uasCommunicationService.sendWaypoint(waypoint);
     }
 
     public String getLastSessionImageFileName() {
@@ -263,161 +296,6 @@ public class CommandService extends Service implements SharedPreferences.OnShare
 
         Log.d(TAG, "getLastSessionImageFileName: imageFileName=" + imageFileName);
         return imageFileName;
-    }
-
-    private void pushUasLocation(Location uasLocation) {
-        Log.d(TAG, "pushUasLocation: uasLocation=" + uasLocation);
-        uasLocations.push(uasLocation);
-    }
-
-    private Location getLastUasLocation() {
-        Log.d(TAG, "getLastUasLocation");
-
-        Location uasLocation = null;
-        if (!uasLocations.isEmpty()) {
-            uasLocation = uasLocations.peek();
-        } else {
-            Log.w(TAG, "getLastUasLocation: uasLocations is empty.");
-        }
-
-        return uasLocation;
-    }
-
-    private void pushHhmdLocation(Location hhmdLocation) {
-        Log.d(TAG, "pushHhmdLocation: hhmdLocation=" + hhmdLocation);
-        hhmdLocations.push(hhmdLocation);
-    }
-
-    private Location getLastHhmdLocation() {
-        Log.d(TAG, "getLastHhmdLocation");
-
-        Location hhmdLocation = null;
-        if (!hhmdLocations.isEmpty()) {
-            hhmdLocation = hhmdLocations.peek();
-        } else {
-            Log.w(TAG, "getLastUasLocation: hhmdLocations is empty.");
-        }
-
-        return hhmdLocation;
-    }
-
-    private Location getPreviousHhmdLocation() {
-        Log.d(TAG, "getPreviousHhmdLocation");
-
-        Location previousHhmdLocation = null;
-        if (hhmdLocations.size() >= 2) {
-            Location lastHhmdLocation = hhmdLocations.pop();
-            previousHhmdLocation = hhmdLocations.peek();
-            hhmdLocations.push(lastHhmdLocation);
-        } else {
-            Log.w(TAG, "getPreviousHhmdLocation: hhmdLocations does not have enough locations.");
-        }
-
-        return previousHhmdLocation;
-    }
-
-    private synchronized int getHeightOffset() {
-        Log.d(TAG, "getHeightOffset");
-
-        return heightOffset;
-    }
-
-    private synchronized void setHeightOffset(int i) {
-        Log.d(TAG, "setHeightOffset: i=" + i);
-
-        heightOffset = i;
-    }
-
-    private synchronized void clearHeightOffset() {
-        Log.d(TAG, "clearHeightOffset");
-
-        setHeightOffset(0);
-    }
-
-    private void resetHeightOffset() {
-        Log.d(TAG, "resetHeightOffset");
-
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        int startHeight = Integer.parseInt(sharedPref.getString(getString(R.string.pref_key_uas_start_height), getString(R.string.pref_value_uas_start_height_default)));
-        setHeightOffset(startHeight);
-    }
-
-    private void incrementHeightOffset() {
-        Log.d(TAG, "incrementHeightOffset");
-
-        setHeightOffset(heightOffset++);
-    }
-
-    private void decrementHeightOffset() {
-        Log.d(TAG, "decrementHeightOffset");
-
-        setHeightOffset(heightOffset--);
-    }
-
-    private Location getLocationDiff(Location newLocation, Location oldLocation) {
-        Log.d(TAG, "getLocationDiff");
-
-        Location diff = null;
-        if (newLocation != null && oldLocation != null) {
-            diff = new Location(getClass().getName());
-
-            double diffLong = newLocation.getLongitude() - oldLocation.getLongitude();
-            double diffLat = newLocation.getLatitude() - oldLocation.getLatitude();
-            double diffAlt = newLocation.getAltitude() - oldLocation.getAltitude();
-            float diffAcc = newLocation.getAccuracy() + newLocation.getAccuracy();
-
-            diff.setLongitude(diffLong);
-            diff.setLatitude(diffLat);
-            diff.setAltitude(diffAlt);
-            diff.setAccuracy(diffAcc);
-        } else {
-            Log.e(TAG, "getLocationSum: Locations cannot be subtracted because a location object is null.");
-        }
-
-        return diff;
-    }
-
-    private Location addLocations(Location location1, Location location2) {
-        Log.d(TAG, "addLocations");
-
-        Location sum = null;
-        if (location1 != null && location2 != null) {
-            sum = new Location(getClass().getName());
-            double retLong = location1.getLongitude() + location2.getLongitude();
-            double retLat = location1.getLatitude() + location2.getLatitude();
-            double retAlt = location1.getAltitude() + location2.getAltitude();
-            float retAcc = location1.getAccuracy() + location2.getAccuracy();
-
-            sum.setLongitude(retLong);
-            sum.setLatitude(retLat);
-            sum.setAltitude(retAlt);
-            sum.setAccuracy(retAcc);
-
-        } else {
-            Log.e(TAG, "addLocations: Locations cannot be added because a location object is null.");
-        }
-
-        return sum;
-    }
-
-    private Location addHeightOffset(Location location) {
-        Log.d(TAG, "addHeightOffset");
-
-        location.setAltitude(location.getAltitude() + getHeightOffset());
-        clearHeightOffset();
-        return location;
-    }
-
-    private Location generateWaypoint() {
-        Log.d(TAG, "generateWaypoint");
-
-        Location lastHhmd = getLastHhmdLocation();
-        Location previousHhmd = getPreviousHhmdLocation();
-        Location lastUas = getLastUasLocation();
-        Location diff = getLocationDiff(lastHhmd, previousHhmd);
-        Location waypoint = addLocations(lastUas, diff);
-
-        return addHeightOffset(waypoint);
     }
 
     @Override
@@ -491,13 +369,13 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     protected void handleCommandHhmdUasHeightUp() {
         Log.d(TAG, "handleCommandHhmdUasHeightUp");
 
-        incrementHeightOffset();
+        locationService.incrementHeightOffset();
     }
 
     protected void handleCommandHhmdUasHeightDown() {
         Log.d(TAG, "handleCommandHhmdUasHeightDown");
 
-        decrementHeightOffset();
+        locationService.decrementHeightOffset();
     }
 
     protected void handleCommandHhmdSessionStart() {
@@ -505,26 +383,18 @@ public class CommandService extends Service implements SharedPreferences.OnShare
 
         createCloudSessionFolder();
 
-        requestLocationUpdates();
-        resetHeightOffset();
+        locationService.startSession();
     }
 
     protected void handleCommandHhmdSessionEnd() {
         Log.d(TAG, "handleCommandHhmdSessionEnd");
 
-        stopLocationUpdates();
-    }
-
-    private void handleCommandHhmdLocation(Location hhmdLocation) {
-        Log.d(TAG, "handleCommandHhmdLocation: location=" + hhmdLocation);
-        pushHhmdLocation(hhmdLocation);
-
-        Location waypoint = generateWaypoint();
+        locationService.stopSession();
     }
 
     private void handleCommandUasLocation(Location uasLocation) {
         Log.d(TAG, "handleCommandUasLocation: uasLocation=" + uasLocation);
-        pushUasLocation(uasLocation);
+        locationService.pushUasLocation(uasLocation);
     }
 
     // TODO: 5/19/2017 Make sure the image is saved to the cloud as well
@@ -587,36 +457,6 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         Intent newImageIntent = new Intent(ACTION_NEW_UAS_IMAGE);
         newImageIntent.putExtra(EXTRA_IMAGE_FILE_NAME, getLastSessionImageFileName());
         sendBroadcast(newImageIntent);
-    }
-
-    private void requestLocationUpdates() {
-        Log.d(TAG, "requestLocationUpdates");
-
-        commandLocationListener = new CommandLocationListener();
-
-        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            int response = getApplicationContext().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION);
-            if (response == PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "onCreate: permission FEATURE_LOCATION is GRANTED");
-                locationManager.requestLocationUpdates(1000 * CONSTANT_LOCATION_UPDATE_SECONDS, 0, locationCriteria, commandLocationListener, getMainLooper());
-            } else {
-                Log.w(TAG, "onCreate: permission FEATURE_LOCATION is DENIED");
-                // TODO : Request permission from user on devices at or above Android M
-                // Because the user can explicitly modify the permissions of apps, if the
-                // user denies Location from this app, then a dialog box should be shown
-                // to the user to give this access to Location. This should send a
-                // broadcast that gets received from all activities. When an activity
-                // gets the broadcast, it should then request the permission.
-            }
-        } else {
-            locationManager.requestLocationUpdates(1000 * CONSTANT_LOCATION_UPDATE_SECONDS, 0, locationCriteria, commandLocationListener, getMainLooper());
-        }
-    }
-
-    private void stopLocationUpdates() {
-        Log.d(TAG, "stopLocationUpdates");
-
-        locationManager.removeUpdates(commandLocationListener);
     }
 
     private void saveImage(String filename) {
@@ -710,6 +550,10 @@ public class CommandService extends Service implements SharedPreferences.OnShare
             String action = intent.getAction();
             if (intent != null && action != null) {
                 switch (action) {
+                    case SEND_WAYPOINT:
+                        Location waypoint = intent.getExtras().getParcelable(EXTRA_LOCATION);
+                        handleSendWaypoint(waypoint);
+                        break;
                     case ACTION_REQUEST_LAST_IMAGE_FILENAME:
                         sendNewImageIntent();
                         break;
@@ -778,36 +622,6 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         @Override
         public void onServiceDisconnected(ComponentName name) {
             Log.d(TAG, "onServiceDisconnected");
-        }
-    }
-
-
-    private class CommandLocationListener implements LocationListener {
-        private static final String TAG = "CommandLocationListener";
-
-        CommandLocationListener() {
-            Log.d(TAG, "CommandLocationListener");
-        }
-
-        @Override
-        public void onLocationChanged(Location location) {
-            Log.d(TAG, "onLocationChanged");
-            handleCommandHhmdLocation(location);
-        }
-
-        @Override
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-            Log.d(TAG, "onStatusChanged: status=" + status);
-        }
-
-        @Override
-        public void onProviderEnabled(String provider) {
-            Log.d(TAG, "onProviderEnabled: provider=" + provider);
-        }
-
-        @Override
-        public void onProviderDisabled(String provider) {
-            Log.d(TAG, "onProviderDisabled: provider=" + provider);
         }
     }
 }

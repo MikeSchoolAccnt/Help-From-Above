@@ -6,6 +6,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.Context;
 import android.content.ServiceConnection;
+import android.location.Location;
 import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
@@ -69,6 +70,10 @@ public class UasCommunicationService extends Service {
         canConnect = true;
     }
 
+    protected void sendWaypoint(Location location) {
+        Log.d(TAG, "sendWaypoint: location=" + location);
+    }
+
     public class UasCommunicationServiceBinder extends Binder {
         UasCommunicationService getService() {
             return UasCommunicationService.this;
@@ -117,9 +122,6 @@ public class UasCommunicationService extends Service {
             switch (reasonCode) {
                 case WifiP2pManager.P2P_UNSUPPORTED:
                     Log.w(TAG, "onFailure: P2P_UNSUPPORTED");
-                    if (canConnect) {
-                        CommandService.notifyUiWifiP2pConnected(getApplicationContext());
-                    }
                     break;
                 case WifiP2pManager.BUSY:
                     Log.w(TAG, "onFailure: BUSY");
@@ -129,6 +131,10 @@ public class UasCommunicationService extends Service {
                     break;
                 default:
                     Log.w(TAG, "onFailure: default");
+            }
+
+            if (canConnect) {
+                CommandService.notifyUiWifiP2pConnected(getApplicationContext());
             }
         }
     }

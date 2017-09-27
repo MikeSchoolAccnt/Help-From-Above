@@ -61,6 +61,10 @@
         <service
             android:name=".UasCommunicationService"
             android:exported="false" />
+        <service
+            android:name=".LocationService"
+            android:enabled="true"
+            android:exported="true"></service>
     </application>
 
 </manifest>
