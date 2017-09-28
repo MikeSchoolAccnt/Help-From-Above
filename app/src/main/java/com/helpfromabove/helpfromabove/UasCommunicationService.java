@@ -74,6 +74,10 @@ public class UasCommunicationService extends Service {
         Log.d(TAG, "sendWaypoint: location=" + location);
     }
 
+    protected void startEmergency() {
+        Log.d(TAG, "startEmergency: NOT IMPLEMENTED!");
+    }
+
     public class UasCommunicationServiceBinder extends Binder {
         UasCommunicationService getService() {
             return UasCommunicationService.this;

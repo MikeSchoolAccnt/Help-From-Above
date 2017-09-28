@@ -74,8 +74,6 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     protected static final String COMMAND_UAS_LOCATION = "com.helpfromabove.helpfromabove.command.COMMAND_UAS_LOCATION";
     protected static final String SETTING_CHANGE_CLOUD = "com.helpfromabove.helpfromabove.setting.SETTING_CHANGE_CLOUD";
     protected static final String SETTING_CHANGE_START_HEIGHT = "com.helpfromabove.helpfromabove.setting.SETTING_CHANGE_START_HEIGHT";
-    protected static final String SETTING_EMERGENCY_CONTACT_ADD = "com.helpfromabove.helpfromabove.setting.SETTING_EMERGENCY_CONTACT_ADD";
-    protected static final String SETTING_EMERGENCY_CONTACT_REMOVE = "com.helpfromabove.helpfromabove.setting.SETTING_EMERGENCY_CONTACT_REMOVE";
     protected static final String EXTRA_CLOUD_TYPE = "com.helpfromabove.helpfromabove.extra.EXTRA_CLOUD_TYPE";
     protected static final String CONSTANT_CLOUD_DROPBOX = "com.helpfromabove.helpfromabove.constant.CONSTANT_CLOUD_DROPBOX";
     protected static final String CONSTANT_CLOUD_GOOGLE_DRIVE = "com.helpfromabove.helpfromabove.constant.CONSTANT_CLOUD_GOOGLE_DRIVE";
@@ -98,6 +96,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     UasCommunicationService uasCommunicationService;
     ServiceConnection locationServiceConnection;
     LocationService locationService;
+    ServiceConnection emergencyServiceConnection;
+    EmergencyService emergencyService;
 
 
     private final String CLOUD_APP_FOLDER = "/" + "Help_From_Above";
@@ -133,8 +133,6 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         intentFilter.addAction(COMMAND_UAS_LOCATION);
         intentFilter.addAction(SETTING_CHANGE_CLOUD);
         intentFilter.addAction(SETTING_CHANGE_START_HEIGHT);
-        intentFilter.addAction(SETTING_EMERGENCY_CONTACT_ADD);
-        intentFilter.addAction(SETTING_EMERGENCY_CONTACT_REMOVE);
         commandServiceBroadcastReceiver = new CommandServiceBroadcastReceiver();
         registerReceiver(commandServiceBroadcastReceiver, intentFilter);
 
@@ -199,7 +197,13 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     }
 
     private void startEmergencyService() {
-        Log.d(TAG, "startEmergencyService: NOT IMPLEMENTED!");
+        Log.d(TAG, "startEmergencyService");
+
+        Intent emergencyServiceIntent = new Intent(getApplicationContext(), EmergencyService.class);
+        startService(emergencyServiceIntent);
+        emergencyServiceConnection = new CommandServiceConnection();
+        bindService(emergencyServiceIntent, emergencyServiceConnection, Context.BIND_NOT_FOREGROUND);
+
     }
 
     private void startNetworkService() {
@@ -210,12 +214,13 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         Log.d(TAG, "setConnectedService");
 
         String serviceClassName = service.getClass().getName();
-        Log.d(TAG, "setConnectedService: check if the class name is the class of the emergencyServiceBinder and set emergencyService reference here");
         Log.d(TAG, "setConnectedService: check if the class name is the class of the networkServiceBinder and set networkService reference here");
         if (serviceClassName.equals(UasCommunicationService.UasCommunicationServiceBinder.class.getName())) {
             uasCommunicationService = ((UasCommunicationService.UasCommunicationServiceBinder) service).getService();
         } else if (serviceClassName.equals(LocationService.LocationServiceBinder.class.getName())) {
             locationService = ((LocationService.LocationServiceBinder) service).getService();
+        } else if (serviceClassName.equals(EmergencyService.EmergencyServiceBinder.class.getName())) {
+            emergencyService = ((EmergencyService.EmergencyServiceBinder) service).getService();
         } else {
             Log.w(TAG, "Unrecognized service class name: " + serviceClassName);
         }
@@ -224,9 +229,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
 
     private void onServiceConnected() {
         Log.d(TAG, "onServiceConnected");
-        Log.d(TAG, "onServiceConnected: check if emergencyService  is null here");
         Log.d(TAG, "onServiceConnected: check if networkService is null here");
-        if ((uasCommunicationService != null) && (locationService != null)) {
+        if ((uasCommunicationService != null) && (locationService != null) && (emergencyService != null)) {
             sendBroadcast(new Intent(ACTION_UI_SERVICES_READY));
         }
     }
@@ -238,7 +242,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         uasCommunicationService = null;
         unbindService(locationServiceConnection);
         locationService = null;
-        Log.d(TAG, "stopServices: unbind emergencyServiceConnection and set emergencyService reference to null here");
+        unbindService(emergencyServiceConnection);
+        emergencyService = null;
         Log.d(TAG, "stopServices: unbind networkServiceConnection and set networkService reference to null here");
     }
 
@@ -310,12 +315,6 @@ public class CommandService extends Service implements SharedPreferences.OnShare
             Log.d(TAG, "onSharedPreferenceChanged: cloudProvider=" + cloudProvider);
 
             handleSettingChangeCloud(cloudProvider);
-        } else if (key.equals(getString(R.string.pref_key_emergency_message_name))) {
-            Log.d(TAG, "onSharedPreferenceChanged: pref_key_emergency_message_name");
-        } else if (key.equals(getString(R.string.pref_key_emergency_message_text))) {
-            Log.d(TAG, "onSharedPreferenceChanged: pref_key_emergency_message_text");
-        } else if (key.equals(getString(R.string.pref_key_emergency_contacts))) {
-            Log.d(TAG, "onSharedPreferenceChanged: pref_key_emergency_contacts");
         } else {
             Log.w(TAG, "onSharedPreferenceChanged: key=" + key);
         }
@@ -328,30 +327,12 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     }
 
     protected void handleCommandHhmdEmergency() {
-
         Log.d(TAG, "handleCommandHhmdEmergency");
 
-        PreferenceScreen screen = SettingsActivity.emergencyContactsPreferenceScreen;
-
-        if(screen == null){
-            Log.d(TAG,"Implement a way to grab contacts is not already done.");
-        }
-        //Lists all contacts that are checked as active. Can be used later for making messages.
-        else {
-            for (int i = 0; i < screen.getPreferenceCount(); i++){
-                CheckBoxPreference box = (CheckBoxPreference) screen.getPreference(i);
-
-                if(box.isChecked()) {
-                    Log.d(TAG, box.getTitle() + " : " + box.getSummary());
-                }
-            }
-        }
-
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        Set<String> set = sharedPref.getStringSet(getString(R.string.pref_key_emergency_contacts), new HashSet<String>());
-        for (String id : set) {
-            Log.d(TAG, "emergencyContactId=" + id);
-        }
+        String sessionCloudLink = getSessionCloudLink();
+        Location lastHhmdLocation = locationService.getLastHhmdLocation();
+        emergencyService.startEmergency(lastHhmdLocation, sessionCloudLink);
+        uasCommunicationService.startEmergency();
     }
 
     protected void handleCommandHhmdLight(boolean lightOnOff) {
@@ -441,14 +422,6 @@ public class CommandService extends Service implements SharedPreferences.OnShare
 
     private void handleSettingChangeStartHeight() {
         Log.d(TAG, "handleSettingChangeStartHeight");
-    }
-
-    private void handleSettingEmergencyContactAdd() {
-        Log.d(TAG, "handleSettingEmergencyContactAdd");
-    }
-
-    private void handleSettingEmergencyContactRemove() {
-        Log.d(TAG, "handleSettingEmergencyContactRemove");
     }
 
     private void sendNewImageIntent() {
@@ -589,12 +562,6 @@ public class CommandService extends Service implements SharedPreferences.OnShare
                         break;
                     case SETTING_CHANGE_START_HEIGHT:
                         handleSettingChangeStartHeight();
-                        break;
-                    case SETTING_EMERGENCY_CONTACT_ADD:
-                        handleSettingEmergencyContactAdd();
-                        break;
-                    case SETTING_EMERGENCY_CONTACT_REMOVE:
-                        handleSettingEmergencyContactRemove();
                         break;
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);

@@ -131,7 +131,7 @@ public class LocationService extends Service {
         hhmdLocations.push(hhmdLocation);
     }
 
-    private Location getLastHhmdLocation() {
+    protected Location getLastHhmdLocation() {
         Log.d(TAG, "getLastHhmdLocation");
 
         Location hhmdLocation = null;
