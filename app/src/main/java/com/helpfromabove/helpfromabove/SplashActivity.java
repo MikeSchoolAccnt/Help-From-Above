@@ -1,27 +1,41 @@
 package com.helpfromabove.helpfromabove;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
+
+import java.util.ArrayList;
 
 /**
  * Created by Michael Purcell on 5/5/2017.
  */
 
 public class SplashActivity extends Activity {
+
+    protected static int PERMISSION_READ_CONTACTS;
+    protected static int PERMISSION_ACCESS_LOCATION;
+    protected static int PERMISSION_SEND_SMS;
+    private static final int PERMISSIONS_CODE = 0;
+
+
     private static final String TAG = "SplashActivity";
     private BroadcastReceiver splashActivityBroadcastReceiver;
     private Animation tempAnim;
     private ImageView splash;
     private boolean servicesReady = false;
     private boolean animationComplete = false;
+    //private boolean permissionsChecked = false;
 
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate");
@@ -45,7 +59,7 @@ public class SplashActivity extends Activity {
             @Override
             public void onAnimationEnd(Animation animation) {
                 animationComplete = true;
-                transition();
+                askForPermissions();
             }
 
             @Override
@@ -63,6 +77,7 @@ public class SplashActivity extends Activity {
 
         splash.startAnimation(tempAnim);
         startService(new Intent(this, CommandService.class));
+
     }
 
     @Override
@@ -79,18 +94,76 @@ public class SplashActivity extends Activity {
         unregisterReceiver(splashActivityBroadcastReceiver);
     }
 
+
+    private void askForPermissions(){
+
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+
+            PERMISSION_ACCESS_LOCATION = getApplicationContext().checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION);
+            PERMISSION_READ_CONTACTS = getApplicationContext().checkSelfPermission(Manifest.permission.READ_CONTACTS);
+            PERMISSION_SEND_SMS = getApplicationContext().checkSelfPermission(Manifest.permission.SEND_SMS);
+
+            ArrayList<String> permissions = new ArrayList<>();
+
+            if(PERMISSION_ACCESS_LOCATION == PackageManager.PERMISSION_DENIED){
+                permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
+            }
+            if(PERMISSION_READ_CONTACTS == PackageManager.PERMISSION_DENIED){
+                permissions.add(Manifest.permission.READ_CONTACTS);
+            }
+            if(PERMISSION_SEND_SMS == PackageManager.PERMISSION_DENIED){
+                permissions.add(Manifest.permission.SEND_SMS);
+            }
+
+            if (permissions.size() != 0) {
+                requestPermissions(permissions.toArray(new String[permissions.size()]), PERMISSIONS_CODE);
+            } else {
+                transition();
+            }
+
+        } else {
+            transition();
+        }
+
+    }
+
     public void transition() {
         Log.d(TAG, "transition");
 
-        if (servicesReady && animationComplete) {
+        if(servicesReady && animationComplete) {
             Intent i = new Intent(getApplicationContext(), WifiP2pConnectActivity.class);
             startActivity(i);
             finish();
             overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-        }
-        else {
+        } else {
             Log.d(TAG, "transition: not ready to start WifiP2pConnectActivity");
         }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        //super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        switch (requestCode) {
+            case PERMISSIONS_CODE:
+                if (grantResults.length > 0) {
+                    boolean[] permissionAcceptance = new boolean[grantResults.length];
+                    for (int i = 0; i < grantResults.length; i++) {
+                        permissionAcceptance[i] = grantResults[0] == PackageManager.PERMISSION_GRANTED;
+                    }
+
+                    for (int i = 0; i < permissionAcceptance.length; i++) {
+                        if (permissionAcceptance[i]) {
+                            Log.d(TAG, "Permission Accepted: " + permissions[i]);
+                        } else {
+                            Log.d(TAG, "Permission Declined: " + permissions[i]);
+                        }
+                    }
+
+                }
+        }
+
+        transition();
     }
 
     private class SplashActivityBroadcastReceiver extends BroadcastReceiver {
