@@ -13,6 +13,7 @@ import com.cloudrail.si.interfaces.CloudStorage;
 import com.cloudrail.si.services.Dropbox;
 import com.cloudrail.si.services.OneDrive;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.DateFormat;
@@ -36,7 +37,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
     private final String CLOUD_APP_FOLDER = "/" + "Help_From_Above";
     private String cloudSessionFolder;
     private CloudStorage cloudStorage;
-
+    private AsyncCloudTask asyncCloudTask;
     public CloudService() {
         super();
 
@@ -90,6 +91,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
                 Log.d(TAG, "handleSettingChangeCloud: Dropbox Specified");
 
                 cloudStorage = new Dropbox(this, DROPBOX_APP_KEY, DROPBOX_APP_SECRET);
+
                 createCloudAppFolder();
                 break;
             case "1":
@@ -102,6 +104,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
                 Log.d(TAG, "handleSettingChangeCloud: OneDrive Specified");
 
                 cloudStorage = new OneDrive(this,ONE_DRIVE_APP_KEY,ONE_DRIVE_APP_SECRET);
+
                 createCloudAppFolder();
                 break;
             default:
@@ -114,8 +117,9 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
 
     private void createCloudAppFolder() {
         Log.d(TAG, "createCloudAppFolder");
-
-       cloudStorage.createFolder(CLOUD_APP_FOLDER);
+        asyncCloudTask = new AsyncCloudTask(cloudStorage);
+        asyncCloudTask.execute(asyncCloudTask.CREATE_CLOUD_APP_FOLDER,CLOUD_APP_FOLDER);
+        //cloudStorage.createFolder(CLOUD_APP_FOLDER);
     }
 
     protected void startSession() {
@@ -126,9 +130,11 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
 
     private void createCloudSessionFolder() {
         Log.d(TAG, "createCloudSessionFolder");
+        asyncCloudTask = new AsyncCloudTask(cloudStorage);
+        asyncCloudTask.execute(asyncCloudTask.CREATE_CLOUD_SESSION_FOLDER,CLOUD_APP_FOLDER);
 
-        cloudSessionFolder = CLOUD_APP_FOLDER + "/" + getDateTime();
-        cloudStorage.createFolder(cloudSessionFolder);
+//      cloudSessionFolder = CLOUD_APP_FOLDER + "/" + getDateTime();
+//      cloudStorage.createFolder(cloudSessionFolder);
     }
 
     private String getDateTime() {
@@ -136,11 +142,17 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         return df.format(Calendar.getInstance().getTime());
     }
 
-    private void uploadImage(final String filename) {
+    private void cloudUploadImage(final String filename) {
         Log.d(TAG, "uploadImage");
+
 
         try {
             final InputStream inputStream = openFileInput(filename);
+
+            //TODO: Find a way to convert inputStream to a string
+            //asyncCloudTask = new AsyncCloudTask(cloudStorage);
+            //asyncCloudTask.execute(asyncCloudTask.CLOUD_UPLOAD_IMAGE,filename, new ByteArrayOutputStream(inputStream));
+
             final String filePath = cloudSessionFolder + "/" + filename;
             cloudStorage.upload(filePath, inputStream, 0, false);
         } catch (IOException iOE) {
