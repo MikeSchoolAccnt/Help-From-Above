@@ -25,8 +25,8 @@ public class UasCommunicationService extends Service {
 
     private WifiP2pManager wifiP2pManager;
     private WifiP2pManager.Channel wifiP2pChannel;
-    private WifiP2pManager.ActionListener wifiP2pScanListener = new WifiP2ScanPActionListener();
-    private WifiP2pManager.ActionListener wifiP2pConnectionListener = new WifiP2ConnectPActionListener();
+    private WifiP2pManager.ActionListener wifiP2pScanListener = new WifiP2pScanActionListener();
+    private WifiP2pManager.ActionListener wifiP2pConnectionListener = new WifiP2pConnectActionListener();
 
     //debugging variable. Remove before final testing.
     private boolean canConnect = false;
@@ -80,7 +80,7 @@ public class UasCommunicationService extends Service {
         }
     }
 
-    private class WifiP2ScanPActionListener implements WifiP2pManager.ActionListener {
+    private class WifiP2pScanActionListener implements WifiP2pManager.ActionListener {
         private static final String TAG = "WifiP2ScanPActionLis...";
 
         @Override
@@ -107,7 +107,7 @@ public class UasCommunicationService extends Service {
         }
     }
 
-    private class WifiP2ConnectPActionListener implements WifiP2pManager.ActionListener {
+    private class WifiP2pConnectActionListener implements WifiP2pManager.ActionListener {
         private static final String TAG = "WifiP2ConnectPAction...";
 
         @Override

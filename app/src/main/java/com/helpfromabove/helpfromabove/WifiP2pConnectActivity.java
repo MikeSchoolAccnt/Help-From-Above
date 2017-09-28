@@ -130,7 +130,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         Log.d(TAG, "bindCommandService");
         Intent commandServiceIntent = new Intent(getApplicationContext(), CommandService.class);
         startService(commandServiceIntent);
-        commandServiceConnection = new WifiP2PCOnnectActivityConnection();
+        commandServiceConnection = new WifiP2pConnectActivityServiceConnection();
         bindService(commandServiceIntent, commandServiceConnection, Context.BIND_NOT_FOREGROUND);
     }
 
@@ -146,8 +146,6 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         Log.d(TAG, "setConnectedService");
 
         String serviceClassName = service.getClass().getName();
-        Log.d(TAG, serviceClassName + " vs.");
-        Log.d(TAG, CommandService.CommandServiceBinder.class.getName());
         if (serviceClassName.equals(CommandService.CommandServiceBinder.class.getName())) {
             commandService = ((CommandService.CommandServiceBinder) service).getService();
             commandService.startWifiP2pScanning();
@@ -267,7 +265,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         }
     }
 
-    protected class WifiP2PCOnnectActivityConnection implements ServiceConnection {
+    protected class WifiP2pConnectActivityServiceConnection implements ServiceConnection {
         private static final String TAG = "CommandServiceConnec...";
 
         @Override
