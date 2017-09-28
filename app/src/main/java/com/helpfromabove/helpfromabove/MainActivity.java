@@ -1,12 +1,16 @@
 package com.helpfromabove.helpfromabove;
 
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SwitchCompat;
 import android.support.v7.widget.Toolbar;
@@ -117,7 +121,18 @@ public class MainActivity extends AppCompatActivity {
     public void emergencyButtonOnClick(View view) {
         Log.d(TAG, "emergencyButtonOnClick");
 
-        sendBroadcast(new Intent(CommandService.COMMAND_HHMD_EMERGENCY));
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            int response = getApplicationContext().checkSelfPermission(Manifest.permission.SEND_SMS);
+            if (response == PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "onCreate: permission SEND_SMS is GRANTED");
+                sendBroadcast(new Intent(CommandService.COMMAND_HHMD_EMERGENCY));
+            } else {
+                ActivityCompat.requestPermissions(this,new String[]{android.Manifest.permission.SEND_SMS},0);
+            }
+        } else {
+            sendBroadcast(new Intent(CommandService.COMMAND_HHMD_EMERGENCY));
+        }
+
     }
 
     public void lightSwitchOnClick(View view) {

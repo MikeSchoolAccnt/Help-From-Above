@@ -57,6 +57,8 @@ import java.util.Stack;
  */
 
 public class CommandService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener {
+
+
     protected static final String ACTION_NEW_UAS_IMAGE = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_IMAGE";
     protected static final String ACTION_NEW_UAS_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_LOCATION";
     protected static final String ACTION_NEW_HHMD_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_HHMD_LOCATION";
@@ -82,6 +84,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     protected static final String CONSTANT_CLOUD_GOOGLE_DRIVE = "com.helpfromabove.helpfromabove.constant.CONSTANT_CLOUD_GOOGLE_DRIVE";
     protected static final String CONSTANT_CLOUD_ONE_DRIVE = "com.helpfromabove.helpfromabove.constant.CONSTANT_CLOUD_ONE_DRIVE";
     protected static final int CONSTANT_LOCATION_UPDATE_SECONDS = 3;
+
 
     //App keys needed for CloudRail and other Cloud Services
     private final static String CLOUDRAIL_LICENSE_KEY = "59c031993d7042599787c8a8";
@@ -437,15 +440,19 @@ public class CommandService extends Service implements SharedPreferences.OnShare
 
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         Set<String> set = sharedPref.getStringSet(getString(R.string.pref_key_emergency_contacts), new HashSet<String>());
-        for (String id : set) {
-            Log.d(TAG, "emergencyContactId=" + id);
-        }
 
         String userName = sharedPref.getString(getString(R.string.pref_key_emergency_message_name),getString(R.string.pref_default_emergency_message_name));
-        String emergencyMessage = sharedPref.getString(getString(R.string.pref_key_emergency_message_text),"Should no happen");
+        String emergencyMessage = sharedPref.getString(getString(R.string.pref_key_emergency_message_text),getString(R.string.pref_value_emergency_message_text_default));
 
         //TODO: replace the default GPS string and CloudLink String in third emergency_message_text
         emergencyMessage = emergencyMessage.replace("(Name)",userName);
+
+        for (String number : set) {
+            Log.d(TAG, "emergencyContactNumber=" + number);
+            Log.d(TAG, "emergencyMessage= " + emergencyMessage);
+            //sendSMSMessage(number,emergencyMessage);
+        }
+
 
         //Input your own information here for testing
         //sendSMSMessage("Your test number",emergencyMessage);

@@ -306,7 +306,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             ContactInfo[] contactInfos = getContactsArray();
             CharSequence[] contactCharSequences = new CharSequence[contactInfos.length];
             for (int i = 0; i < contactInfos.length; i++) {
-                contactCharSequences[i] = contactInfos[i].contactId.toString();
+                contactCharSequences[i] = contactInfos[i].number.toString();
             }
 
             return contactCharSequences;
