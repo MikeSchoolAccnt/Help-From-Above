@@ -7,40 +7,19 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.location.Criteria;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.os.Binder;
-import android.os.Build;
 import android.os.IBinder;
-import android.preference.CheckBoxPreference;
-import android.preference.PreferenceManager;
-import android.preference.PreferenceScreen;
 import android.support.annotation.Nullable;
 import android.util.Log;
-
-import com.cloudrail.si.CloudRail;
-import com.cloudrail.si.interfaces.CloudStorage;
-import com.cloudrail.si.services.Dropbox;
-import com.cloudrail.si.services.OneDrive;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Set;
 import java.util.Stack;
 
 /**
@@ -52,10 +31,10 @@ import java.util.Stack;
  * application, and perform calculations on locations for waypoints.
  */
 
-public class CommandService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener {
+public class CommandService extends Service {
     protected static final String ACTION_UI_SERVICES_READY = "com.helpfromabove.helpfromabove.action.ACTION_UI_SERVICES_READY";
     protected static final String ACTION_UI_WIFI_P2P_CONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_UI_WIFI_P2P_CONNECTED";
-    protected static final String SEND_WAYPOINT = "com.helpfromabove.helpfromabove.command.SEND_WAYPOINT";
+    protected static final String ACTION_NEW_WAYPOINT_AVAILABLE = "com.helpfromabove.helpfromabove.command.ACTION_NEW_WAYPOINT_AVAILABLE";
 
     protected static final String ACTION_NEW_UAS_IMAGE = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_IMAGE";
     protected static final String ACTION_NEW_UAS_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_LOCATION";
@@ -72,22 +51,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     protected static final String COMMAND_HHMD_SESSION_END = "com.helpfromabove.helpfromabove.command.COMMAND_HHMD_SESSION_END";
     protected static final String COMMAND_UAS_IMAGE = "com.helpfromabove.helpfromabove.command.COMMAND_UAS_IMAGE";
     protected static final String COMMAND_UAS_LOCATION = "com.helpfromabove.helpfromabove.command.COMMAND_UAS_LOCATION";
-    protected static final String SETTING_CHANGE_CLOUD = "com.helpfromabove.helpfromabove.setting.SETTING_CHANGE_CLOUD";
     protected static final String SETTING_CHANGE_START_HEIGHT = "com.helpfromabove.helpfromabove.setting.SETTING_CHANGE_START_HEIGHT";
-    protected static final String EXTRA_CLOUD_TYPE = "com.helpfromabove.helpfromabove.extra.EXTRA_CLOUD_TYPE";
-    protected static final String CONSTANT_CLOUD_DROPBOX = "com.helpfromabove.helpfromabove.constant.CONSTANT_CLOUD_DROPBOX";
-    protected static final String CONSTANT_CLOUD_GOOGLE_DRIVE = "com.helpfromabove.helpfromabove.constant.CONSTANT_CLOUD_GOOGLE_DRIVE";
-    protected static final String CONSTANT_CLOUD_ONE_DRIVE = "com.helpfromabove.helpfromabove.constant.CONSTANT_CLOUD_ONE_DRIVE";
-
-    //App keys needed for CloudRail and other Cloud Services
-    private final static String CLOUDRAIL_LICENSE_KEY = "59c031993d7042599787c8a8";
-    private final static String DROPBOX_APP_KEY = "th6i7dbzxmnzbu5";
-    private final static String DROPBOX_APP_SECRET = "22vq1tpd68tm28l";
-    //Still need application keys for GoogleDrive and OneDrive
-    private final static String GOOGLE_DRIVE_APP_KEY = "";
-    private final static String GOOGLE_DRIVE_APP_SECRET = "";
-    private final static String ONE_DRIVE_APP_KEY = "8c273966-c62c-48b0-8500-d42b849bbf18";
-    private final static String ONE_DRIVE_APP_SECRET = "3tGij2AmL0dGx7pHkukgK9o";
 
     private final static String TAG = "CommandService";
 
@@ -98,14 +62,13 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     LocationService locationService;
     ServiceConnection emergencyServiceConnection;
     EmergencyService emergencyService;
+    ServiceConnection cloudServiceConnection;
+    CloudService cloudService;
 
 
-    private final String CLOUD_APP_FOLDER = "/" + "Help_From_Above";
-    private String cloudSessionFolder;
     private CommandServiceBroadcastReceiver commandServiceBroadcastReceiver;
     private IntentFilter intentFilter;
     private Stack<String> mImageFileNamesStack = new Stack<>();
-    private CloudStorage cloudStorage;
 
     // This is for local image testing. Remove once local image testing is complete
     private int imageDebugCounter = 0;
@@ -116,12 +79,10 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         Log.d(TAG, "onCreate");
         super.onCreate();
 
-        CloudRail.setAppKey(CLOUDRAIL_LICENSE_KEY);
-
         mImageFileNamesStack = new Stack<>();
 
         intentFilter = new IntentFilter();
-        intentFilter.addAction(SEND_WAYPOINT);
+        intentFilter.addAction(ACTION_NEW_WAYPOINT_AVAILABLE);
         intentFilter.addAction(ACTION_REQUEST_LAST_IMAGE_FILENAME);
         intentFilter.addAction(COMMAND_HHMD_EMERGENCY);
         intentFilter.addAction(COMMAND_HHMD_LIGHT);
@@ -131,14 +92,11 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         intentFilter.addAction(COMMAND_HHMD_SESSION_END);
         intentFilter.addAction(COMMAND_UAS_IMAGE);
         intentFilter.addAction(COMMAND_UAS_LOCATION);
-        intentFilter.addAction(SETTING_CHANGE_CLOUD);
         intentFilter.addAction(SETTING_CHANGE_START_HEIGHT);
         commandServiceBroadcastReceiver = new CommandServiceBroadcastReceiver();
         registerReceiver(commandServiceBroadcastReceiver, intentFilter);
 
         startServices();
-
-        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).registerOnSharedPreferenceChangeListener(this);
 
         // This is for local image testing. Remove once local image testing is complete
         Bitmap bm = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.imag4240);
@@ -160,7 +118,6 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         Log.d(TAG, "onDestroy");
         super.onDestroy();
 
-        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).unregisterOnSharedPreferenceChangeListener(this);
         stopServices();
         unregisterReceiver(commandServiceBroadcastReceiver);
     }
@@ -207,7 +164,13 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     }
 
     private void startNetworkService() {
-        Log.d(TAG, "startNetworkService: NOT IMPLEMENTED!");
+        Log.d(TAG, "startNetworkService");
+
+        Intent cloudServiceIntent = new Intent(getApplicationContext(), CloudService.class);
+        startService(cloudServiceIntent);
+        cloudServiceConnection = new CommandServiceConnection();
+        bindService(cloudServiceIntent, cloudServiceConnection, Context.BIND_NOT_FOREGROUND);
+
     }
 
     private void setConnectedService(IBinder service) {
@@ -221,6 +184,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
             locationService = ((LocationService.LocationServiceBinder) service).getService();
         } else if (serviceClassName.equals(EmergencyService.EmergencyServiceBinder.class.getName())) {
             emergencyService = ((EmergencyService.EmergencyServiceBinder) service).getService();
+        } else if (serviceClassName.equals(CloudService.CloudServiceBinder.class.getName())) {
+            cloudService = ((CloudService.CloudServiceBinder) service).getService();
         } else {
             Log.w(TAG, "Unrecognized service class name: " + serviceClassName);
         }
@@ -229,8 +194,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
 
     private void onServiceConnected() {
         Log.d(TAG, "onServiceConnected");
-        Log.d(TAG, "onServiceConnected: check if networkService is null here");
-        if ((uasCommunicationService != null) && (locationService != null) && (emergencyService != null)) {
+
+        if ((uasCommunicationService != null) && (locationService != null) && (emergencyService != null) && (cloudService != null)) {
             sendBroadcast(new Intent(ACTION_UI_SERVICES_READY));
         }
     }
@@ -244,7 +209,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         locationService = null;
         unbindService(emergencyServiceConnection);
         emergencyService = null;
-        Log.d(TAG, "stopServices: unbind networkServiceConnection and set networkService reference to null here");
+        unbindService(cloudServiceConnection);
+        cloudService = null;
     }
 
     protected void startWifiP2pScanning() {
@@ -273,17 +239,16 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         contest.sendBroadcast(new Intent(ACTION_UI_WIFI_P2P_CONNECTED));
     }
 
-    protected static void sendUasWaypoint(Context context, Location waypoint) {
+    protected static void sendUasWaypoint(Context context) {
         Log.d(TAG, "sendUasWaypoint");
 
-        Intent sendWaypointIntent = new Intent(SEND_WAYPOINT);
-        sendWaypointIntent.putExtra(EXTRA_LOCATION, waypoint);
-        context.sendBroadcast(sendWaypointIntent);
+        context.sendBroadcast(new Intent(ACTION_NEW_WAYPOINT_AVAILABLE));
     }
 
-    private void handleSendWaypoint(Location waypoint) {
+    private void handleSendWaypoint() {
         Log.d(TAG, "handleSendWaypoint");
 
+        Location waypoint = locationService.getLastWaypointLocation();
         uasCommunicationService.sendWaypoint(waypoint);
     }
 
@@ -303,23 +268,6 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         return imageFileName;
     }
 
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        Log.d(TAG, "onSharedPreferenceChanged");
-
-        if (key.equals(getString(R.string.pref_key_cloud_storage_provider))) {
-            Log.d(TAG, "onSharedPreferenceChanged: pref_key_cloud_storage_provider");
-
-            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-            String cloudProvider = sharedPref.getString(getString(R.string.pref_key_cloud_storage_provider), null);
-            Log.d(TAG, "onSharedPreferenceChanged: cloudProvider=" + cloudProvider);
-
-            handleSettingChangeCloud(cloudProvider);
-        } else {
-            Log.w(TAG, "onSharedPreferenceChanged: key=" + key);
-        }
-    }
-
     public void addSessionImageFileName(String imageFileName) {
         Log.d(TAG, "addSessionImageFileName");
 
@@ -329,7 +277,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     protected void handleCommandHhmdEmergency() {
         Log.d(TAG, "handleCommandHhmdEmergency");
 
-        String sessionCloudLink = getSessionCloudLink();
+        String sessionCloudLink = cloudService.getSessionCloudLink();
         Location lastHhmdLocation = locationService.getLastHhmdLocation();
         emergencyService.startEmergency(lastHhmdLocation, sessionCloudLink);
         uasCommunicationService.startEmergency();
@@ -362,8 +310,7 @@ public class CommandService extends Service implements SharedPreferences.OnShare
     protected void handleCommandHhmdSessionStart() {
         Log.d(TAG, "handleCommandHhmdSessionStart");
 
-        createCloudSessionFolder();
-
+        cloudService.startSession();
         locationService.startSession();
     }
 
@@ -378,46 +325,14 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         locationService.pushUasLocation(uasLocation);
     }
 
-    // TODO: 5/19/2017 Make sure the image is saved to the cloud as well
-    // TODO : Parameter(s) for incoming UAS image need(s) to be added.
     private void handleCommandUasImage() {
         Log.d(TAG, "handleCommandUasImage");
-
-        String filename = getDateTime() + ".jpg";
-        saveImage(filename);
-        uploadImage(filename);
-        addSessionImageFileName(filename);
-        sendNewImageIntent();
-    }
-
-    private void handleSettingChangeCloud(String cloudType) {
-        Log.d(TAG, "handleSettingChangeCloud");
-
-        switch (cloudType) {
-            case "0":
-                Log.d(TAG, "handleSettingChangeCloud: Dropbox Specified");
-
-                cloudStorage = new Dropbox(this, DROPBOX_APP_KEY, DROPBOX_APP_SECRET);
-                createCloudAppFolder();
-                break;
-            case "1":
-                Log.d(TAG, "handleSettingChangeCloud: Google Drive Specified");
-
-//                cloudStorage = new GoogleDrive();
-//                createCloudAppFolder();
-                break;
-            case "2":
-                Log.d(TAG, "handleSettingChangeCloud: OneDrive Specified");
-
-                cloudStorage = new OneDrive(this,ONE_DRIVE_APP_KEY,ONE_DRIVE_APP_SECRET);
-                createCloudAppFolder();
-                break;
-            default:
-                Log.d(TAG, "handleSettingChangeCloud: No Cloud Specified");
-                //Possible set to device storage here
-                //Note: Most of the cloud services allowed for saving in offline mode
-                break;
-        }
+// TODO: Figure out how this will work
+//        String filename = getDateTime() + ".jpg";
+//        saveImage(filename);
+//        uploadImage(filename);
+//        addSessionImageFileName(filename);
+//        sendNewImageIntent();
     }
 
     private void handleSettingChangeStartHeight() {
@@ -447,74 +362,6 @@ public class CommandService extends Service implements SharedPreferences.OnShare
         }
     }
 
-    private void createCloudAppFolder() {
-        Log.d(TAG, "createCloudAppFolder");
-
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    cloudStorage.createFolder(CLOUD_APP_FOLDER);
-                } catch (Exception e) {
-                    Log.e(TAG, "createCloudAppFolder: Exception " + e.getMessage(), e);
-                }
-            }
-        }.start();
-    }
-
-    private void createCloudSessionFolder() {
-        Log.d(TAG, "createCloudSessionFolder");
-
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    cloudSessionFolder = CLOUD_APP_FOLDER + "/" + getDateTime();
-
-                    cloudStorage.createFolder(cloudSessionFolder);
-                } catch (Exception e) {
-                    Log.e(TAG, "createCloudSessionFolder: Exception " + e.getMessage(), e);
-                }
-            }
-        }.start();
-    }
-
-    private void uploadImage(final String filename) {
-        Log.d(TAG, "uploadImage");
-
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    final InputStream inputStream = openFileInput(filename);
-                    final String filePath = cloudSessionFolder + "/" + filename;
-                    cloudStorage.upload(filePath, inputStream, 0, false);
-                } catch (Exception e) {
-                    Log.e(TAG, "uploadImage: Exception " + e.getMessage(), e);
-                }
-            }
-        }.start();
-    }
-
-    private String getSessionCloudLink() {
-        Log.d(TAG, "getSessionCloudLink");
-
-        String link;
-        if (cloudStorage != null) {
-            link = cloudStorage.createShareLink(cloudSessionFolder);
-        } else {
-            Log.w(TAG, "getSessionCloudLink: No cloud storage");
-            link = null;
-        }
-
-        return link;
-    }
-
-    private String getDateTime() {
-        DateFormat df = new SimpleDateFormat("yyyyMMddHHmmssZ", Locale.getDefault());
-        return df.format(Calendar.getInstance().getTime());
-    }
-
     private class CommandServiceBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -523,9 +370,8 @@ public class CommandService extends Service implements SharedPreferences.OnShare
             String action = intent.getAction();
             if (intent != null && action != null) {
                 switch (action) {
-                    case SEND_WAYPOINT:
-                        Location waypoint = intent.getExtras().getParcelable(EXTRA_LOCATION);
-                        handleSendWaypoint(waypoint);
+                    case ACTION_NEW_WAYPOINT_AVAILABLE:
+                        handleSendWaypoint();
                         break;
                     case ACTION_REQUEST_LAST_IMAGE_FILENAME:
                         sendNewImageIntent();
@@ -555,10 +401,6 @@ public class CommandService extends Service implements SharedPreferences.OnShare
                         break;
                     case COMMAND_UAS_IMAGE:
                         handleCommandUasImage();
-                        break;
-                    case SETTING_CHANGE_CLOUD:
-                        String cloudType = intent.getStringExtra(EXTRA_CLOUD_TYPE);
-                        handleSettingChangeCloud(cloudType);
                         break;
                     case SETTING_CHANGE_START_HEIGHT:
                         handleSettingChangeStartHeight();

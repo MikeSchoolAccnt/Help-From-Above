@@ -43,6 +43,7 @@
 
         <service
             android:name=".CommandService"
+            android:enabled="true"
             android:exported="false" />
 
         <activity
@@ -60,13 +61,20 @@
 
         <service
             android:name=".UasCommunicationService"
+            android:enabled="true"
             android:exported="false" />
         <service
             android:name=".LocationService"
+            android:enabled="true"
             android:exported="false" />
         <service
             android:name=".EmergencyService"
+            android:enabled="true"
             android:exported="false" />
+        <service
+            android:name=".CloudService"
+            android:enabled="true"
+            android:exported="false"></service>
     </application>
 
 </manifest>

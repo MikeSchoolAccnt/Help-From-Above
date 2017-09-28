@@ -30,6 +30,7 @@ public class LocationService extends Service {
     private Criteria locationCriteria = new Criteria();
     private Stack<Location> hhmdLocations = new Stack<>();
     private Stack<Location> uasLocations = new Stack<>();
+    private Stack<Location> waypointLocations = new Stack<>();
     private int heightOffset;
 
     protected static final int CONSTANT_LOCATION_UPDATE_SECONDS = 3;
@@ -62,6 +63,7 @@ public class LocationService extends Service {
 
         resetHeightOffset();
         requestLocationUpdates();
+        clearLocations();
     }
 
 
@@ -95,6 +97,14 @@ public class LocationService extends Service {
         } else {
             locationManager.requestLocationUpdates(1000 * CONSTANT_LOCATION_UPDATE_SECONDS, 0, locationCriteria, commandLocationListener, getMainLooper());
         }
+    }
+
+    private void clearLocations() {
+        Log.d(TAG, "clearLocations");
+
+        hhmdLocations.clear();
+        uasLocations.clear();
+        waypointLocations.clear();
     }
 
     protected void stopSession() {
@@ -143,6 +153,25 @@ public class LocationService extends Service {
 
         return hhmdLocation;
     }
+
+    private void pushWaypointLocation(Location waypoint) {
+        Log.d(TAG, "pushWaypointLocation");
+        waypointLocations.push(waypoint);
+    }
+
+    protected Location getLastWaypointLocation() {
+        Log.d(TAG, "getLastWaypointLocation");
+
+        Location waypoint = null;
+        if (!waypointLocations.isEmpty()) {
+            waypoint = waypointLocations.peek();
+        } else {
+            Log.w(TAG, "getLastWaypointLocation: waypointLocations is empty.");
+        }
+
+        return waypoint;
+    }
+
 
     private Location getPreviousHhmdLocation() {
         Log.d(TAG, "getPreviousHhmdLocation");
@@ -278,7 +307,8 @@ public class LocationService extends Service {
             Log.d(TAG, "onLocationChanged");
             pushHhmdLocation(location);
             Location waypoint = generateWaypoint();
-            CommandService.sendUasWaypoint(getApplicationContext(), waypoint);
+            pushWaypointLocation(waypoint);
+            CommandService.sendUasWaypoint(getApplicationContext());
         }
 
         @Override
