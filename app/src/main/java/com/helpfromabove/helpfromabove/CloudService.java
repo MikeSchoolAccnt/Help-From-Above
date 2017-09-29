@@ -13,13 +13,13 @@ import com.cloudrail.si.interfaces.CloudStorage;
 import com.cloudrail.si.services.Dropbox;
 import com.cloudrail.si.services.OneDrive;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
+import java.util.concurrent.ExecutionException;
 
 public class CloudService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String TAG = "CloudService";
@@ -37,7 +37,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
     private final String CLOUD_APP_FOLDER = "/" + "Help_From_Above";
     private String cloudSessionFolder;
     private CloudStorage cloudStorage;
-    private AsyncCloudTask asyncCloudTask;
+    private CreateCloudSessionFolder createCloudSessionFolder;
     public CloudService() {
         super();
 
@@ -50,8 +50,9 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         super.onCreate();
 
         CloudRail.setAppKey(CLOUDRAIL_LICENSE_KEY);
-
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).registerOnSharedPreferenceChangeListener(this);
+
+        initCloudStorage();
     }
 
     @Override
@@ -83,26 +84,51 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         }
     }
 
+    private void initCloudStorage(){
+
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        String cloudType = sharedPref.getString(getString(R.string.pref_key_cloud_storage_provider),null);
+
+        switch (cloudType) {
+            case "0":
+                Log.d(TAG, "initCloudStorage: Dropbox Specified");
+                cloudStorage = new Dropbox(this, DROPBOX_APP_KEY, DROPBOX_APP_SECRET);
+                break;
+            case "1":
+                Log.d(TAG, "initCloudStorage: Google Drive Specified");
+//                cloudStorage = new GoogleDrive();
+//                createCloudAppFolder();
+                break;
+            case "2":
+                Log.d(TAG, "initCloudStorage: OneDrive Specified");
+                cloudStorage = new OneDrive(this,ONE_DRIVE_APP_KEY,ONE_DRIVE_APP_SECRET);
+                break;
+            default:
+                Log.d(TAG, "initCloudStorage: No Cloud Specified");
+                //Possible set to device storage here
+                //Note: Most of the cloud services allowed for saving in offline mode
+                break;
+        }
+
+    }
+
     private void handleSettingChangeCloud(String cloudType) {
         Log.d(TAG, "handleSettingChangeCloud");
 
         switch (cloudType) {
             case "0":
                 Log.d(TAG, "handleSettingChangeCloud: Dropbox Specified");
-
                 cloudStorage = new Dropbox(this, DROPBOX_APP_KEY, DROPBOX_APP_SECRET);
 
                 createCloudAppFolder();
                 break;
             case "1":
                 Log.d(TAG, "handleSettingChangeCloud: Google Drive Specified");
-
 //                cloudStorage = new GoogleDrive();
 //                createCloudAppFolder();
                 break;
             case "2":
                 Log.d(TAG, "handleSettingChangeCloud: OneDrive Specified");
-
                 cloudStorage = new OneDrive(this,ONE_DRIVE_APP_KEY,ONE_DRIVE_APP_SECRET);
 
                 createCloudAppFolder();
@@ -117,24 +143,26 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
 
     private void createCloudAppFolder() {
         Log.d(TAG, "createCloudAppFolder");
-        asyncCloudTask = new AsyncCloudTask(cloudStorage);
-        asyncCloudTask.execute(asyncCloudTask.CREATE_CLOUD_APP_FOLDER,CLOUD_APP_FOLDER);
-        //cloudStorage.createFolder(CLOUD_APP_FOLDER);
+
+        new CreateCloudAppFolder(cloudStorage,CLOUD_APP_FOLDER).execute();
     }
 
     protected void startSession() {
         Log.d(TAG, "startSession");
 
-        createCloudSessionFolder();
+        if(cloudStorage != null) {
+            createCloudSessionFolder();
+        } else {
+            //TODO: Handle local storage
+            Log.d(TAG,"startSession: Need to handle local storage option");
+        }
     }
 
     private void createCloudSessionFolder() {
         Log.d(TAG, "createCloudSessionFolder");
-        asyncCloudTask = new AsyncCloudTask(cloudStorage);
-        asyncCloudTask.execute(asyncCloudTask.CREATE_CLOUD_SESSION_FOLDER,CLOUD_APP_FOLDER);
 
-//      cloudSessionFolder = CLOUD_APP_FOLDER + "/" + getDateTime();
-//      cloudStorage.createFolder(cloudSessionFolder);
+        createCloudSessionFolder = new CreateCloudSessionFolder(cloudStorage,CLOUD_APP_FOLDER);
+        createCloudSessionFolder.execute();
     }
 
     private String getDateTime() {
@@ -145,19 +173,24 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
     private void cloudUploadImage(final String filename) {
         Log.d(TAG, "uploadImage");
 
-
         try {
             final InputStream inputStream = openFileInput(filename);
 
-            //TODO: Find a way to convert inputStream to a string
-            //asyncCloudTask = new AsyncCloudTask(cloudStorage);
-            //asyncCloudTask.execute(asyncCloudTask.CLOUD_UPLOAD_IMAGE,filename, new ByteArrayOutputStream(inputStream));
+            //Getting the cloudSessionFolder like this can run into problems if
+            //it is accessed to fast. Possibly make change as suggested
+            //in CreateCloudSessionFolderAsyncTask onPostExecute.
+            cloudSessionFolder = createCloudSessionFolder.get();
 
-            final String filePath = cloudSessionFolder + "/" + filename;
-            cloudStorage.upload(filePath, inputStream, 0, false);
+            new CloudUploadImage(cloudStorage, CLOUD_APP_FOLDER,cloudSessionFolder,filename).execute(inputStream);
+            
         } catch (IOException iOE) {
             Log.e(TAG, "uploadImage: Exception " + iOE.getMessage(), iOE);
+        } catch (InterruptedException ex){
+            Log.e(TAG,ex.getMessage());
+        } catch (ExecutionException ex){
+            Log.e(TAG,ex.getMessage());
         }
+
     }
 
     protected String getSessionCloudLink() {
