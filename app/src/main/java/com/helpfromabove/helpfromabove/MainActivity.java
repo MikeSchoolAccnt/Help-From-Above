@@ -18,6 +18,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 
 import java.io.FileInputStream;
@@ -35,6 +36,9 @@ public class MainActivity extends AppCompatActivity {
     private final String TAG = "MainActivity";
     private MainActivityBroadcastReceiver mainActivityBroadcastReceiver = new MainActivityBroadcastReceiver();
 
+    private Button endSessionButton;
+    private Button startSessionButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate");
@@ -42,6 +46,9 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        startSessionButton = (Button) findViewById(R.id.session_start_button);
+        endSessionButton = (Button) findViewById(R.id.session_end_button);
+        endSessionButton.setEnabled(false);
         setSupportActionBar(toolbar);
     }
 
@@ -158,12 +165,16 @@ public class MainActivity extends AppCompatActivity {
 
     public void sessionStartButtonOnCLick(View view) {
         Log.d(TAG, "sessionStartButtonOnCLick");
-
+        endSessionButton.setEnabled(true);
+        startSessionButton.setEnabled(false);
         sendBroadcast(new Intent(CommandService.COMMAND_HHMD_SESSION_START));
     }
 
     public void sessionEndButtonOnCLick(View view) {
         Log.d(TAG, "sessionEndButtonOnCLick");
+
+        endSessionButton.setEnabled(false);
+        startSessionButton.setEnabled(true);
 
         sendBroadcast(new Intent(CommandService.COMMAND_HHMD_SESSION_END));
     }
