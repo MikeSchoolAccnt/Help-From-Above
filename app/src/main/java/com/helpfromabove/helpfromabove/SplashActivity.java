@@ -149,7 +149,7 @@ public class SplashActivity extends Activity {
                 if (grantResults.length > 0) {
                     boolean[] permissionAcceptance = new boolean[grantResults.length];
                     for (int i = 0; i < grantResults.length; i++) {
-                        permissionAcceptance[i] = grantResults[0] == PackageManager.PERMISSION_GRANTED;
+                        permissionAcceptance[i] = grantResults[i] == PackageManager.PERMISSION_GRANTED;
                     }
 
                     for (int i = 0; i < permissionAcceptance.length; i++) {
