@@ -87,29 +87,31 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
     private void initCloudStorage(){
 
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-        String cloudType = sharedPref.getString(getString(R.string.pref_key_cloud_storage_provider),null);
+        String cloudType = sharedPref.getString(getString(R.string.pref_key_cloud_storage_provider), getString(R.string.pref_value_cloud_storage_provider_none));
 
         switch (cloudType) {
+            case "-1":
+                Log.d(TAG, "initCloudStorage: None specified");
+                break;
             case "0":
-                Log.d(TAG, "initCloudStorage: Dropbox Specified");
+                Log.d(TAG, "initCloudStorage: Dropbox specified");
                 cloudStorage = new Dropbox(this, DROPBOX_APP_KEY, DROPBOX_APP_SECRET);
                 break;
             case "1":
-                Log.d(TAG, "initCloudStorage: Google Drive Specified");
+                Log.d(TAG, "initCloudStorage: Google Drive specified");
 //                cloudStorage = new GoogleDrive();
 //                createCloudAppFolder();
                 break;
             case "2":
-                Log.d(TAG, "initCloudStorage: OneDrive Specified");
-                cloudStorage = new OneDrive(this,ONE_DRIVE_APP_KEY,ONE_DRIVE_APP_SECRET);
+                Log.d(TAG, "initCloudStorage: OneDrive specified");
+                cloudStorage = new OneDrive(this, ONE_DRIVE_APP_KEY, ONE_DRIVE_APP_SECRET);
                 break;
             default:
-                Log.d(TAG, "initCloudStorage: No Cloud Specified");
+                Log.d(TAG, "initCloudStorage: Unknown cloud storage specified");
                 //Possible set to device storage here
                 //Note: Most of the cloud services allowed for saving in offline mode
                 break;
         }
-
     }
 
     private void handleSettingChangeCloud(String cloudType) {

@@ -195,15 +195,17 @@ public class MainActivity extends AppCompatActivity {
     private void updateUasImageView(String uasImageFileName) {
         Log.d(TAG, "updateUasImageView: uasImageFileName=" + uasImageFileName);
 
-        try {
-            FileInputStream fis = openFileInput(uasImageFileName);
-            Bitmap imageBitmap = BitmapFactory.decodeStream(fis);
-            ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
-            imageView.setImageBitmap(imageBitmap);
-        } catch (FileNotFoundException fNFE) {
-            Log.e(TAG, "setUasImage: FileNotFoundException: " + fNFE.getMessage(), fNFE);
-        } catch (NullPointerException nPE) {
-            Log.e(TAG, "setUasImage: NullPointerException: " + nPE.getMessage(), nPE);
+        if (uasImageFileName != null) {
+            try {
+                FileInputStream fis = openFileInput(uasImageFileName);
+                Bitmap imageBitmap = BitmapFactory.decodeStream(fis);
+                ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
+                imageView.setImageBitmap(imageBitmap);
+            } catch (FileNotFoundException fNFE) {
+                Log.e(TAG, "setUasImage: FileNotFoundException: " + fNFE.getMessage(), fNFE);
+            } catch (NullPointerException nPE) {
+                Log.e(TAG, "setUasImage: NullPointerException: " + nPE.getMessage(), nPE);
+            }
         }
     }
 
