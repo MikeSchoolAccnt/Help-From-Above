@@ -1,12 +1,10 @@
 package com.helpfromabove.helpfromabove;
 
-import android.app.IntentService;
 import android.app.Service;
-import android.content.ComponentName;
 import android.content.Intent;
 import android.content.Context;
-import android.content.ServiceConnection;
 import android.location.Location;
+import android.net.wifi.WifiManager;
 import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
@@ -23,6 +21,7 @@ public class UasCommunicationService extends Service {
 
     private final IBinder mBinder = new UasCommunicationServiceBinder();
 
+    private WifiManager wifiManager;
     private WifiP2pManager wifiP2pManager;
     private WifiP2pManager.Channel wifiP2pChannel;
     private WifiP2pManager.ActionListener wifiP2pScanListener = new WifiP2pScanActionListener();
@@ -41,12 +40,29 @@ public class UasCommunicationService extends Service {
     public void onCreate() {
         Log.d(TAG, "onCreate");
         super.onCreate();
+
+        setWifiManager();
+        turnOnWifi();
     }
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         return mBinder;
+    }
+
+    private void setWifiManager() {
+        Log.d(TAG, "setWifiManager");
+
+        wifiManager = (WifiManager) this.getSystemService(Context.WIFI_SERVICE);
+    }
+
+    private void turnOnWifi() {
+        Log.d(TAG, "turnOnWifi");
+
+        if (!wifiManager.isWifiEnabled()) {
+            wifiManager.setWifiEnabled(true);
+        }
     }
 
     protected void startScanning() {
@@ -78,7 +94,7 @@ public class UasCommunicationService extends Service {
         Log.d(TAG, "startEmergency: NOT IMPLEMENTED!");
     }
 
-    public class UasCommunicationServiceBinder extends Binder {
+    protected class UasCommunicationServiceBinder extends Binder {
         UasCommunicationService getService() {
             return UasCommunicationService.this;
         }
