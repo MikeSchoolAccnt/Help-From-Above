@@ -22,12 +22,10 @@ import java.util.ArrayList;
  */
 
 public class SplashActivity extends Activity {
-
     protected static int PERMISSION_READ_CONTACTS;
     protected static int PERMISSION_ACCESS_LOCATION;
     protected static int PERMISSION_SEND_SMS;
     private static final int PERMISSIONS_CODE = 0;
-
 
     private static final String TAG = "SplashActivity";
     private BroadcastReceiver splashActivityBroadcastReceiver;
@@ -77,7 +75,6 @@ public class SplashActivity extends Activity {
 
         splash.startAnimation(tempAnim);
         startService(new Intent(this, CommandService.class));
-
     }
 
     @Override
@@ -94,6 +91,11 @@ public class SplashActivity extends Activity {
         unregisterReceiver(splashActivityBroadcastReceiver);
     }
 
+    private void broadcastRequestServicesReady() {
+        Log.d(TAG, "broadcastRequestServicesReady");
+
+        sendBroadcast(new Intent(CommandService.ACTION_REQUEST_SERVICES_READY));
+    }
 
     private void askForPermissions(){
 
@@ -142,6 +144,7 @@ public class SplashActivity extends Activity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        Log.d(TAG, "onRequestPermissionsResult");
         //super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         switch (requestCode) {

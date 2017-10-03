@@ -32,6 +32,7 @@ import java.util.Stack;
  */
 
 public class CommandService extends Service {
+    protected static final String ACTION_REQUEST_SERVICES_READY = "com.helpfromabove.helpfromabove.action.ACTION_REQUEST_SERVICES_READY";
     protected static final String ACTION_UI_SERVICES_READY = "com.helpfromabove.helpfromabove.action.ACTION_UI_SERVICES_READY";
     protected static final String ACTION_UI_WIFI_P2P_CONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_UI_WIFI_P2P_CONNECTED";
     protected static final String ACTION_NEW_WAYPOINT_AVAILABLE = "com.helpfromabove.helpfromabove.command.ACTION_NEW_WAYPOINT_AVAILABLE";
@@ -82,6 +83,7 @@ public class CommandService extends Service {
         mImageFileNamesStack = new Stack<>();
 
         intentFilter = new IntentFilter();
+        intentFilter.addAction(ACTION_REQUEST_SERVICES_READY);
         intentFilter.addAction(ACTION_NEW_WAYPOINT_AVAILABLE);
         intentFilter.addAction(ACTION_REQUEST_LAST_IMAGE_FILENAME);
         intentFilter.addAction(COMMAND_HHMD_EMERGENCY);
@@ -177,7 +179,7 @@ public class CommandService extends Service {
         Log.d(TAG, "setConnectedService");
 
         String serviceClassName = service.getClass().getName();
-        Log.d(TAG, "setConnectedService: check if the class name is the class of the networkServiceBinder and set networkService reference here");
+
         if (serviceClassName.equals(UasCommunicationService.UasCommunicationServiceBinder.class.getName())) {
             uasCommunicationService = ((UasCommunicationService.UasCommunicationServiceBinder) service).getService();
         } else if (serviceClassName.equals(LocationService.LocationServiceBinder.class.getName())) {
@@ -189,11 +191,12 @@ public class CommandService extends Service {
         } else {
             Log.w(TAG, "Unrecognized service class name: " + serviceClassName);
         }
-        onServiceConnected();
+
+        broadcastIfServicesReady();
     }
 
-    private void onServiceConnected() {
-        Log.d(TAG, "onServiceConnected");
+    private void broadcastIfServicesReady() {
+        Log.d(TAG, "broadcastIfServicesReady");
 
         if ((uasCommunicationService != null) && (locationService != null) && (emergencyService != null) && (cloudService != null)) {
             sendBroadcast(new Intent(ACTION_UI_SERVICES_READY));
@@ -370,6 +373,9 @@ public class CommandService extends Service {
             String action = intent.getAction();
             if (intent != null && action != null) {
                 switch (action) {
+                    case ACTION_REQUEST_SERVICES_READY:
+                        broadcastIfServicesReady();
+                        break;
                     case ACTION_NEW_WAYPOINT_AVAILABLE:
                         handleSendWaypoint();
                         break;
