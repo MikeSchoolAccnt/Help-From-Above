@@ -1,25 +1,31 @@
 package com.helpfromabove.helpfromabove;
 
 import android.app.Service;
-import android.content.Intent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.location.Location;
+import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
+import android.net.wifi.p2p.WifiP2pGroup;
+import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-import com.cloudrail.si.servicecode.Command;
-
 public class UasCommunicationService extends Service {
     private static final String TAG = "UasCommunicationService";
 
     private final IBinder mBinder = new UasCommunicationServiceBinder();
+
+    private IntentFilter intentFilter;
+    private UasCommunicationServiceBroadcastReceiver broadcastReceiver;
 
     private WifiManager wifiManager;
     private WifiP2pManager wifiP2pManager;
@@ -41,8 +47,26 @@ public class UasCommunicationService extends Service {
         Log.d(TAG, "onCreate");
         super.onCreate();
 
+        intentFilter = new IntentFilter();
+        intentFilter.addAction(WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION);
+        intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
+        intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
+        intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
+        intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
+
+        broadcastReceiver = new UasCommunicationServiceBroadcastReceiver();
+        registerReceiver(broadcastReceiver, intentFilter);
+
         setWifiManager();
         turnOnWifi();
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.d(TAG, "onDestroy");
+        super.onDestroy();
+
+        unregisterReceiver(broadcastReceiver);
     }
 
     @Nullable
@@ -81,9 +105,21 @@ public class UasCommunicationService extends Service {
         config.wps.setup = WpsInfo.PBC;
 
         wifiP2pManager.connect(wifiP2pChannel, config, wifiP2pConnectionListener);
+    }
 
-        //debugging boolean. Remove during testing
-        canConnect = true;
+    private void handleWifiP2pConnectionChangedAction(WifiP2pInfo wifiP2pInfo, NetworkInfo networkInfo, WifiP2pGroup wifiP2pGroup) {
+        Log.d(TAG, "handleWifiP2pConnectionChangedAction");
+
+        Log.d(TAG, "handleWifiP2pConnectionChangedAction: groupFormed=" + wifiP2pInfo.groupFormed);
+        Log.d(TAG, "handleWifiP2pConnectionChangedAction: groupOwnerAddress=" + wifiP2pInfo.groupOwnerAddress);
+        Log.d(TAG, "handleWifiP2pConnectionChangedAction: networkInfo=" + networkInfo);
+        Log.d(TAG, "handleWifiP2pConnectionChangedAction: wifiP2pGroup=" + wifiP2pGroup);
+
+        // TODO: Check and store network connection information needed to send/receive data from UASC
+        Log.d(TAG, "Checking/storing network information NOT YET IMPLEMENTED!");
+        if (networkInfo.getState() == NetworkInfo.State.CONNECTED) {
+            CommandService.notifyUiWifiP2pConnected(getApplicationContext());
+        }
     }
 
     protected void sendWaypoint(Location location) {
@@ -97,6 +133,42 @@ public class UasCommunicationService extends Service {
     protected class UasCommunicationServiceBinder extends Binder {
         UasCommunicationService getService() {
             return UasCommunicationService.this;
+        }
+    }
+
+    private class UasCommunicationServiceBroadcastReceiver extends BroadcastReceiver {
+        private static final String TAG = "Uas...BroadcastReceiver";
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "onReceive");
+
+            String action = intent.getAction();
+            if (action != null) {
+                switch (action) {
+                    case WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION:
+                        Log.d(TAG, "WIFI_P2P_DISCOVERY_CHANGED_ACTION");
+                        break;
+                    case WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION:
+                        Log.d(TAG, "WIFI_P2P_STATE_CHANGED_ACTION");
+                        break;
+                    case WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION:
+                        Log.d(TAG, "WIFI_P2P_PEERS_CHANGED_ACTION");
+                        break;
+                    case WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION:
+                        WifiP2pInfo wifiP2pInfo = intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_INFO);
+                        NetworkInfo networkInfo = intent.getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
+                        WifiP2pGroup wifiP2pGroup = intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_GROUP);
+                        handleWifiP2pConnectionChangedAction(wifiP2pInfo, networkInfo, wifiP2pGroup);
+                        break;
+                    case WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION:
+                        Log.d(TAG, "WIFI_P2P_THIS_DEVICE_CHANGED_ACTION");
+                        break;
+                    default:
+                        Log.w(TAG, "onReceive: default: action=" + action);
+                        break;
+                }
+            }
         }
     }
 
@@ -133,7 +205,6 @@ public class UasCommunicationService extends Service {
         @Override
         public void onSuccess() {
             Log.d(TAG, "onSuccess");
-            CommandService.notifyUiWifiP2pConnected(getApplicationContext());
         }
 
         @Override
@@ -153,10 +224,8 @@ public class UasCommunicationService extends Service {
                     Log.w(TAG, "onFailure: default");
             }
 
-            if (canConnect) {
-                CommandService.notifyUiWifiP2pConnected(getApplicationContext());
-            }
+            // TODO: Used for testing other features on emulator, remove in final production
+            CommandService.notifyUiWifiP2pConnected(getApplicationContext());
         }
     }
-
 }
