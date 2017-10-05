@@ -57,6 +57,7 @@ public class SplashActivity extends Activity {
             @Override
             public void onAnimationEnd(Animation animation) {
                 animationComplete = true;
+                broadcastRequestServicesReady();
                 askForPermissions();
             }
 
