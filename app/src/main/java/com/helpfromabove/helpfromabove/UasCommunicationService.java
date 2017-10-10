@@ -102,6 +102,7 @@ public class UasCommunicationService extends Service {
 
         WifiP2pConfig config = new WifiP2pConfig();
         config.deviceAddress = device.deviceAddress;
+        config.groupOwnerIntent = 0;
         config.wps.setup = WpsInfo.PBC;
 
         wifiP2pManager.connect(wifiP2pChannel, config, wifiP2pConnectionListener);
@@ -114,6 +115,14 @@ public class UasCommunicationService extends Service {
         Log.d(TAG, "handleWifiP2pConnectionChangedAction: groupOwnerAddress=" + wifiP2pInfo.groupOwnerAddress);
         Log.d(TAG, "handleWifiP2pConnectionChangedAction: networkInfo=" + networkInfo);
         Log.d(TAG, "handleWifiP2pConnectionChangedAction: wifiP2pGroup=" + wifiP2pGroup);
+
+
+        //Store these values and start the client somewhere else
+        String portNum = "5000";
+        if(wifiP2pInfo.groupFormed){
+            String hostIP = wifiP2pInfo.groupOwnerAddress.getHostAddress();
+            new UasClient(hostIP,portNum).execute();
+        }
 
         // TODO: Check and store network connection information needed to send/receive data from UASC
         Log.d(TAG, "Checking/storing network information NOT YET IMPLEMENTED!");
