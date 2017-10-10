@@ -44,11 +44,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         intentFilter = new IntentFilter();
-        intentFilter.addAction(WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION);
-        intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
-        intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
-        intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
         intentFilter.addAction(CommandService.ACTION_UI_WIFI_P2P_CONNECTED);
 
         adapter = new ArrayAdapter(getApplicationContext(), R.layout.wifi_p2p_device, R.id.wifi_p2p_device_name) {
@@ -204,14 +200,6 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         }
     }
 
-    private void handleWifiP2pDiscoveryChanged() {
-        Log.d(TAG, "handleWifiP2pDiscoveryChanged");
-    }
-
-    private void handleWifiP2pStateChanged() {
-        Log.d(TAG, "handleWifiP2pStateChanged");
-    }
-
     private void handleWifiP2pPeersChanged(Collection<WifiP2pDevice> devices) {
         Log.d(TAG, "handleWifiP2pPeersChanged");
 
@@ -222,14 +210,6 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         }
     }
 
-    private void handleWifiP2pConnectionChanged() {
-        Log.d(TAG, "handleWifiP2pConnectionChanged");
-    }
-
-    private void handleWifiP2pThisDeviceChanged() {
-        Log.d(TAG, "handleWifiP2pThisDeviceChanged");
-    }
-
     private class WifiP2pConnectActivityBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -238,21 +218,9 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
             String action = intent.getAction();
             if (intent != null && action != null) {
                 switch (action) {
-                    case WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION:
-                        handleWifiP2pDiscoveryChanged();
-                        break;
-                    case WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION:
-                        handleWifiP2pStateChanged();
-                        break;
                     case WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION:
                         WifiP2pDeviceList deviceList = intent.getParcelableExtra(WifiP2pManager.EXTRA_P2P_DEVICE_LIST);
                         handleWifiP2pPeersChanged(deviceList.getDeviceList());
-                        break;
-                    case WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION:
-                        handleWifiP2pConnectionChanged();
-                        break;
-                    case WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION:
-                        handleWifiP2pThisDeviceChanged();
                         break;
                     case CommandService.ACTION_UI_WIFI_P2P_CONNECTED:
                         startActivity(new Intent(getApplicationContext(), MainActivity.class));

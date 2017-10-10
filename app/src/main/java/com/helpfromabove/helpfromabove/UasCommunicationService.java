@@ -33,6 +33,10 @@ public class UasCommunicationService extends Service {
     private WifiP2pManager.ActionListener wifiP2pScanListener = new WifiP2pScanActionListener();
     private WifiP2pManager.ActionListener wifiP2pConnectionListener = new WifiP2pConnectActionListener();
 
+    private WifiP2pInfo wifiP2pInfo;
+    private NetworkInfo networkInfo;
+    private WifiP2pGroup wifiP2pGroup;
+
     //debugging variable. Remove before final testing.
     private boolean canConnect = false;
 
@@ -50,7 +54,6 @@ public class UasCommunicationService extends Service {
         intentFilter = new IntentFilter();
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
-        intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
 
@@ -107,6 +110,34 @@ public class UasCommunicationService extends Service {
         wifiP2pManager.connect(wifiP2pChannel, config, wifiP2pConnectionListener);
     }
 
+    private void handleDiscoveryStateChanged(int state) {
+        switch (state) {
+            case WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED:
+                Log.d(TAG, "handleDiscoveryStateChanged: WIFI_P2P_DISCOVERY_STARTED");
+                break;
+            case WifiP2pManager.WIFI_P2P_DISCOVERY_STOPPED:
+                Log.d(TAG, "handleDiscoveryStateChanged: WIFI_P2P_DISCOVERY_STOPPED");
+                break;
+            default:
+                Log.w(TAG, "handleDiscoveryStateChanged: default: state=" + state);
+                break;
+        }
+    }
+
+    private void handleWifiP2pStateChanged(int state) {
+        switch (state) {
+            case WifiP2pManager.WIFI_P2P_STATE_ENABLED:
+                Log.d(TAG, "handleWifiP2pStateChanged: WIFI_P2P_STATE_ENABLED");
+                break;
+            case WifiP2pManager.WIFI_P2P_STATE_DISABLED:
+                Log.d(TAG, "handleWifiP2pStateChanged: WIFI_P2P_STATE_DISABLED");
+                break;
+            default:
+                Log.w(TAG, "handleWifiP2pStateChanged: default: state=" + state);
+                break;
+        }
+    }
+
     private void handleWifiP2pConnectionChangedAction(WifiP2pInfo wifiP2pInfo, NetworkInfo networkInfo, WifiP2pGroup wifiP2pGroup) {
         Log.d(TAG, "handleWifiP2pConnectionChangedAction");
 
@@ -115,11 +146,16 @@ public class UasCommunicationService extends Service {
         Log.d(TAG, "handleWifiP2pConnectionChangedAction: networkInfo=" + networkInfo);
         Log.d(TAG, "handleWifiP2pConnectionChangedAction: wifiP2pGroup=" + wifiP2pGroup);
 
-        // TODO: Check and store network connection information needed to send/receive data from UASC
-        Log.d(TAG, "Checking/storing network information NOT YET IMPLEMENTED!");
         if (networkInfo.getState() == NetworkInfo.State.CONNECTED) {
+            this.wifiP2pInfo = wifiP2pInfo;
+            this.networkInfo = networkInfo;
+            this.wifiP2pGroup = wifiP2pGroup;
             CommandService.notifyUiWifiP2pConnected(getApplicationContext());
         }
+    }
+
+    private void handleThisDeviceDetailsChanged() {
+        Log.d(TAG, "handleThisDeviceDetailsChanged");
     }
 
     protected void sendWaypoint(Location location) {
@@ -147,13 +183,12 @@ public class UasCommunicationService extends Service {
             if (action != null) {
                 switch (action) {
                     case WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION:
-                        Log.d(TAG, "WIFI_P2P_DISCOVERY_CHANGED_ACTION");
+                        int discoveryState = intent.getIntExtra(WifiP2pManager.EXTRA_DISCOVERY_STATE, -1);
+                        handleDiscoveryStateChanged(discoveryState);
                         break;
                     case WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION:
-                        Log.d(TAG, "WIFI_P2P_STATE_CHANGED_ACTION");
-                        break;
-                    case WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION:
-                        Log.d(TAG, "WIFI_P2P_PEERS_CHANGED_ACTION");
+                        int wifiState = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1);
+                        handleWifiP2pStateChanged(wifiState);
                         break;
                     case WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION:
                         WifiP2pInfo wifiP2pInfo = intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_INFO);
@@ -162,7 +197,7 @@ public class UasCommunicationService extends Service {
                         handleWifiP2pConnectionChangedAction(wifiP2pInfo, networkInfo, wifiP2pGroup);
                         break;
                     case WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION:
-                        Log.d(TAG, "WIFI_P2P_THIS_DEVICE_CHANGED_ACTION");
+                        handleThisDeviceDetailsChanged();
                         break;
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);
