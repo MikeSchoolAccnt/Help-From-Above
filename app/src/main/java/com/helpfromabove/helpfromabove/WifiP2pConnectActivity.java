@@ -21,6 +21,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 
 import java.util.Collection;
 
@@ -45,6 +46,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
 
         intentFilter = new IntentFilter();
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
+        intentFilter.addAction(CommandService.ACTION_UI_WIFI_P2P_CONNECTING);
         intentFilter.addAction(CommandService.ACTION_UI_WIFI_P2P_CONNECTED);
 
         adapter = new ArrayAdapter(getApplicationContext(), R.layout.wifi_p2p_device, R.id.wifi_p2p_device_name) {
@@ -176,6 +178,16 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
                 .show();
     }
 
+    private void displayWifiP2pConnectingDialog() {
+        Log.d(TAG, "displayWifiP2pConnectingDialog");
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(new ProgressBar(getApplicationContext()))
+                .setTitle("Connecting...")
+                .setCancelable(false)
+                .show();
+    }
+
     private void onArrayAdapterDataSetChanged() {
         Log.d(TAG, "onArrayAdapterDataSetChanged");
 
@@ -221,6 +233,9 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
                     case WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION:
                         WifiP2pDeviceList deviceList = intent.getParcelableExtra(WifiP2pManager.EXTRA_P2P_DEVICE_LIST);
                         handleWifiP2pPeersChanged(deviceList.getDeviceList());
+                        break;
+                    case CommandService.ACTION_UI_WIFI_P2P_CONNECTING:
+                        displayWifiP2pConnectingDialog();
                         break;
                     case CommandService.ACTION_UI_WIFI_P2P_CONNECTED:
                         startActivity(new Intent(getApplicationContext(), MainActivity.class));

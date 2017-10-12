@@ -34,6 +34,7 @@ import java.util.Stack;
 public class CommandService extends Service {
     protected static final String ACTION_REQUEST_SERVICES_READY = "com.helpfromabove.helpfromabove.action.ACTION_REQUEST_SERVICES_READY";
     protected static final String ACTION_UI_SERVICES_READY = "com.helpfromabove.helpfromabove.action.ACTION_UI_SERVICES_READY";
+    protected static final String ACTION_UI_WIFI_P2P_CONNECTING = "com.helpfromabove.helpfromabove.action.ACTION_UI_WIFI_P2P_CONNECTING";
     protected static final String ACTION_UI_WIFI_P2P_CONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_UI_WIFI_P2P_CONNECTED";
     protected static final String ACTION_NEW_WAYPOINT_AVAILABLE = "com.helpfromabove.helpfromabove.command.ACTION_NEW_WAYPOINT_AVAILABLE";
 
@@ -236,10 +237,16 @@ public class CommandService extends Service {
      * restrictions on size of data sent through intents
      ******************************************************/
 
-    protected static void notifyUiWifiP2pConnected(Context contest) {
+    protected static void notifyUiWifiP2pConnecting(Context context) {
+        Log.d(TAG, "notifyUiWifiP2pConnecting");
+
+        context.sendBroadcast(new Intent(ACTION_UI_WIFI_P2P_CONNECTING));
+    }
+
+    protected static void notifyUiWifiP2pConnected(Context context) {
         Log.d(TAG, "notifyUiWifiP2pConnected");
 
-        contest.sendBroadcast(new Intent(ACTION_UI_WIFI_P2P_CONNECTED));
+        context.sendBroadcast(new Intent(ACTION_UI_WIFI_P2P_CONNECTED));
     }
 
     protected static void sendUasWaypoint(Context context) {

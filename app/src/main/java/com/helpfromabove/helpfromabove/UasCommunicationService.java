@@ -33,18 +33,16 @@ public class UasCommunicationService extends Service {
     private WifiP2pManager.ActionListener wifiP2pScanListener = new WifiP2pScanActionListener();
     private WifiP2pManager.ActionListener wifiP2pConnectionListener = new WifiP2pConnectActionListener();
 
+    private enum Initiator  {
+        NONE,
+        HHMD,
+        UASC,
+    }
+    private Initiator initiator = Initiator.NONE;
+
     private WifiP2pInfo wifiP2pInfo;
     private NetworkInfo networkInfo;
     private WifiP2pGroup wifiP2pGroup;
-
-    //debugging variable. Remove before final testing.
-    private boolean canConnect = false;
-
-    public UasCommunicationService() {
-        super();
-
-        Log.d(TAG, "UasCommunicationService");
-    }
 
     @Override
     public void onCreate() {
@@ -95,6 +93,8 @@ public class UasCommunicationService extends Service {
     protected void startScanning() {
         Log.d(TAG, "startScanning");
 
+        initiator = Initiator.NONE;
+
         wifiP2pManager = (WifiP2pManager) this.getSystemService(Context.WIFI_P2P_SERVICE);
         wifiP2pChannel = wifiP2pManager.initialize(this, getMainLooper(), null);
         wifiP2pManager.discoverPeers(wifiP2pChannel, wifiP2pScanListener);
@@ -102,6 +102,8 @@ public class UasCommunicationService extends Service {
 
     protected void connectToDevice(WifiP2pDevice device) {
         Log.d(TAG, "connectToDevice: device.toString()=" + device.toString());
+
+        initiator = Initiator.HHMD;
 
         WifiP2pConfig config = new WifiP2pConfig();
         config.deviceAddress = device.deviceAddress;
@@ -150,7 +152,16 @@ public class UasCommunicationService extends Service {
             this.wifiP2pInfo = wifiP2pInfo;
             this.networkInfo = networkInfo;
             this.wifiP2pGroup = wifiP2pGroup;
-            CommandService.notifyUiWifiP2pConnected(getApplicationContext());
+
+            // If connection was established by the HHMD, then cancel the connection and start scanning.
+            // That way, the UASC can establish the connection with the HHMD.
+            if (initiator == Initiator.HHMD) {
+                CommandService.notifyUiWifiP2pConnecting(getApplicationContext());
+                wifiP2pManager.cancelConnect(wifiP2pChannel, wifiP2pConnectionListener);
+                startScanning();
+            } else {
+                CommandService.notifyUiWifiP2pConnected(getApplicationContext());
+            }
         }
     }
 
