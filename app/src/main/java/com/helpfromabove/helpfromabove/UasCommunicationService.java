@@ -37,6 +37,8 @@ public class UasCommunicationService extends Service {
     private NetworkInfo networkInfo;
     private WifiP2pGroup wifiP2pGroup;
 
+    private Heartbeat heartbeat;
+
     //debugging variable. Remove before final testing.
     private boolean canConnect = false;
 
@@ -105,6 +107,7 @@ public class UasCommunicationService extends Service {
 
         WifiP2pConfig config = new WifiP2pConfig();
         config.deviceAddress = device.deviceAddress;
+        config.groupOwnerIntent = 0;
         config.wps.setup = WpsInfo.PBC;
 
         wifiP2pManager.connect(wifiP2pChannel, config, wifiP2pConnectionListener);
@@ -146,12 +149,24 @@ public class UasCommunicationService extends Service {
         Log.d(TAG, "handleWifiP2pConnectionChangedAction: networkInfo=" + networkInfo);
         Log.d(TAG, "handleWifiP2pConnectionChangedAction: wifiP2pGroup=" + wifiP2pGroup);
 
-        if (networkInfo.getState() == NetworkInfo.State.CONNECTED) {
+        if (networkInfo.getState() == NetworkInfo.State.CONNECTED){
             this.wifiP2pInfo = wifiP2pInfo;
             this.networkInfo = networkInfo;
             this.wifiP2pGroup = wifiP2pGroup;
+            startHeartbeat();
             CommandService.notifyUiWifiP2pConnected(getApplicationContext());
+        } else {
+            if(heartbeat != null){
+                heartbeat.stopHeartbeat();
+            }
         }
+    }
+
+    private void startHeartbeat(){
+
+        heartbeat = new Heartbeat(wifiP2pInfo.groupOwnerAddress.getHostAddress(),"5000",10000);
+        heartbeat.startHeartbeat();
+
     }
 
     private void handleThisDeviceDetailsChanged() {
