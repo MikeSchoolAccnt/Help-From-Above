@@ -37,7 +37,8 @@ public class UasCommunicationService extends Service {
     private NetworkInfo networkInfo;
     private WifiP2pGroup wifiP2pGroup;
 
-    private Heartbeat heartbeat;
+    private UASCClient uascClient;
+    private String port = "5000";
 
     //debugging variable. Remove before final testing.
     private boolean canConnect = false;
@@ -153,20 +154,16 @@ public class UasCommunicationService extends Service {
             this.wifiP2pInfo = wifiP2pInfo;
             this.networkInfo = networkInfo;
             this.wifiP2pGroup = wifiP2pGroup;
+            uascClient = new UASCClient(getApplicationContext(),wifiP2pInfo.groupOwnerAddress.getHostAddress(),port);
             startHeartbeat();
             CommandService.notifyUiWifiP2pConnected(getApplicationContext());
-        } else {
-            if(heartbeat != null){
-                heartbeat.stopHeartbeat();
-            }
+        } else{
+            uascClient.stopHeartbeat();
         }
     }
 
     private void startHeartbeat(){
-
-        heartbeat = new Heartbeat(wifiP2pInfo.groupOwnerAddress.getHostAddress(),"5000",10000);
-        heartbeat.startHeartbeat();
-
+        uascClient.startHeartbeat(10000);
     }
 
     private void handleThisDeviceDetailsChanged() {
