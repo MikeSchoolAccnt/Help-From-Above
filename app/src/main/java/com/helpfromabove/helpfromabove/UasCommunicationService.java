@@ -158,8 +158,20 @@ public class UasCommunicationService extends Service {
         Log.d(TAG, "handleThisDeviceDetailsChanged");
     }
 
+    protected void startSession() {
+        Log.d(TAG, "startSession: NOT IMPLEMENTED!");
+    }
+
+    protected void stopSession() {
+        Log.d(TAG, "stopSession: NOT IMPLEMENTED!");
+    }
+
+    protected void setLightOnOff(boolean lightOnOff) {
+        Log.d(TAG, "lightOnOff: lightOnOff=" + lightOnOff + ": NOT IMPLEMENTED!");
+    }
+
     protected void sendWaypoint(Location location) {
-        Log.d(TAG, "sendWaypoint: location=" + location);
+        Log.d(TAG, "sendWaypoint: location=" + location + ": NOT IMPLEMENTED!");
     }
 
     protected void startEmergency() {

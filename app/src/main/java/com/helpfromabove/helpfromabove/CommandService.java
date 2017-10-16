@@ -289,6 +289,8 @@ public class CommandService extends Service {
     protected void handleCommandHhmdLight(boolean lightOnOff) {
         Log.d(TAG, "handleCommandHhmdLight: lightOnOff=" + lightOnOff);
 
+        uasCommunicationService.setLightOnOff(lightOnOff);
+
         // This is for local image testing. Remove once local image testing is complete
         if (imageDebugCounter >= 2) {
             Log.d(TAG, "handleCommandHhmdLight: incoming image example");
@@ -313,6 +315,7 @@ public class CommandService extends Service {
     protected void handleCommandHhmdSessionStart() {
         Log.d(TAG, "handleCommandHhmdSessionStart");
 
+        uasCommunicationService.startSession();
         cloudService.startSession();
         locationService.startSession();
     }
@@ -320,6 +323,7 @@ public class CommandService extends Service {
     protected void handleCommandHhmdSessionEnd() {
         Log.d(TAG, "handleCommandHhmdSessionEnd");
 
+        uasCommunicationService.stopSession();
         locationService.stopSession();
     }
 
