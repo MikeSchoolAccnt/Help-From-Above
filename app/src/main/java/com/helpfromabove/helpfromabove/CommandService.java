@@ -334,12 +334,10 @@ public class CommandService extends Service {
 
     private void handleCommandUasImage() {
         Log.d(TAG, "handleCommandUasImage");
-// TODO: Figure out how this will work
-//        String filename = getDateTime() + ".jpg";
-//        saveImage(filename);
-//        uploadImage(filename);
-//        addSessionImageFileName(filename);
-//        sendNewImageIntent();
+
+        // TODO: Add method for getting the most recent image data from the UasCOmmunicationService class.
+        Object data = null;// = uasCommunicationService.getImageData();
+        cloudService.saveImage(data);
     }
 
     private void handleSettingChangeStartHeight() {

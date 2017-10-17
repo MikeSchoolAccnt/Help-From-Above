@@ -1,9 +1,11 @@
 package com.helpfromabove.helpfromabove;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Binder;
+import android.os.Environment;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -13,8 +15,11 @@ import com.cloudrail.si.interfaces.CloudStorage;
 import com.cloudrail.si.services.Dropbox;
 import com.cloudrail.si.services.OneDrive;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -34,10 +39,12 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
 
     private final IBinder mBinder = new CloudServiceBinder();
 
-    private final String CLOUD_APP_FOLDER = "/" + "Help_From_Above";
-    private String cloudSessionFolder;
+    private static final String APP_FOLDER = "Help_From_Above";
+    private final String CLOUD_APP_FOLDER = "/" + APP_FOLDER;
+    private String sessionFolder;
+
     private CloudStorage cloudStorage;
-    private CreateCloudSessionFolder createCloudSessionFolder;
+
     public CloudService() {
         super();
 
@@ -53,6 +60,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).registerOnSharedPreferenceChangeListener(this);
 
         initCloudStorage();
+        createAppFolder();
     }
 
     @Override
@@ -76,22 +84,20 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         if (key.equals(getString(R.string.pref_key_cloud_storage_provider))) {
             Log.d(TAG, "onSharedPreferenceChanged: pref_key_cloud_storage_provider");
 
-            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-            String cloudProvider = sharedPref.getString(getString(R.string.pref_key_cloud_storage_provider), null);
-            Log.d(TAG, "onSharedPreferenceChanged: cloudProvider=" + cloudProvider);
-
-            handleSettingChangeCloud(cloudProvider);
+            initCloudStorage();
+            createAppFolder();
         }
     }
 
-    private void initCloudStorage(){
+    private void initCloudStorage() {
 
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-        String cloudType = sharedPref.getString(getString(R.string.pref_key_cloud_storage_provider), getString(R.string.pref_value_cloud_storage_provider_none));
+        String cloudType = sharedPref.getString(getString(R.string.pref_key_cloud_storage_provider), getString(R.string.pref_value_cloud_storage_provider_default));
 
         switch (cloudType) {
             case "-1":
                 Log.d(TAG, "initCloudStorage: None specified");
+                cloudStorage = null;
                 break;
             case "0":
                 Log.d(TAG, "initCloudStorage: Dropbox specified");
@@ -107,64 +113,83 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
                 cloudStorage = new OneDrive(this, ONE_DRIVE_APP_KEY, ONE_DRIVE_APP_SECRET);
                 break;
             default:
-                Log.d(TAG, "initCloudStorage: Unknown cloud storage specified");
-                //Possible set to device storage here
-                //Note: Most of the cloud services allowed for saving in offline mode
+                Log.w(TAG, "initCloudStorage: Unknown cloud storage specified");
                 break;
         }
     }
 
-    private void handleSettingChangeCloud(String cloudType) {
-        Log.d(TAG, "handleSettingChangeCloud");
+    private void createAppFolder() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (cloudStorage == null) {
+                    createLocalAppFolder();
+                } else {
+                    createCloudAppFolder();
+                }
+            }
+        }).start();
+    }
 
-        switch (cloudType) {
-            case "0":
-                Log.d(TAG, "handleSettingChangeCloud: Dropbox Specified");
-                cloudStorage = new Dropbox(this, DROPBOX_APP_KEY, DROPBOX_APP_SECRET);
+    private void createLocalAppFolder() {
+        Log.d(TAG, "createLocalAppFolder");
 
-                createCloudAppFolder();
-                break;
-            case "1":
-                Log.d(TAG, "handleSettingChangeCloud: Google Drive Specified");
-//                cloudStorage = new GoogleDrive();
-//                createCloudAppFolder();
-                break;
-            case "2":
-                Log.d(TAG, "handleSettingChangeCloud: OneDrive Specified");
-                cloudStorage = new OneDrive(this,ONE_DRIVE_APP_KEY,ONE_DRIVE_APP_SECRET);
-
-                createCloudAppFolder();
-                break;
-            default:
-                Log.d(TAG, "handleSettingChangeCloud: No Cloud Specified");
-                //Possible set to device storage here
-                //Note: Most of the cloud services allowed for saving in offline mode
-                break;
+        String dir = Environment.getExternalStorageDirectory() + File.separator + CLOUD_APP_FOLDER;
+        File directory = new File(dir);
+        if (!directory.mkdirs()) {
+            Log.e(TAG, "Could not make directories: " + dir);
         }
     }
 
     private void createCloudAppFolder() {
         Log.d(TAG, "createCloudAppFolder");
 
-        new CreateCloudAppFolder(cloudStorage,CLOUD_APP_FOLDER).execute();
+        try{
+            cloudStorage.createFolder(CLOUD_APP_FOLDER);
+        } catch (com.cloudrail.si.exceptions.HttpException hE){
+            Log.e(TAG, hE.getMessage());
+        }
     }
 
     protected void startSession() {
         Log.d(TAG, "startSession");
 
-        if(cloudStorage != null) {
-            createCloudSessionFolder();
-        } else {
-            //TODO: Handle local storage
-            Log.d(TAG,"startSession: Need to handle local storage option");
-        }
+        createSessionFolder();
+    }
+
+    private void createSessionFolder() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (cloudStorage == null) {
+                    createLocalSessionFolder();
+                } else {
+                    createCloudSessionFolder();
+                }
+            }
+        }).start();
     }
 
     private void createCloudSessionFolder() {
         Log.d(TAG, "createCloudSessionFolder");
 
-        createCloudSessionFolder = new CreateCloudSessionFolder(cloudStorage,CLOUD_APP_FOLDER);
-        createCloudSessionFolder.execute();
+        String cloudSessionFolder = CLOUD_APP_FOLDER + "/" + getDateTime();
+
+        try {
+            cloudStorage.createFolder(cloudSessionFolder);
+        } catch (com.cloudrail.si.exceptions.HttpException ex) {
+            Log.e(TAG,ex.getMessage());
+        }
+    }
+
+    private void createLocalSessionFolder() {
+        Log.d(TAG, "createLocalSessionFolder");
+
+        sessionFolder = Environment.getExternalStorageDirectory() + File.separator + APP_FOLDER + getDateTime();
+        File directory = new File(sessionFolder);
+        if (!directory.mkdirs()) {
+            Log.e(TAG, "Could not make directories: " + sessionFolder);
+        }
     }
 
     private String getDateTime() {
@@ -172,27 +197,51 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         return df.format(Calendar.getInstance().getTime());
     }
 
-    private void cloudUploadImage(final String filename) {
-        Log.d(TAG, "uploadImage");
+    protected void saveImage(final Object data) {
+        Log.d(TAG, "saveImage");
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (cloudStorage == null) {
+                    saveLocalImage(data);
+                } else {
+                    saveCloudImage(data);
+                }
+            }
+        }).start();
+    }
 
-        try {
-            final InputStream inputStream = openFileInput(filename);
+    private void saveLocalImage(final Object data) {
+        Log.d(TAG, "saveLocalImage");
 
-            //Getting the cloudSessionFolder like this can run into problems if
-            //it is accessed to fast. Possibly make change as suggested
-            //in CreateCloudSessionFolderAsyncTask onPostExecute.
-            cloudSessionFolder = createCloudSessionFolder.get();
+//        // TODO: Determine filename either from data, or from getDateTime();
+//        String filename = null;
+//        String path = sessionFolder + File.separator + filename;
+//        try {
+//            File file = new File(path);
+//            file.createNewFile();
+//        } catch (IOException iOE) {
+//            Log.e(TAG, "saveLocalImage: IOException: " + iOE.getMessage(), iOE);
+//        }
+//
+//        try {
+//            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(getApplicationContext().openFileOutput(path, Context.MODE_PRIVATE));
+//        // TODO: Determine what data type will be and how to convert it so we can write it
+//            outputStreamWriter.write(data);
+//            outputStreamWriter.close();
+//        } catch (IOException iOE) {
+//            Log.e(TAG, "saveLocalImage: IOException: " + iOE.getMessage(), iOE);
+//        }
+    }
 
-            new CloudUploadImage(cloudStorage, CLOUD_APP_FOLDER,cloudSessionFolder,filename).execute(inputStream);
-            
-        } catch (IOException iOE) {
-            Log.e(TAG, "uploadImage: Exception " + iOE.getMessage(), iOE);
-        } catch (InterruptedException ex){
-            Log.e(TAG,ex.getMessage());
-        } catch (ExecutionException ex){
-            Log.e(TAG,ex.getMessage());
-        }
+    private void saveCloudImage(final Object data) {
+        Log.d(TAG, "saveCloudImage");
 
+//        // TODO: Determine filename either from data, or from getDateTime();
+//        String filename = null;
+//        // TODO: Determine what data type will be and how to convert it to input steam
+//        InputStream inputStream = null;
+//        cloudStorage.upload(filename, inputStream, 0, false);
     }
 
     protected String getSessionCloudLink() {
@@ -200,15 +249,13 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
 
         String link = null;
         if (cloudStorage != null) {
-            link = cloudStorage.createShareLink(cloudSessionFolder);
+            link = cloudStorage.createShareLink(sessionFolder);
         } else {
-            Log.w(TAG, "getSessionCloudLink: No cloud storage");
+            Log.d(TAG, "getSessionCloudLink: No cloud storage");
         }
 
         return link;
     }
-
-
 
     protected class CloudServiceBinder extends Binder {
         private static final String TAG = "CloudServiceBinder";
@@ -219,5 +266,4 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
             return CloudService.this;
         }
     }
-
 }
