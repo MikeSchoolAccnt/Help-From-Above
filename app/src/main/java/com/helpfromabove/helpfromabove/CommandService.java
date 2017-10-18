@@ -248,6 +248,10 @@ public class CommandService extends Service {
         context.sendBroadcast(new Intent(ACTION_NEW_WAYPOINT_AVAILABLE));
     }
 
+    protected Bitmap getNewImage(){
+        return uasCommunicationService.getNewImage();
+    }
+
     private void handleSendWaypoint() {
         Log.d(TAG, "handleSendWaypoint");
 
@@ -276,6 +280,7 @@ public class CommandService extends Service {
 
         mImageFileNamesStack.push(imageFileName);
     }
+
 
     protected void handleCommandHhmdEmergency() {
         Log.d(TAG, "handleCommandHhmdEmergency");

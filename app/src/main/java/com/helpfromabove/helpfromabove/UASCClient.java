@@ -2,9 +2,11 @@ package com.helpfromabove.helpfromabove;
 
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
@@ -12,14 +14,18 @@ import android.util.Log;
 import com.helpfromabove.helpfromabove.CommandService;
 import com.helpfromabove.helpfromabove.UasCommunicationService;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 
 /**
  * Created by Michael Purcell on 10/16/2017.
@@ -56,13 +62,22 @@ public class UASCClient {
 
     private String imageEndpoint;
     private String gpsEndpoint;
-    private Bitmap bitmap;
+    private Bitmap imageBitmap;
+    private Drawable drawable;
 
+
+    //These are only for testing
+    private ArrayList<String> testURLs = new ArrayList<>();
+    private int currentImageNumber = 0;
 
     public UASCClient(Context context, String hostIP, String port){
         this.context = context;
         this.hostIP = hostIP;
         this.port = port;
+
+        testURLs.add("http://www.androidbegin.com/wp-content/uploads/2013/07/HD-Logo.gif");
+        testURLs.add("https://pbs.twimg.com/profile_images/875749462957670400/T0lwiBK8.jpg");
+        testURLs.add("http://mathworld.wolfram.com/images/gifs/SmallTriambicIcosahedron.gif");
 
         handlerThread = new HandlerThread("Heartbeat");
         handlerThread.start();
@@ -74,7 +89,7 @@ public class UASCClient {
 
         this.heartbeatDelay = heartbeatDelay;
         initializeHeartbeat();
-        mHandler.postDelayed(heartbeatRunnable,heartbeatDelay);
+        mHandler.postDelayed(heartbeatRunnable,0);
 
     }
 
@@ -89,7 +104,7 @@ public class UASCClient {
         this.imageEndpoint = imageEndpoint;
         this.imageAccessDelay = imageAccessDelay;
         initializeAccessServerImage();
-        mHandler.postDelayed(accessServerImageRunnable,imageAccessDelay);
+        mHandler.postDelayed(accessServerImageRunnable,0);
 
     }
 
@@ -99,18 +114,10 @@ public class UASCClient {
         }
     }
 
-    //This is set up this way because broadcasting the image isn't possible
-    //due to size constraints and cannot directly access CommandService
-    //from here.
-    public BitmapDrawable getCurrentImage(){
-        if(bitmap != null) {
-
-            BitmapDrawable newImage = new BitmapDrawable(context.getResources(), bitmap);
-            return newImage;
-        } else {
-            return null;
-        }
+    public Bitmap getImageBitmap(){
+        return this.imageBitmap;
     }
+
 
     public void startGPSAccess(String gpsEndpoint, int gpsAccessDelay){
         this.gpsEndpoint = gpsEndpoint;
@@ -155,6 +162,8 @@ public class UASCClient {
                     osw.flush();
                     osw.close();
                     int code = connection.getResponseCode();
+
+                    connection.disconnect();
                     Log.d(TAG,"Responce Code: " + code);
                 } catch (FileNotFoundException e) {
                     Log.e(TAG,e.getMessage());
@@ -172,17 +181,26 @@ public class UASCClient {
             @Override
             public void run() {
                 try {
-                    imageConnectionURL = new URL("http://"+hostIP+":"+port+"/"+imageEndpoint);
-                    imageConnection = (HttpURLConnection) imageConnectionURL.openConnection();
-                    imageConnection.setRequestMethod("GET");
-                    imageConnection.setDoInput(true);
-                    imageConnection.connect();
+                    //imageConnectionURL = new URL("http://"+hostIP+":"+port+"/"+imageEndpoint);
 
-                    InputStream inputStream = connection.getInputStream();
-                    bitmap = BitmapFactory.decodeStream(inputStream);
+                    //Testing code needed for until the server is set up
+                    //Start of testing code
+                    imageConnectionURL = new URL(testURLs.get(currentImageNumber));
+                    if(currentImageNumber == testURLs.size()-1) {
+                        currentImageNumber = 0;
+                    }
+                    else {
+                        currentImageNumber++;
+                    }
+                    //End of testing code
 
+                    InputStream inputStream = imageConnectionURL.openStream();
 
-                    imageConnection.disconnect();
+                    imageBitmap = BitmapFactory.decodeStream(inputStream);
+
+                    //Only broadcast new image if there is one.
+                    if(imageBitmap != null)
+                        context.sendBroadcast(new Intent(CommandService.ACTION_NEW_UAS_IMAGE));
 
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
