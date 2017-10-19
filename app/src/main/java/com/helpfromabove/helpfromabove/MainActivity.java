@@ -63,8 +63,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         Log.d(TAG, "onStart");
-        bindCommandService();
         super.onStart();
+
+        bindCommandService();
+
     }
 
     @Override
@@ -88,6 +90,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         Log.d(TAG, "onStop");
         super.onStop();
+
+        unbindCommandService();
     }
 
     @Override
@@ -130,6 +134,12 @@ public class MainActivity extends AppCompatActivity {
         startService(commandServiceIntent);
         commandServiceConnection = new MainActivityServiceConnection();
         bindService(commandServiceIntent, commandServiceConnection, Context.BIND_NOT_FOREGROUND);
+    }
+
+    private void unbindCommandService() {
+        Log.d(TAG, "unbindCommandService");
+
+        unbindService(commandServiceConnection);
     }
 
     /*
