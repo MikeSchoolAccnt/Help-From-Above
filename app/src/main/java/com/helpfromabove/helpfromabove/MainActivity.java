@@ -2,14 +2,18 @@ package com.helpfromabove.helpfromabove;
 
 import android.Manifest;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SwitchCompat;
@@ -36,6 +40,10 @@ public class MainActivity extends AppCompatActivity {
     private final String TAG = "MainActivity";
     private MainActivityBroadcastReceiver mainActivityBroadcastReceiver = new MainActivityBroadcastReceiver();
 
+
+    private CommandService commandService;
+    private ServiceConnection commandServiceConnection;
+
     private Button endSessionButton;
     private Button startSessionButton;
 
@@ -56,6 +64,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         Log.d(TAG, "onStart");
         super.onStart();
+
+        bindCommandService();
+
     }
 
     @Override
@@ -79,6 +90,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         Log.d(TAG, "onStop");
         super.onStop();
+
+        unbindCommandService();
     }
 
     @Override
@@ -115,6 +128,19 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+
+    private void bindCommandService(){
+        Intent commandServiceIntent = new Intent(getApplicationContext(), CommandService.class);
+        startService(commandServiceIntent);
+        commandServiceConnection = new MainActivityServiceConnection();
+        bindService(commandServiceIntent, commandServiceConnection, Context.BIND_NOT_FOREGROUND);
+    }
+
+    private void unbindCommandService() {
+        Log.d(TAG, "unbindCommandService");
+
+        unbindService(commandServiceConnection);
+    }
 
     /*
      * OnClick handler methods
@@ -192,23 +218,51 @@ public class MainActivity extends AppCompatActivity {
     /*
      * Methods for handling events caused by receiving new broadcasts
      */
-    private void updateUasImageView(String uasImageFileName) {
-        Log.d(TAG, "updateUasImageView: uasImageFileName=" + uasImageFileName);
+    public void updateUasImageView(Bitmap imageBitmap) {
+        Log.d(TAG, "updateUasImageView: New uas Image");
 
-        if (uasImageFileName != null) {
-            try {
-                FileInputStream fis = openFileInput(uasImageFileName);
-                Bitmap imageBitmap = BitmapFactory.decodeStream(fis);
-                ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
-                imageView.setImageBitmap(imageBitmap);
-            } catch (FileNotFoundException fNFE) {
-                Log.e(TAG, "setUasImage: FileNotFoundException: " + fNFE.getMessage(), fNFE);
-            } catch (NullPointerException nPE) {
-                Log.e(TAG, "setUasImage: NullPointerException: " + nPE.getMessage(), nPE);
-            }
+        ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
+
+        imageView.setImageBitmap(imageBitmap);
+
+//        if (uasImageFileName != null) {
+//            try {
+//                FileInputStream fis = openFileInput(uasImageFileName);
+//                Bitmap imageBitmap = BitmapFactory.decodeStream(fis);
+//                ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
+//                imageView.setImageBitmap(imageBitmap);
+//            } catch (FileNotFoundException fNFE) {
+//                Log.e(TAG, "setUasImage: FileNotFoundException: " + fNFE.getMessage(), fNFE);
+//            } catch (NullPointerException nPE) {
+//                Log.e(TAG, "setUasImage: NullPointerException: " + nPE.getMessage(), nPE);
+//            }
+//        }
+    }
+    private void setConnectedService(IBinder service) {
+        Log.d(TAG, "setConnectedService");
+
+        String serviceClassName = service.getClass().getName();
+        if (serviceClassName.equals(CommandService.CommandServiceBinder.class.getName())) {
+            commandService = ((CommandService.CommandServiceBinder) service).getService();
+            commandService.startWifiP2pScanning();
         }
     }
 
+    protected class MainActivityServiceConnection implements ServiceConnection{
+
+        private static final String TAG = "MainActivitySe";
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(TAG, "onServiceConnected");
+            setConnectedService(service);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d(TAG, "onServiceDisconnected");
+        }
+    }
     /*
      * Custom BroadcastReceiver for routing intent actions to their
      * proper methods for the MainActivity
@@ -224,8 +278,7 @@ public class MainActivity extends AppCompatActivity {
                     case CommandService.ACTION_NEW_UAS_IMAGE:
                         Log.d(TAG, "onReceive: ACTION_NEW_UAS_IMAGE");
 
-                        String uasImageFileName = intent.getStringExtra(CommandService.EXTRA_IMAGE_FILE_NAME);
-                        updateUasImageView(uasImageFileName);
+                        updateUasImageView(commandService.getNewImage());
                         break;
                     case CommandService.ACTION_NEW_UAS_LOCATION:
                         Log.d(TAG, "onReceive: ACTION_NEW_UAS_LOCATION");

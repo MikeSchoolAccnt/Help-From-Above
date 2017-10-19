@@ -5,6 +5,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
+import android.graphics.Bitmap;
 import android.location.Location;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
@@ -23,6 +25,8 @@ public class UasCommunicationService extends Service {
     private static final String TAG = "UasCommunicationService";
 
     private final IBinder mBinder = new UasCommunicationServiceBinder();
+
+    protected static final String NEW_UASC_IMAGE = "NEW_UASC_IMAGE";
 
     private IntentFilter intentFilter;
     private UasCommunicationServiceBroadcastReceiver broadcastReceiver;
@@ -66,6 +70,7 @@ public class UasCommunicationService extends Service {
         setWifiManager();
         turnOnWifi();
     }
+
 
     @Override
     public void onDestroy() {
@@ -158,7 +163,10 @@ public class UasCommunicationService extends Service {
             startHeartbeat();
             CommandService.notifyUiWifiP2pConnected(getApplicationContext());
         } else{
-            uascClient.stopHeartbeat();
+            if(uascClient != null) {
+                uascClient.stopHeartbeat();
+                uascClient.stopImageAccess();
+            }
         }
     }
 
@@ -171,11 +179,17 @@ public class UasCommunicationService extends Service {
     }
 
     protected void startSession() {
-        Log.d(TAG, "startSession: NOT IMPLEMENTED!");
+        Log.d(TAG, "startSession: NOT FULLY IMPLEMENTED!");
+        if(uascClient != null) {
+            uascClient.startImageAccess("image", 10000);
+        }
     }
 
     protected void stopSession() {
-        Log.d(TAG, "stopSession: NOT IMPLEMENTED!");
+        Log.d(TAG, "stopSession: NOT FULLY IMPLEMENTED!");
+        if(uascClient != null){
+            uascClient.stopImageAccess();
+        }
     }
 
     protected void setLightOnOff(boolean lightOnOff) {
@@ -190,6 +204,17 @@ public class UasCommunicationService extends Service {
         Log.d(TAG, "startEmergency: NOT IMPLEMENTED!");
     }
 
+    public Bitmap getNewImage(){
+        if(uascClient != null) {
+            return uascClient.getImageBitmap();
+        } else {
+            return null;
+        }
+    }
+
+    protected void handleNewImage(){
+
+    }
     protected class UasCommunicationServiceBinder extends Binder {
         UasCommunicationService getService() {
             return UasCommunicationService.this;
@@ -223,6 +248,8 @@ public class UasCommunicationService extends Service {
                     case WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION:
                         handleThisDeviceDetailsChanged();
                         break;
+                    case NEW_UASC_IMAGE:
+                        handleNewImage();
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);
                         break;
