@@ -200,7 +200,7 @@ public class UASCClient {
 
                     //Only broadcast new image if there is one.
                     if(imageBitmap != null)
-                        context.sendBroadcast(new Intent(CommandService.ACTION_NEW_UAS_IMAGE));
+                        CommandService.notifyUiNewImageAvailable(context);
 
                 } catch (MalformedURLException e) {
                     e.printStackTrace();

@@ -9,8 +9,6 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -40,7 +38,6 @@ public class MainActivity extends AppCompatActivity {
     private final String TAG = "MainActivity";
     private MainActivityBroadcastReceiver mainActivityBroadcastReceiver = new MainActivityBroadcastReceiver();
 
-
     private CommandService commandService;
     private ServiceConnection commandServiceConnection;
 
@@ -66,7 +63,6 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
 
         bindCommandService();
-
     }
 
     @Override
@@ -74,8 +70,9 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "onResume");
         super.onResume();
 
-        registerReceiver(mainActivityBroadcastReceiver, new IntentFilter(CommandService.ACTION_NEW_UAS_IMAGE));
-        sendBroadcast(new Intent(CommandService.ACTION_REQUEST_LAST_IMAGE_FILENAME));
+        IntentFilter intentFilter = new IntentFilter(CommandService.ACTION_UI_NEW_IMAGE);
+        registerReceiver(mainActivityBroadcastReceiver, intentFilter);
+        handleNewImage();
     }
 
     @Override
@@ -158,42 +155,41 @@ public class MainActivity extends AppCompatActivity {
             int response = getApplicationContext().checkSelfPermission(Manifest.permission.SEND_SMS);
             if (response == PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "onCreate: permission SEND_SMS is GRANTED");
-                sendBroadcast(new Intent(CommandService.COMMAND_HHMD_EMERGENCY));
+                commandService.handleCommandHhmdEmergency();
             } else {
                 ActivityCompat.requestPermissions(this,new String[]{android.Manifest.permission.SEND_SMS},0);
             }
         } else {
-            sendBroadcast(new Intent(CommandService.COMMAND_HHMD_EMERGENCY));
+            commandService.handleCommandHhmdEmergency();
         }
-
     }
 
     public void lightSwitchOnClick(View view) {
         Log.d(TAG, "lightSwitchOnClick");
 
         boolean isChecked = ((SwitchCompat) view).isChecked();
-        Intent lightIntent = new Intent(CommandService.COMMAND_HHMD_LIGHT);
-        lightIntent.putExtra(CommandService.EXTRA_LIGHT_ON_OFF, isChecked);
-        sendBroadcast(lightIntent);
+        commandService.handleCommandHhmdLight(isChecked);
     }
 
     public void uasHeightUpButtonOnClick(View view) {
         Log.d(TAG, "uasHeightUpButtonOnClick ");
 
-        sendBroadcast(new Intent(CommandService.COMMAND_HHMD_UAS_HEIGHT_UP));
+        commandService.handleCommandHhmdUasHeightUp();
     }
 
     public void uasHeightDownButtonOnClick(View view) {
         Log.d(TAG, "uasHeightDownButtonOnClick");
 
-        sendBroadcast(new Intent(CommandService.COMMAND_HHMD_UAS_HEIGHT_DOWN));
+        commandService.handleCommandHhmdUasHeightDown();
     }
 
     public void sessionStartButtonOnCLick(View view) {
         Log.d(TAG, "sessionStartButtonOnCLick");
+
         endSessionButton.setEnabled(true);
         startSessionButton.setEnabled(false);
-        sendBroadcast(new Intent(CommandService.COMMAND_HHMD_SESSION_START));
+
+        commandService.handleCommandHhmdSessionStart();
     }
 
     public void sessionEndButtonOnCLick(View view) {
@@ -202,7 +198,7 @@ public class MainActivity extends AppCompatActivity {
         endSessionButton.setEnabled(false);
         startSessionButton.setEnabled(true);
 
-        sendBroadcast(new Intent(CommandService.COMMAND_HHMD_SESSION_END));
+        commandService.handleCommandHhmdSessionEnd();
     }
 
     /*
@@ -218,39 +214,29 @@ public class MainActivity extends AppCompatActivity {
     /*
      * Methods for handling events caused by receiving new broadcasts
      */
-    public void updateUasImageView(Bitmap imageBitmap) {
-        Log.d(TAG, "updateUasImageView: New uas Image");
+    private void handleNewImage() {
+        Log.d(TAG, "handleNewImage");
 
         ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
+        Bitmap bitmap = commandService.getNewImage();
 
-        imageView.setImageBitmap(imageBitmap);
-
-//        if (uasImageFileName != null) {
-//            try {
-//                FileInputStream fis = openFileInput(uasImageFileName);
-//                Bitmap imageBitmap = BitmapFactory.decodeStream(fis);
-//                ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
-//                imageView.setImageBitmap(imageBitmap);
-//            } catch (FileNotFoundException fNFE) {
-//                Log.e(TAG, "setUasImage: FileNotFoundException: " + fNFE.getMessage(), fNFE);
-//            } catch (NullPointerException nPE) {
-//                Log.e(TAG, "setUasImage: NullPointerException: " + nPE.getMessage(), nPE);
-//            }
-//        }
+        if ((imageView != null) && (bitmap != null)) {
+            imageView.setImageBitmap(bitmap);
+        }
     }
+
     private void setConnectedService(IBinder service) {
         Log.d(TAG, "setConnectedService");
 
         String serviceClassName = service.getClass().getName();
         if (serviceClassName.equals(CommandService.CommandServiceBinder.class.getName())) {
             commandService = ((CommandService.CommandServiceBinder) service).getService();
-            commandService.startWifiP2pScanning();
         }
     }
 
-    protected class MainActivityServiceConnection implements ServiceConnection{
+    private class MainActivityServiceConnection implements ServiceConnection{
 
-        private static final String TAG = "MainActivitySe";
+        private static final String TAG = "MainActivityServiceC...";
 
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -263,6 +249,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "onServiceDisconnected");
         }
     }
+
     /*
      * Custom BroadcastReceiver for routing intent actions to their
      * proper methods for the MainActivity
@@ -275,10 +262,8 @@ public class MainActivity extends AppCompatActivity {
             String action = intent.getAction();
             if (intent != null && action != null) {
                 switch (action) {
-                    case CommandService.ACTION_NEW_UAS_IMAGE:
-                        Log.d(TAG, "onReceive: ACTION_NEW_UAS_IMAGE");
-
-                        updateUasImageView(commandService.getNewImage());
+                    case CommandService.ACTION_UI_NEW_IMAGE:
+                        handleNewImage();
                         break;
                     case CommandService.ACTION_NEW_UAS_LOCATION:
                         Log.d(TAG, "onReceive: ACTION_NEW_UAS_LOCATION");
