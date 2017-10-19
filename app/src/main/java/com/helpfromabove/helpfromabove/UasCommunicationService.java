@@ -209,7 +209,7 @@ public class UasCommunicationService extends Service {
         }
     }
 
-    private class UasCommunicationServiceBinder extends Binder {
+    protected class UasCommunicationServiceBinder extends Binder {
         UasCommunicationService getService() {
             return UasCommunicationService.this;
         }

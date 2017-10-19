@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.location.Location;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
@@ -38,8 +39,13 @@ public class UASCClient {
     private String hostIP;
     private String port;
 
-    private HandlerThread handlerThread;
-    private Handler mHandler;
+    //Use for runnable methods that run every x seconds
+    private HandlerThread constantHandlerThread;
+    private Handler constantHandler;
+
+    //Use for one time runnable methods
+    private HandlerThread oneTimeHandlerThread;
+    private Handler oneTimeHandler;
 
     //Need a separate set of these for each one because how handlers work
     private URL connectionURL;
@@ -55,6 +61,17 @@ public class UASCClient {
     private Runnable accessServerImageRunnable;
     private Runnable accessGPSRunnable;
 
+    //One time runnables
+    //Used for commands that don't need to get information from the server
+    //Note: lightRunnable, startSessionRunnable, and endSessionRunnable could
+    //      be combined to one runnable that takes a type but is not so that
+    //      it is more readable.
+    private Runnable lightRunnable;
+    private Runnable startSessionRunnable;
+    private Runnable endSessionRunnable;
+    private Runnable newWaypointRunnable;
+
+
     //The delays are how often this should happen in milliseconds
     private int heartbeatDelay;
     private int imageAccessDelay;
@@ -62,8 +79,12 @@ public class UASCClient {
 
     private String imageEndpoint;
     private String gpsEndpoint;
+    private String newWaypointEndpoint;
+    private String lightEndpoint;
+    private String startSessionEndpoint;
+    private String endSessionEndpoint;
     private Bitmap imageBitmap;
-    private Drawable drawable;
+    private Location lastWaypoint;
 
 
     //These are only for testing
@@ -79,23 +100,26 @@ public class UASCClient {
         testURLs.add("https://pbs.twimg.com/profile_images/875749462957670400/T0lwiBK8.jpg");
         testURLs.add("http://mathworld.wolfram.com/images/gifs/SmallTriambicIcosahedron.gif");
 
-        handlerThread = new HandlerThread("Heartbeat");
-        handlerThread.start();
+        constantHandlerThread = new HandlerThread("Constant-UASCClient");
+        constantHandlerThread.start();
+        constantHandler = new Handler(constantHandlerThread.getLooper());
 
-        mHandler = new Handler(handlerThread.getLooper());
+        oneTimeHandlerThread = new HandlerThread("OneTime-UASCClient");
+        oneTimeHandlerThread.start();
+        oneTimeHandler = new Handler(oneTimeHandlerThread.getLooper());
     }
 
     public void startHeartbeat(int heartbeatDelay){
 
         this.heartbeatDelay = heartbeatDelay;
         initializeHeartbeat();
-        mHandler.postDelayed(heartbeatRunnable,0);
+        constantHandler.postDelayed(heartbeatRunnable,0);
 
     }
 
     public void stopHeartbeat(){
         if(heartbeatRunnable != null){
-            mHandler.removeCallbacks(heartbeatRunnable);
+            constantHandler.removeCallbacks(heartbeatRunnable);
         }
     }
 
@@ -104,13 +128,13 @@ public class UASCClient {
         this.imageEndpoint = imageEndpoint;
         this.imageAccessDelay = imageAccessDelay;
         initializeAccessServerImage();
-        mHandler.postDelayed(accessServerImageRunnable,0);
+        constantHandler.postDelayed(accessServerImageRunnable,0);
 
     }
 
     public void stopImageAccess(){
         if(accessServerImageRunnable != null){
-            mHandler.removeCallbacks(accessServerImageRunnable);
+            constantHandler.removeCallbacks(accessServerImageRunnable);
         }
     }
 
@@ -123,17 +147,46 @@ public class UASCClient {
         this.gpsEndpoint = gpsEndpoint;
         this.gpsAccessDelay = gpsAccessDelay;
         initializeAccessGPS();
-        mHandler.postDelayed(accessGPSRunnable,gpsAccessDelay);
+        constantHandler.postDelayed(accessGPSRunnable,gpsAccessDelay);
     }
 
     public void stopGPSAccess(){
         if(accessGPSRunnable != null){
-            mHandler.removeCallbacks(accessGPSRunnable);
+            constantHandler.removeCallbacks(accessGPSRunnable);
         }
     }
 
-    public void stopAll(){
-        handlerThread.quitSafely();
+    public void toogleLight(String lightEndpoint){
+        this.lightEndpoint = lightEndpoint;
+        initializeLight();
+        oneTimeHandler.post(lightRunnable);
+    }
+
+    public void sendStartSession(String startSessionEndpoint){
+        this.startSessionEndpoint = startSessionEndpoint;
+        initializeStartSession();
+        oneTimeHandler.post(startSessionRunnable);
+    }
+
+    public void sendEndSession(String endSessionEndpoint){
+        this.endSessionEndpoint = endSessionEndpoint;
+        initializeEndSession();
+        oneTimeHandler.post(endSessionRunnable);
+    }
+
+    public void sendNewWaypoint(String newWaypointEndpoint, Location location){
+        this.newWaypointEndpoint = newWaypointEndpoint;
+        this.lastWaypoint = location;
+        initializeNewWaypoint();
+        oneTimeHandler.post(newWaypointRunnable);
+    }
+
+    public void stopAllConstant(){
+        constantHandlerThread.quitSafely();
+    }
+
+    public void stopAllOneTime(){
+        oneTimeHandlerThread.quitSafely();
     }
 
     private void initializeHeartbeat(){
@@ -171,7 +224,7 @@ public class UASCClient {
                     Log.e(TAG,e.getMessage());
                 }
 
-                mHandler.postDelayed(this,heartbeatDelay);
+                constantHandler.postDelayed(this,heartbeatDelay);
             }
         };
     }
@@ -207,7 +260,7 @@ public class UASCClient {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                mHandler.postDelayed(this,imageAccessDelay);
+                constantHandler.postDelayed(this,imageAccessDelay);
             }
         };
     }
@@ -231,10 +284,98 @@ public class UASCClient {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                mHandler.postDelayed(this,gpsAccessDelay);
+                constantHandler.postDelayed(this,gpsAccessDelay);
             }
 
         };
     }
 
+    private void initializeLight(){
+        lightRunnable = new Runnable() {
+            @Override
+            public void run() {
+
+                try {
+
+                    URL tempURL = new URL("http://"+hostIP+":"+port+"/"+lightEndpoint);
+                    //Server can detect this and act off of it.
+                    tempURL.openConnection();
+
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        };
+    }
+
+    private void initializeStartSession(){
+        startSessionRunnable = new Runnable() {
+            @Override
+            public void run() {
+
+                try {
+
+                    URL tempURL = new URL("http://"+hostIP+":"+port+"/"+startSessionEndpoint);
+                    //Server can detect this and act off of it.
+                    tempURL.openConnection();
+
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        };
+    }
+
+    private void initializeEndSession(){
+        endSessionRunnable = new Runnable() {
+            @Override
+            public void run() {
+
+                try {
+
+                    URL tempURL = new URL("http://"+hostIP+":"+port+"/"+endSessionEndpoint);
+                    //Server can detect this and act off of it.
+                    tempURL.openConnection();
+
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        };
+    }
+
+    private void initializeNewWaypoint(){
+        newWaypointRunnable = new Runnable() {
+            @Override
+            public void run() {
+
+                try {
+
+                    URL tempURL = new URL("http://"+hostIP+":"+port+"/"+newWaypointEndpoint);
+
+                    String latitude = Location.convert(lastWaypoint.getLatitude(),Location.FORMAT_DEGREES);
+                    String longitide = Location.convert(lastWaypoint.getLongitude(),Location.FORMAT_DEGREES);
+                    String altitude = Location.convert(lastWaypoint.getAltitude(),Location.FORMAT_DEGREES);
+
+                    //TODO: Send the latest waypoint to the server
+
+
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        };
+    }
 }

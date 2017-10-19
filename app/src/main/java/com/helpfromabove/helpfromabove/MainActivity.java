@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
 
         IntentFilter intentFilter = new IntentFilter(CommandService.ACTION_UI_NEW_IMAGE);
         registerReceiver(mainActivityBroadcastReceiver, intentFilter);
-        handleNewImage();
+        //handleNewImage();
     }
 
     @Override

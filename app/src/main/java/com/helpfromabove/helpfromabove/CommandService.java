@@ -237,7 +237,8 @@ public class CommandService extends Service {
     }
 
     protected Bitmap getNewImage(){
-        return uasCommunicationService.getNewImage();
+
+        return uasCommunicationService.getNewImage() == null ? null: uasCommunicationService.getNewImage();
     }
 
     private void handleSendWaypoint() {

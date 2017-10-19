@@ -56,7 +56,7 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
 
         IntentFilter intentFilter = new IntentFilter(CommandService.ACTION_UI_NEW_IMAGE);
         registerReceiver(fullscreenUasImageBroadcastReceiver, intentFilter);
-        handleNewImage();
+        //handleNewImage();
     }
 
     @Override
