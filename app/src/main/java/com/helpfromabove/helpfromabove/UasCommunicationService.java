@@ -26,8 +26,6 @@ public class UasCommunicationService extends Service {
 
     private final IBinder mBinder = new UasCommunicationServiceBinder();
 
-    protected static final String NEW_UASC_IMAGE = "NEW_UASC_IMAGE";
-
     private IntentFilter intentFilter;
     private UasCommunicationServiceBroadcastReceiver broadcastReceiver;
 
@@ -248,8 +246,6 @@ public class UasCommunicationService extends Service {
                     case WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION:
                         handleThisDeviceDetailsChanged();
                         break;
-                    case NEW_UASC_IMAGE:
-                        handleNewImage();
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);
                         break;

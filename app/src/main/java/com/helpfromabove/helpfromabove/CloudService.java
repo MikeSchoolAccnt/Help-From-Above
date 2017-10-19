@@ -3,6 +3,7 @@ package com.helpfromabove.helpfromabove;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.os.Binder;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
@@ -13,8 +14,12 @@ import com.cloudrail.si.interfaces.CloudStorage;
 import com.cloudrail.si.services.Dropbox;
 import com.cloudrail.si.services.OneDrive;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -35,7 +40,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
     private final IBinder mBinder = new CloudServiceBinder();
 
     private final String CLOUD_APP_FOLDER = "/" + "Help_From_Above";
-    private String cloudSessionFolder;
+    private String cloudSessionFolder = "";
     private CloudStorage cloudStorage;
     private CreateCloudSessionFolder createCloudSessionFolder;
     public CloudService() {
@@ -172,21 +177,31 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         return df.format(Calendar.getInstance().getTime());
     }
 
-    private void cloudUploadImage(final String filename) {
+    protected void cloudUploadImage(Bitmap bitmap) {
         Log.d(TAG, "uploadImage");
 
         try {
-            final InputStream inputStream = openFileInput(filename);
 
-            //Getting the cloudSessionFolder like this can run into problems if
-            //it is accessed to fast. Possibly make change as suggested
-            //in CreateCloudSessionFolderAsyncTask onPostExecute.
-            cloudSessionFolder = createCloudSessionFolder.get();
+            if(bitmap != null && bitmap.getByteCount() != 0) {
 
-            new CloudUploadImage(cloudStorage, CLOUD_APP_FOLDER,cloudSessionFolder,filename).execute(inputStream);
-            
-        } catch (IOException iOE) {
-            Log.e(TAG, "uploadImage: Exception " + iOE.getMessage(), iOE);
+                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.PNG,100,byteArrayOutputStream);
+
+                byte[] imageBytes = byteArrayOutputStream.toByteArray();
+//                ByteBuffer imageByteBuffer = ByteBuffer.wrap(imageBytes);
+//                imageByteBuffer.order(ByteOrder.nativeOrder());
+//                bitmap.copyPixelsToBuffer(imageByteBuffer);
+                ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(imageBytes);
+
+
+                //Getting the cloudSessionFolder like this can run into problems if
+                //it is accessed to fast. Possibly make change as suggested
+                //in CreateCloudSessionFolderAsyncTask onPostExecute.
+                cloudSessionFolder = createCloudSessionFolder.get();
+
+                if (!cloudSessionFolder.equals(""))
+                    new CloudUploadImage(cloudStorage, CLOUD_APP_FOLDER, cloudSessionFolder).execute(byteArrayInputStream);
+            }
         } catch (InterruptedException ex){
             Log.e(TAG,ex.getMessage());
         } catch (ExecutionException ex){

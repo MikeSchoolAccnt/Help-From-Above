@@ -5,6 +5,7 @@ import android.util.Log;
 
 import com.cloudrail.si.interfaces.CloudStorage;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -24,7 +25,7 @@ public class CloudUploadImage extends AsyncTask<InputStream,Void,Void> {
     private String cloudAppFolder;
     private String fileName;
 
-    public CloudUploadImage(CloudStorage cloudStorage, String cloudAppFolder, String cloudSessionFolder, String fileName){
+    public CloudUploadImage(CloudStorage cloudStorage, String cloudAppFolder, String cloudSessionFolder){
         this.cloudStorage = cloudStorage;
         this.cloudSessionFolder = cloudSessionFolder;
         this.cloudAppFolder = cloudAppFolder;
@@ -36,12 +37,19 @@ public class CloudUploadImage extends AsyncTask<InputStream,Void,Void> {
 
         Log.d(TAG,"Executing");
 
+        fileName = getDateTime();
+
         InputStream inputStream = params[0];
 
-        final String filePath = cloudSessionFolder + "/" + fileName;
+        final String filePath = cloudSessionFolder + "/" + fileName + ".png";
 
-        cloudStorage.upload(filePath, inputStream, 0, false);
+        try {
+            cloudStorage.upload(filePath, inputStream, inputStream.available(), false);
+        } catch (IOException e) {
+            Log.e(TAG,e.getMessage());
+        }
 
+        Log.d(TAG,"Done Uploading");
         return null;
     }
 

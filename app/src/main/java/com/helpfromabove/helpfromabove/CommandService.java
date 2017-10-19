@@ -85,6 +85,7 @@ public class CommandService extends Service {
         intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_REQUEST_SERVICES_READY);
         intentFilter.addAction(ACTION_NEW_WAYPOINT_AVAILABLE);
+        intentFilter.addAction(ACTION_NEW_UAS_IMAGE);
         intentFilter.addAction(ACTION_REQUEST_LAST_IMAGE_FILENAME);
         intentFilter.addAction(COMMAND_HHMD_EMERGENCY);
         intentFilter.addAction(COMMAND_HHMD_LIGHT);
@@ -390,6 +391,10 @@ public class CommandService extends Service {
                         break;
                     case ACTION_REQUEST_LAST_IMAGE_FILENAME:
                         sendNewImageIntent();
+                        break;
+                    case ACTION_NEW_UAS_IMAGE:
+                        Log.d(TAG,"ACTION_UPLOAD_TO_CLOUD");
+                        cloudService.cloudUploadImage(uasCommunicationService.getNewImage());
                         break;
                     case COMMAND_HHMD_EMERGENCY:
                         handleCommandHhmdEmergency();
