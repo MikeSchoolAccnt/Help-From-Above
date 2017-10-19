@@ -36,23 +36,14 @@ public class CommandService extends Service {
     protected static final String ACTION_UI_SERVICES_READY = "com.helpfromabove.helpfromabove.action.ACTION_UI_SERVICES_READY";
     protected static final String ACTION_UI_WIFI_P2P_CONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_UI_WIFI_P2P_CONNECTED";
     protected static final String ACTION_NEW_WAYPOINT_AVAILABLE = "com.helpfromabove.helpfromabove.command.ACTION_NEW_WAYPOINT_AVAILABLE";
-
     protected static final String ACTION_NEW_UAS_IMAGE = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_IMAGE";
     protected static final String ACTION_NEW_UAS_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_LOCATION";
     protected static final String ACTION_NEW_HHMD_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_HHMD_LOCATION";
     protected static final String ACTION_REQUEST_LAST_IMAGE_FILENAME = "com.helpfromabove.helpfromabove.action.ACTION_REQUEST_LAST_IMAGE_FILENAME";
-    protected static final String EXTRA_LIGHT_ON_OFF = "com.helpfromabove.helpfromabove.extra.EXTRA_LIGHT_ON_OFF";
     protected static final String EXTRA_IMAGE_FILE_NAME = "com.helpfromabove.helpfromabove.extra.EXTRA_IMAGE_FILE_NAME";
     protected static final String EXTRA_LOCATION = "com.helpfromabove.helpfromabove.extra.EXTRA_LOCATION";
-    protected static final String COMMAND_HHMD_EMERGENCY = "com.helpfromabove.helpfromabove.command.COMMAND_HHMD_EMERGENCY";
-    protected static final String COMMAND_HHMD_LIGHT = "com.helpfromabove.helpfromabove.command.COMMAND_HHMD_LIGHT";
-    protected static final String COMMAND_HHMD_UAS_HEIGHT_UP = "com.helpfromabove.helpfromabove.command.COMMAND_HHMD_UAS_HEIGHT_UP";
-    protected static final String COMMAND_HHMD_UAS_HEIGHT_DOWN = "com.helpfromabove.helpfromabove.command.COMMAND_HHMD_UAS_HEIGHT_DOWN";
-    protected static final String COMMAND_HHMD_SESSION_START = "com.helpfromabove.helpfromabove.command.COMMAND_HHMD_SESSION_START";
-    protected static final String COMMAND_HHMD_SESSION_END = "com.helpfromabove.helpfromabove.command.COMMAND_HHMD_SESSION_END";
     protected static final String COMMAND_UAS_IMAGE = "com.helpfromabove.helpfromabove.command.COMMAND_UAS_IMAGE";
     protected static final String COMMAND_UAS_LOCATION = "com.helpfromabove.helpfromabove.command.COMMAND_UAS_LOCATION";
-    protected static final String SETTING_CHANGE_START_HEIGHT = "com.helpfromabove.helpfromabove.setting.SETTING_CHANGE_START_HEIGHT";
 
     private final static String TAG = "CommandService";
 
@@ -86,15 +77,8 @@ public class CommandService extends Service {
         intentFilter.addAction(ACTION_REQUEST_SERVICES_READY);
         intentFilter.addAction(ACTION_NEW_WAYPOINT_AVAILABLE);
         intentFilter.addAction(ACTION_REQUEST_LAST_IMAGE_FILENAME);
-        intentFilter.addAction(COMMAND_HHMD_EMERGENCY);
-        intentFilter.addAction(COMMAND_HHMD_LIGHT);
-        intentFilter.addAction(COMMAND_HHMD_UAS_HEIGHT_UP);
-        intentFilter.addAction(COMMAND_HHMD_UAS_HEIGHT_DOWN);
-        intentFilter.addAction(COMMAND_HHMD_SESSION_START);
-        intentFilter.addAction(COMMAND_HHMD_SESSION_END);
         intentFilter.addAction(COMMAND_UAS_IMAGE);
         intentFilter.addAction(COMMAND_UAS_LOCATION);
-        intentFilter.addAction(SETTING_CHANGE_START_HEIGHT);
         commandServiceBroadcastReceiver = new CommandServiceBroadcastReceiver();
         registerReceiver(commandServiceBroadcastReceiver, intentFilter);
 
@@ -195,7 +179,7 @@ public class CommandService extends Service {
         broadcastIfServicesReady();
     }
 
-    private void broadcastIfServicesReady() {
+    protected void broadcastIfServicesReady() {
         Log.d(TAG, "broadcastIfServicesReady");
 
         if ((uasCommunicationService != null) && (locationService != null) && (emergencyService != null) && (cloudService != null)) {
@@ -347,10 +331,6 @@ public class CommandService extends Service {
 //        sendNewImageIntent();
     }
 
-    private void handleSettingChangeStartHeight() {
-        Log.d(TAG, "handleSettingChangeStartHeight");
-    }
-
     private void sendNewImageIntent() {
         Log.d(TAG, "sendNewImageIntent");
 
@@ -391,34 +371,12 @@ public class CommandService extends Service {
                     case ACTION_REQUEST_LAST_IMAGE_FILENAME:
                         sendNewImageIntent();
                         break;
-                    case COMMAND_HHMD_EMERGENCY:
-                        handleCommandHhmdEmergency();
-                        break;
-                    case COMMAND_HHMD_LIGHT:
-                        final boolean lightOnOff = intent.getBooleanExtra(EXTRA_LIGHT_ON_OFF, true);
-                        handleCommandHhmdLight(lightOnOff);
-                        break;
-                    case COMMAND_HHMD_UAS_HEIGHT_UP:
-                        handleCommandHhmdUasHeightUp();
-                        break;
-                    case COMMAND_HHMD_UAS_HEIGHT_DOWN:
-                        handleCommandHhmdUasHeightDown();
-                        break;
-                    case COMMAND_HHMD_SESSION_START:
-                        handleCommandHhmdSessionStart();
-                        break;
-                    case COMMAND_HHMD_SESSION_END:
-                        handleCommandHhmdSessionEnd();
-                        break;
                     case COMMAND_UAS_LOCATION:
                         final Location uasLocation = intent.getExtras().getParcelable(EXTRA_LOCATION);
                         handleCommandUasLocation(uasLocation);
                         break;
                     case COMMAND_UAS_IMAGE:
                         handleCommandUasImage();
-                        break;
-                    case SETTING_CHANGE_START_HEIGHT:
-                        handleSettingChangeStartHeight();
                         break;
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);

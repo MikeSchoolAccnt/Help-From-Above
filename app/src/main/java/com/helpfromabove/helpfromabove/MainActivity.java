@@ -9,8 +9,6 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -66,7 +64,6 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
 
         bindCommandService();
-
     }
 
     @Override
@@ -75,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
 
         registerReceiver(mainActivityBroadcastReceiver, new IntentFilter(CommandService.ACTION_NEW_UAS_IMAGE));
-        sendBroadcast(new Intent(CommandService.ACTION_REQUEST_LAST_IMAGE_FILENAME));
+        commandService.broadcastIfServicesReady();
     }
 
     @Override
@@ -158,42 +155,41 @@ public class MainActivity extends AppCompatActivity {
             int response = getApplicationContext().checkSelfPermission(Manifest.permission.SEND_SMS);
             if (response == PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "onCreate: permission SEND_SMS is GRANTED");
-                sendBroadcast(new Intent(CommandService.COMMAND_HHMD_EMERGENCY));
+                commandService.handleCommandHhmdEmergency();
             } else {
                 ActivityCompat.requestPermissions(this,new String[]{android.Manifest.permission.SEND_SMS},0);
             }
         } else {
-            sendBroadcast(new Intent(CommandService.COMMAND_HHMD_EMERGENCY));
+            commandService.handleCommandHhmdEmergency();
         }
-
     }
 
     public void lightSwitchOnClick(View view) {
         Log.d(TAG, "lightSwitchOnClick");
 
         boolean isChecked = ((SwitchCompat) view).isChecked();
-        Intent lightIntent = new Intent(CommandService.COMMAND_HHMD_LIGHT);
-        lightIntent.putExtra(CommandService.EXTRA_LIGHT_ON_OFF, isChecked);
-        sendBroadcast(lightIntent);
+        commandService.handleCommandHhmdLight(isChecked);
     }
 
     public void uasHeightUpButtonOnClick(View view) {
         Log.d(TAG, "uasHeightUpButtonOnClick ");
 
-        sendBroadcast(new Intent(CommandService.COMMAND_HHMD_UAS_HEIGHT_UP));
+        commandService.handleCommandHhmdUasHeightUp();
     }
 
     public void uasHeightDownButtonOnClick(View view) {
         Log.d(TAG, "uasHeightDownButtonOnClick");
 
-        sendBroadcast(new Intent(CommandService.COMMAND_HHMD_UAS_HEIGHT_DOWN));
+        commandService.handleCommandHhmdUasHeightDown();
     }
 
     public void sessionStartButtonOnCLick(View view) {
         Log.d(TAG, "sessionStartButtonOnCLick");
+
         endSessionButton.setEnabled(true);
         startSessionButton.setEnabled(false);
-        sendBroadcast(new Intent(CommandService.COMMAND_HHMD_SESSION_START));
+
+        commandService.handleCommandHhmdSessionStart();
     }
 
     public void sessionEndButtonOnCLick(View view) {
@@ -202,7 +198,7 @@ public class MainActivity extends AppCompatActivity {
         endSessionButton.setEnabled(false);
         startSessionButton.setEnabled(true);
 
-        sendBroadcast(new Intent(CommandService.COMMAND_HHMD_SESSION_END));
+        commandService.handleCommandHhmdSessionEnd();
     }
 
     /*
@@ -225,18 +221,6 @@ public class MainActivity extends AppCompatActivity {
 
         imageView.setImageBitmap(imageBitmap);
 
-//        if (uasImageFileName != null) {
-//            try {
-//                FileInputStream fis = openFileInput(uasImageFileName);
-//                Bitmap imageBitmap = BitmapFactory.decodeStream(fis);
-//                ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
-//                imageView.setImageBitmap(imageBitmap);
-//            } catch (FileNotFoundException fNFE) {
-//                Log.e(TAG, "setUasImage: FileNotFoundException: " + fNFE.getMessage(), fNFE);
-//            } catch (NullPointerException nPE) {
-//                Log.e(TAG, "setUasImage: NullPointerException: " + nPE.getMessage(), nPE);
-//            }
-//        }
     }
     private void setConnectedService(IBinder service) {
         Log.d(TAG, "setConnectedService");
