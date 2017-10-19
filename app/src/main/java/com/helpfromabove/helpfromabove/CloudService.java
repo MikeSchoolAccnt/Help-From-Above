@@ -1,9 +1,10 @@
 package com.helpfromabove.helpfromabove;
 
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
 import android.os.Binder;
 import android.os.Environment;
 import android.os.IBinder;
@@ -15,16 +16,15 @@ import com.cloudrail.si.interfaces.CloudStorage;
 import com.cloudrail.si.services.Dropbox;
 import com.cloudrail.si.services.OneDrive;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
-import java.util.concurrent.ExecutionException;
 
 public class CloudService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String TAG = "CloudService";
@@ -40,16 +40,12 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
     private final IBinder mBinder = new CloudServiceBinder();
 
     private static final String APP_FOLDER = "Help_From_Above";
-    private final String CLOUD_APP_FOLDER = "/" + APP_FOLDER;
+    private final String CLOUD_APP_FOLDER = File.pathSeparator + APP_FOLDER;
     private String sessionFolder;
+    private CompressFormat compressionFormat;
+    private int compressionQuality;
 
     private CloudStorage cloudStorage;
-
-    public CloudService() {
-        super();
-
-        Log.d(TAG, "CloudService");
-    }
 
     @Override
     public void onCreate() {
@@ -155,6 +151,8 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         Log.d(TAG, "startSession");
 
         createSessionFolder();
+        compressionFormat = CompressFormat.PNG;
+        compressionQuality = 50;
     }
 
     private void createSessionFolder() {
@@ -197,51 +195,97 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         return df.format(Calendar.getInstance().getTime());
     }
 
-    protected void saveImage(final Object data) {
+    private String getImageFileExtension() {
+        String extension;
+        if (compressionFormat == CompressFormat.PNG) {
+            extension = ".png";
+        }
+        else if (compressionFormat == CompressFormat.JPEG) {
+            extension = ".jpg";
+        }
+        else {
+            Log.w(TAG, "Unknown compression format: " + compressionFormat);
+            extension = null;
+        }
+
+        return extension;
+    }
+
+    protected void saveImage(final Bitmap bitmap) {
         Log.d(TAG, "saveImage");
         new Thread(new Runnable() {
             @Override
             public void run() {
                 if (cloudStorage == null) {
-                    saveLocalImage(data);
+                    saveLocalImage(bitmap);
                 } else {
-                    saveCloudImage(data);
+                    saveCloudImage(bitmap);
                 }
             }
         }).start();
     }
 
-    private void saveLocalImage(final Object data) {
+    private void saveLocalImage(Bitmap bitmap) {
         Log.d(TAG, "saveLocalImage");
 
-//        // TODO: Determine filename either from data, or from getDateTime();
-//        String filename = null;
-//        String path = sessionFolder + File.separator + filename;
-//        try {
-//            File file = new File(path);
-//            file.createNewFile();
-//        } catch (IOException iOE) {
-//            Log.e(TAG, "saveLocalImage: IOException: " + iOE.getMessage(), iOE);
-//        }
-//
-//        try {
-//            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(getApplicationContext().openFileOutput(path, Context.MODE_PRIVATE));
-//        // TODO: Determine what data type will be and how to convert it so we can write it
-//            outputStreamWriter.write(data);
-//            outputStreamWriter.close();
-//        } catch (IOException iOE) {
-//            Log.e(TAG, "saveLocalImage: IOException: " + iOE.getMessage(), iOE);
-//        }
+        try {
+            byte[] byteArray = convertBitmapToByteArray(bitmap, compressionFormat, compressionQuality);
+            String filename = getDateTime() + getImageFileExtension();
+            String path = sessionFolder + File.separator + filename;
+
+            File file = new File(path);
+            file.createNewFile();
+
+            FileOutputStream fos = new FileOutputStream(file);
+            fos.write(byteArray);
+            fos.flush();
+            fos.close();
+        } catch (IOException iOE) {
+            Log.e(TAG, "saveLocalImage: IOException: " + iOE.getMessage(), iOE);
+        }
     }
 
-    private void saveCloudImage(final Object data) {
+    private static byte[] convertBitmapToByteArray(Bitmap bitmap, CompressFormat format, int quality) {
+        byte[] byteArray;
+        if (bitmap == null) {
+            byteArray = null;
+        }
+        else {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            bitmap.compress(format, quality, bos);
+            byteArray = bos.toByteArray();
+        }
+
+        return byteArray;
+    }
+
+    private void saveCloudImage(Bitmap bitmap) {
         Log.d(TAG, "saveCloudImage");
 
-//        // TODO: Determine filename either from data, or from getDateTime();
-//        String filename = null;
-//        // TODO: Determine what data type will be and how to convert it to input steam
-//        InputStream inputStream = null;
-//        cloudStorage.upload(filename, inputStream, 0, false);
+        ByteArrayInputStream byteArrayInputStream = convertDataToByteArrayInputStream(bitmap, compressionFormat, compressionQuality);
+
+        String filename = getDateTime() + getImageFileExtension();
+        String path = sessionFolder + File.separator + filename;
+        cloudStorage.upload(path, byteArrayInputStream, byteArrayInputStream.available(), false);
+    }
+
+    private static ByteArrayInputStream convertDataToByteArrayInputStream(Bitmap bitmap, CompressFormat format, int quality) {
+        Log.d(TAG, "convertDataToBitmap");
+
+        ByteArrayInputStream byteArrayInputStream;
+
+        if(bitmap == null || bitmap.getByteCount() == 0) {
+            byteArrayInputStream = null;
+        }
+        else {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            bitmap.compress(format, quality, byteArrayOutputStream);
+
+            byte[] imageBytes = byteArrayOutputStream.toByteArray();
+            byteArrayInputStream = new ByteArrayInputStream(imageBytes);
+        }
+
+        return byteArrayInputStream;
     }
 
     protected String getSessionCloudLink() {

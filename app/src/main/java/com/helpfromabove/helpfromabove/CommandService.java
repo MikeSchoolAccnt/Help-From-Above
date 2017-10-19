@@ -226,16 +226,6 @@ public class CommandService extends Service {
         uasCommunicationService.connectToDevice(device);
     }
 
-    /******************************************************
-     * In the future, we might want all static methods to
-     * only send action intents (without extras, or very
-     * little data [like ints or strings]). That way when
-     * the dynamic methods are called, they have to get
-     * the latest data values from the service instances.
-     * That would reduce the amount of data sent, and
-     * restrictions on size of data sent through intents
-     ******************************************************/
-
     protected static void notifyUiWifiP2pConnected(Context contest) {
         Log.d(TAG, "notifyUiWifiP2pConnected");
 
@@ -269,12 +259,6 @@ public class CommandService extends Service {
 
         Log.d(TAG, "getLastSessionImageFileName: imageFileName=" + imageFileName);
         return imageFileName;
-    }
-
-    public void addSessionImageFileName(String imageFileName) {
-        Log.d(TAG, "addSessionImageFileName");
-
-        mImageFileNamesStack.push(imageFileName);
     }
 
     protected void handleCommandHhmdEmergency() {
@@ -336,8 +320,8 @@ public class CommandService extends Service {
         Log.d(TAG, "handleCommandUasImage");
 
         // TODO: Add method for getting the most recent image data from the UasCOmmunicationService class.
-        Object data = null;// = uasCommunicationService.getImageData();
-        cloudService.saveImage(data);
+        Bitmap bitmap = null;// = uasCommunicationService.getImageData();
+        cloudService.saveImage(bitmap);
     }
 
     private void handleSettingChangeStartHeight() {
@@ -350,21 +334,6 @@ public class CommandService extends Service {
         Intent newImageIntent = new Intent(ACTION_NEW_UAS_IMAGE);
         newImageIntent.putExtra(EXTRA_IMAGE_FILE_NAME, getLastSessionImageFileName());
         sendBroadcast(newImageIntent);
-    }
-
-    private void saveImage(String filename) {
-        Log.d(TAG, "saveImage");
-
-        try {
-            FileOutputStream outputStream = openFileOutput(filename, Context.MODE_PRIVATE);
-
-            // This is for local image testing. Modify once local image testing is complete
-            outputStream.write(imageBytes.get(imageDebugCounter % 3));
-
-            outputStream.close();
-        } catch (IOException iOE) {
-            Log.e(TAG, "handleCommandUasImage: IOException: " + iOE.getMessage(), iOE);
-        }
     }
 
     private class CommandServiceBroadcastReceiver extends BroadcastReceiver {
