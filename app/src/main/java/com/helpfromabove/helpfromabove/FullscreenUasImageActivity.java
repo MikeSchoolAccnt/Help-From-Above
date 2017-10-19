@@ -1,12 +1,15 @@
 package com.helpfromabove.helpfromabove;
 
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.ImageView;
@@ -27,6 +30,8 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
     private static final String TAG = "FullscreenUasImageAc...";
     private FullscreenUasImageBroadcastReceiver fUIBR = new FullscreenUasImageBroadcastReceiver();
 
+    private CommandService commandService;
+    private ServiceConnection commandServiceConnection;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +45,8 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
     protected void onStart() {
         Log.d(TAG, "onStart");
         super.onStart();
+
+        bindCommandService();
     }
 
     @Override
@@ -48,7 +55,7 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
         super.onResume();
 
         registerReceiver(fUIBR, new IntentFilter(CommandService.ACTION_NEW_UAS_IMAGE));
-        sendBroadcast(new Intent(CommandService.ACTION_REQUEST_LAST_IMAGE_FILENAME));
+        commandService.broadcastIfServicesReady();
     }
 
     @Override
@@ -63,6 +70,21 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
     protected void onStop() {
         Log.d(TAG, "onStop");
         super.onStop();
+
+        unbindCommandService();
+    }
+
+    private void bindCommandService(){
+        Intent commandServiceIntent = new Intent(getApplicationContext(), CommandService.class);
+        startService(commandServiceIntent);
+        commandServiceConnection = new FullscreenUasImageActivityServiceConnection();
+        bindService(commandServiceIntent, commandServiceConnection, Context.BIND_NOT_FOREGROUND);
+    }
+
+    private void unbindCommandService() {
+        Log.d(TAG, "unbindCommandService");
+
+        unbindService(commandServiceConnection);
     }
 
     private void updateFullscreenUasImageView(String uasImageFileName) {
@@ -84,6 +106,32 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
             }
         }
     }
+
+    private void setConnectedService(IBinder service) {
+        Log.d(TAG, "setConnectedService");
+
+        String serviceClassName = service.getClass().getName();
+        if (serviceClassName.equals(CommandService.CommandServiceBinder.class.getName())) {
+            commandService = ((CommandService.CommandServiceBinder) service).getService();
+        }
+    }
+
+    protected class FullscreenUasImageActivityServiceConnection implements ServiceConnection {
+
+        private static final String TAG = "FullscreenUasImageAc...";
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(TAG, "onServiceConnected");
+            setConnectedService(service);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d(TAG, "onServiceDisconnected");
+        }
+    }
+
 
     /*
      * Custom BroadcastReceiver for routing intent actions to their

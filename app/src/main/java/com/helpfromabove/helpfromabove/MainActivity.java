@@ -38,7 +38,6 @@ public class MainActivity extends AppCompatActivity {
     private final String TAG = "MainActivity";
     private MainActivityBroadcastReceiver mainActivityBroadcastReceiver = new MainActivityBroadcastReceiver();
 
-
     private CommandService commandService;
     private ServiceConnection commandServiceConnection;
 
@@ -228,13 +227,12 @@ public class MainActivity extends AppCompatActivity {
         String serviceClassName = service.getClass().getName();
         if (serviceClassName.equals(CommandService.CommandServiceBinder.class.getName())) {
             commandService = ((CommandService.CommandServiceBinder) service).getService();
-            commandService.startWifiP2pScanning();
         }
     }
 
     protected class MainActivityServiceConnection implements ServiceConnection{
 
-        private static final String TAG = "MainActivitySe";
+        private static final String TAG = "MainActivityServiceC...";
 
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -247,6 +245,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "onServiceDisconnected");
         }
     }
+
     /*
      * Custom BroadcastReceiver for routing intent actions to their
      * proper methods for the MainActivity
