@@ -28,7 +28,7 @@ import java.io.IOException;
 
 public class FullscreenUasImageActivity extends AppCompatActivity {
     private static final String TAG = "FullscreenUasImageAc...";
-    private FullscreenUasImageBroadcastReceiver fUIBR = new FullscreenUasImageBroadcastReceiver();
+    private FullscreenUasImageBroadcastReceiver fullscreenUasImageBroadcastReceiver = new FullscreenUasImageBroadcastReceiver();
 
     private CommandService commandService;
     private ServiceConnection commandServiceConnection;
@@ -54,8 +54,9 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
         Log.d(TAG, "onResume");
         super.onResume();
 
-        registerReceiver(fUIBR, new IntentFilter(CommandService.ACTION_NEW_UAS_IMAGE));
-        commandService.broadcastIfServicesReady();
+        IntentFilter intentFilter = new IntentFilter(CommandService.ACTION_UI_NEW_IMAGE);
+        registerReceiver(fullscreenUasImageBroadcastReceiver, intentFilter);
+        handleNewImage();
     }
 
     @Override
@@ -63,7 +64,7 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
         Log.d(TAG, "onPause");
         super.onPause();
 
-        unregisterReceiver(fUIBR);
+        unregisterReceiver(fullscreenUasImageBroadcastReceiver);
     }
 
     @Override
@@ -87,23 +88,14 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
         unbindService(commandServiceConnection);
     }
 
-    private void updateFullscreenUasImageView(String uasImageFileName) {
-        Log.d(TAG, "updateFullscreenUasImageView");
+    private void handleNewImage() {
+        Log.d(TAG, "handleNewImage");
 
-        if (uasImageFileName != null) {
-            try {
-                FileInputStream fis = openFileInput(uasImageFileName);
-                FileDescriptor fD = fis.getFD();
-                Bitmap imageBitmap = BitmapFactory.decodeFileDescriptor(fD);
-                ImageView imageView = (ImageView) findViewById(R.id.fullscreen_uas_image_view);
-                imageView.setImageBitmap(imageBitmap);
-            } catch (FileNotFoundException fNFE) {
-                Log.e(TAG, "setUasImage: FileNotFoundException: " + fNFE.getMessage(), fNFE);
-            } catch (IOException iOE) {
-                Log.e(TAG, "setUasImage: IOException: " + iOE.getMessage(), iOE);
-            } catch (NullPointerException nPE) {
-                Log.e(TAG, "setUasImage: NullPointerException: " + nPE.getMessage(), nPE);
-            }
+        ImageView imageView = (ImageView) findViewById(R.id.fullscreen_uas_image_view);
+        Bitmap bitmap = commandService.getNewImage();
+
+        if ((imageView != null) && (bitmap != null)) {
+            imageView.setImageBitmap(bitmap);
         }
     }
 
@@ -117,7 +109,6 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
     }
 
     private class FullscreenUasImageActivityServiceConnection implements ServiceConnection {
-
         private static final String TAG = "FullscreenUasImageAc...";
 
         @Override
@@ -145,11 +136,8 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
             String action = intent.getAction();
             if (intent != null && action != null) {
                 switch (action) {
-                    case CommandService.ACTION_NEW_UAS_IMAGE:
-                        Log.d(TAG, "onReceive: ACTION_NEW_UAS_IMAGE");
-
-                        String imageFileName = intent.getStringExtra(CommandService.EXTRA_IMAGE_FILE_NAME);
-                        updateFullscreenUasImageView(imageFileName);
+                    case CommandService.ACTION_UI_NEW_IMAGE:
+                        handleNewImage();
                         break;
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);

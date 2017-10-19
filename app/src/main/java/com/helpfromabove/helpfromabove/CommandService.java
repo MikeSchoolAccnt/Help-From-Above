@@ -34,8 +34,8 @@ import java.util.Stack;
 public class CommandService extends Service {
     protected static final String ACTION_UI_SERVICES_READY = "com.helpfromabove.helpfromabove.action.ACTION_UI_SERVICES_READY";
     protected static final String ACTION_UI_WIFI_P2P_CONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_UI_WIFI_P2P_CONNECTED";
+    protected static final String ACTION_UI_NEW_IMAGE = "com.helpfromabove.helpfromabove.action.ACTION_UI_NEW_IMAGE";
     protected static final String ACTION_NEW_WAYPOINT_AVAILABLE = "com.helpfromabove.helpfromabove.command.ACTION_NEW_WAYPOINT_AVAILABLE";
-    protected static final String ACTION_NEW_UAS_IMAGE = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_IMAGE";
     protected static final String ACTION_NEW_UAS_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_LOCATION";
     protected static final String ACTION_NEW_HHMD_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_HHMD_LOCATION";
     protected static final String ACTION_REQUEST_LAST_IMAGE_FILENAME = "com.helpfromabove.helpfromabove.action.ACTION_REQUEST_LAST_IMAGE_FILENAME";
@@ -230,6 +230,12 @@ public class CommandService extends Service {
         context.sendBroadcast(new Intent(ACTION_NEW_WAYPOINT_AVAILABLE));
     }
 
+    protected static void notifyUiNewImageAvailable(Context context) {
+        Log.d(TAG, "notifyUiNewImageAvailable");
+
+        context.sendBroadcast(new Intent(ACTION_UI_NEW_IMAGE));
+    }
+
     protected Bitmap getNewImage(){
         return uasCommunicationService.getNewImage();
     }
@@ -329,14 +335,6 @@ public class CommandService extends Service {
 //        sendNewImageIntent();
     }
 
-    private void sendNewImageIntent() {
-        Log.d(TAG, "sendNewImageIntent");
-
-        Intent newImageIntent = new Intent(ACTION_NEW_UAS_IMAGE);
-        newImageIntent.putExtra(EXTRA_IMAGE_FILE_NAME, getLastSessionImageFileName());
-        sendBroadcast(newImageIntent);
-    }
-
     private void saveImage(String filename) {
         Log.d(TAG, "saveImage");
 
@@ -362,9 +360,6 @@ public class CommandService extends Service {
                 switch (action) {
                     case ACTION_NEW_WAYPOINT_AVAILABLE:
                         handleSendWaypoint();
-                        break;
-                    case ACTION_REQUEST_LAST_IMAGE_FILENAME:
-                        sendNewImageIntent();
                         break;
                     case COMMAND_UAS_LOCATION:
                         final Location uasLocation = intent.getExtras().getParcelable(EXTRA_LOCATION);

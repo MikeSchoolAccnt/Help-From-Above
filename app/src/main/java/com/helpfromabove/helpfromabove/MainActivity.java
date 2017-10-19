@@ -70,8 +70,9 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "onResume");
         super.onResume();
 
-        registerReceiver(mainActivityBroadcastReceiver, new IntentFilter(CommandService.ACTION_NEW_UAS_IMAGE));
-        commandService.broadcastIfServicesReady();
+        IntentFilter intentFilter = new IntentFilter(CommandService.ACTION_UI_NEW_IMAGE);
+        registerReceiver(mainActivityBroadcastReceiver, intentFilter);
+        handleNewImage();
     }
 
     @Override
@@ -213,14 +214,17 @@ public class MainActivity extends AppCompatActivity {
     /*
      * Methods for handling events caused by receiving new broadcasts
      */
-    public void updateUasImageView(Bitmap imageBitmap) {
-        Log.d(TAG, "updateUasImageView: New uas Image");
+    private void handleNewImage() {
+        Log.d(TAG, "handleNewImage");
 
         ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
+        Bitmap bitmap = commandService.getNewImage();
 
-        imageView.setImageBitmap(imageBitmap);
-
+        if ((imageView != null) && (bitmap != null)) {
+            imageView.setImageBitmap(bitmap);
+        }
     }
+
     private void setConnectedService(IBinder service) {
         Log.d(TAG, "setConnectedService");
 
@@ -258,10 +262,8 @@ public class MainActivity extends AppCompatActivity {
             String action = intent.getAction();
             if (intent != null && action != null) {
                 switch (action) {
-                    case CommandService.ACTION_NEW_UAS_IMAGE:
-                        Log.d(TAG, "onReceive: ACTION_NEW_UAS_IMAGE");
-
-                        updateUasImageView(commandService.getNewImage());
+                    case CommandService.ACTION_UI_NEW_IMAGE:
+                        handleNewImage();
                         break;
                     case CommandService.ACTION_NEW_UAS_LOCATION:
                         Log.d(TAG, "onReceive: ACTION_NEW_UAS_LOCATION");
