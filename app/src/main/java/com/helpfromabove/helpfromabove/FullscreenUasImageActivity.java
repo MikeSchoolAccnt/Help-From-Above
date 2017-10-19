@@ -116,7 +116,7 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
         }
     }
 
-    protected class FullscreenUasImageActivityServiceConnection implements ServiceConnection {
+    private class FullscreenUasImageActivityServiceConnection implements ServiceConnection {
 
         private static final String TAG = "FullscreenUasImageAc...";
 

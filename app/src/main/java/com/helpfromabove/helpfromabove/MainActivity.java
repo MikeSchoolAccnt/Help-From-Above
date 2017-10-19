@@ -230,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    protected class MainActivityServiceConnection implements ServiceConnection{
+    private class MainActivityServiceConnection implements ServiceConnection{
 
         private static final String TAG = "MainActivityServiceC...";
 

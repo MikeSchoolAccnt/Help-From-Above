@@ -3,12 +3,15 @@ package com.helpfromabove.helpfromabove;
 import android.Manifest;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.animation.Animation;
@@ -29,11 +32,14 @@ public class SplashActivity extends Activity {
 
     private static final String TAG = "SplashActivity";
     private BroadcastReceiver splashActivityBroadcastReceiver;
+
+    private CommandService commandService;
+    private ServiceConnection commandServiceConnection;
+
     private Animation tempAnim;
     private ImageView splash;
     private boolean servicesReady = false;
     private boolean animationComplete = false;
-    //private boolean permissionsChecked = false;
 
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate");
@@ -57,7 +63,7 @@ public class SplashActivity extends Activity {
             @Override
             public void onAnimationEnd(Animation animation) {
                 animationComplete = true;
-                broadcastRequestServicesReady();
+                requestServicesReadyBroadcast();
                 askForPermissions();
             }
 
@@ -75,13 +81,14 @@ public class SplashActivity extends Activity {
         super.onStart();
 
         splash.startAnimation(tempAnim);
-        startService(new Intent(this, CommandService.class));
+        bindCommandService();
     }
 
     @Override
     protected void onResume() {
         Log.d(TAG, "onResume");
         super.onResume();
+
         registerReceiver(splashActivityBroadcastReceiver, new IntentFilter(CommandService.ACTION_UI_SERVICES_READY));
     }
 
@@ -89,16 +96,44 @@ public class SplashActivity extends Activity {
     protected void onPause() {
         Log.d(TAG, "onPause");
         super.onPause();
+
         unregisterReceiver(splashActivityBroadcastReceiver);
     }
 
-    private void broadcastRequestServicesReady() {
-        Log.d(TAG, "broadcastRequestServicesReady");
+    @Override
+    protected void onStop() {
+        Log.d(TAG, "onStop");
+        super.onStop();
 
-        sendBroadcast(new Intent(CommandService.ACTION_REQUEST_SERVICES_READY));
+        unbindCommandService();
     }
 
-    private void askForPermissions(){
+    private void bindCommandService() {
+        Intent commandServiceIntent = new Intent(getApplicationContext(), CommandService.class);
+        startService(commandServiceIntent);
+        commandServiceConnection = new SplashActivityServiceConnection();
+        bindService(commandServiceIntent, commandServiceConnection, Context.BIND_NOT_FOREGROUND);
+    }
+
+    private void unbindCommandService() {
+        Log.d(TAG, "unbindCommandService");
+
+        unbindService(commandServiceConnection);
+    }
+
+    private void requestServicesReadyBroadcast() {
+        Log.d(TAG, "requestServicesReadyBroadcast");
+
+        if (commandService != null) {
+            commandService.broadcastIfServicesReady();
+        }
+        else {
+            Log.e(TAG, "commandService is null!!!");
+        }
+    }
+
+    private void askForPermissions() {
+        Log.d(TAG, "askForPermissions");
 
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 
@@ -121,17 +156,17 @@ public class SplashActivity extends Activity {
             if (permissions.size() != 0) {
                 requestPermissions(permissions.toArray(new String[permissions.size()]), PERMISSIONS_CODE);
             } else {
-                transition();
+                transitionIfReady();
             }
 
         } else {
-            transition();
+            transitionIfReady();
         }
 
     }
 
-    public void transition() {
-        Log.d(TAG, "transition");
+    private void transitionIfReady() {
+        Log.d(TAG, "transitionIfReady");
 
         if(servicesReady && animationComplete) {
             Intent i = new Intent(getApplicationContext(), WifiP2pConnectActivity.class);
@@ -167,7 +202,32 @@ public class SplashActivity extends Activity {
                 }
         }
 
-        transition();
+        transitionIfReady();
+    }
+
+    private void setConnectedService(IBinder service) {
+        Log.d(TAG, "setConnectedService");
+
+        String serviceClassName = service.getClass().getName();
+        if (serviceClassName.equals(CommandService.CommandServiceBinder.class.getName())) {
+            commandService = ((CommandService.CommandServiceBinder) service).getService();
+        }
+    }
+
+    private class SplashActivityServiceConnection implements ServiceConnection{
+
+        private static final String TAG = "SplashActivityServic...";
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(TAG, "onServiceConnected");
+            setConnectedService(service);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d(TAG, "onServiceDisconnected");
+        }
     }
 
     private class SplashActivityBroadcastReceiver extends BroadcastReceiver {
@@ -180,7 +240,7 @@ public class SplashActivity extends Activity {
                 switch (action) {
                     case CommandService.ACTION_UI_SERVICES_READY:
                         servicesReady = true;
-                        transition();
+                        transitionIfReady();
                         break;
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);
