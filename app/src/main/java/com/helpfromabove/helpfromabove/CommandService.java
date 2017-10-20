@@ -311,8 +311,7 @@ public class CommandService extends Service {
     private void handleCommandUasImage() {
         Log.d(TAG, "handleCommandUasImage");
 
-        // TODO: Add method for getting the most recent image data from the UasCOmmunicationService class.
-        Bitmap bitmap = null;// = uasCommunicationService.getImageData();
+        Bitmap bitmap = uasCommunicationService.getNewImage();
         cloudService.saveImage(bitmap);
     }
 
