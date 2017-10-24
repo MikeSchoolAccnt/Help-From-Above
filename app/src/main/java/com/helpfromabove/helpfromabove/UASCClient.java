@@ -15,8 +15,13 @@ import android.util.Log;
 import com.helpfromabove.helpfromabove.CommandService;
 import com.helpfromabove.helpfromabove.UasCommunicationService;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,6 +31,7 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 
 /**
@@ -34,6 +40,12 @@ import java.util.ArrayList;
 
 public class UASCClient {
     private static final String TAG = "Heartbeat";
+
+    //Used for JSON Keys don't make consistent with other Strings
+    public static final String ALTITUDE = "ALTITUDE";
+    public static final String LONGITUDE = "LONGITUDE";
+    public static final String LATITUDE = "LATITUDE";
+    public static final String STATUS = "STATUS";
 
     private Context context;
     private String hostIP;
@@ -84,7 +96,7 @@ public class UASCClient {
     private String startSessionEndpoint;
     private String endSessionEndpoint;
     private Bitmap imageBitmap;
-    private Location lastWaypoint;
+    private Location latestUASLocation;
 
 
     //These are only for testing
@@ -144,7 +156,7 @@ public class UASCClient {
 
     protected Location getNewUasLocation() {
         Log.d(TAG, "getNewUasLocation: NOT YET IMPLEMENTED!");
-        return null;
+        return latestUASLocation;
     }
 
     public void startGPSAccess(String gpsEndpoint, int gpsAccessDelay){
@@ -178,10 +190,9 @@ public class UASCClient {
         oneTimeHandler.post(endSessionRunnable);
     }
 
-    public void sendNewWaypoint(String newWaypointEndpoint, Location location){
+    public void sendNewWaypoint(String newWaypointEndpoint, Location waypoint){
         this.newWaypointEndpoint = newWaypointEndpoint;
-        this.lastWaypoint = location;
-        initializeNewWaypoint();
+        initializeNewWaypoint(waypoint);
         oneTimeHandler.post(newWaypointRunnable);
     }
 
@@ -275,18 +286,40 @@ public class UASCClient {
             public void run() {
                 try {
                     gpsConnectionURL = new URL("http://"+hostIP+":"+port+"/"+gpsEndpoint);
-                    gpsConneciton = (HttpURLConnection) gpsConnectionURL.openConnection();
 
-                    //TODO implement getting the gps form the server
+                    InputStreamReader inputStreamReader = new InputStreamReader(gpsConnectionURL.openStream());
+                    BufferedReader reader = new BufferedReader(inputStreamReader);
+                    StringBuilder stringBuilder = new StringBuilder();
+                    String line;
+                    while((line = reader.readLine()) != null){
+                        stringBuilder.append(line);
+                    }
+                    reader.close();
 
-                    //TODO implement how the gps information is sent to the CommandService
-                    //This should be done by broadcasting it in someway.
+                    JSONObject jsonObject = new JSONObject(stringBuilder.toString());
+
+                    String status = jsonObject.getString(STATUS);
+
+                    double altitude = jsonObject.getDouble(ALTITUDE);
+                    double latitude = jsonObject.getDouble(LATITUDE);
+                    double longitude = jsonObject.getDouble(LONGITUDE);
+
+                    //This works for storing the location values in a location object
+                    latestUASLocation = new Location("");
+
+                    latestUASLocation.setAltitude(altitude);
+                    latestUASLocation.setLatitude(latitude);
+                    latestUASLocation.setLongitude(longitude);
+
+                    CommandService.notifyNewWaypointAvailable(context);
 
 
                 } catch (MalformedURLException e) {
-                    e.printStackTrace();
+                    Log.e(TAG,e.getMessage());
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.e(TAG,e.getMessage());
+                } catch (JSONException e) {
+                    Log.e(TAG,e.getMessage());
                 }
                 constantHandler.postDelayed(this,gpsAccessDelay);
             }
@@ -357,26 +390,50 @@ public class UASCClient {
         };
     }
 
-    private void initializeNewWaypoint(){
+    private void initializeNewWaypoint(final Location waypoint){
         newWaypointRunnable = new Runnable() {
             @Override
             public void run() {
 
+                Log.d(TAG,"Sending test Location");
+
                 try {
 
                     URL tempURL = new URL("http://"+hostIP+":"+port+"/"+newWaypointEndpoint);
+                    HttpURLConnection tempConnection = (HttpURLConnection) tempURL.openConnection();
+                    tempConnection.setRequestMethod("POST");
+                    tempConnection.setDoInput(true);
+                    tempConnection.setDoOutput(true);
+                    tempConnection.setUseCaches(false);
 
-                    String latitude = Location.convert(lastWaypoint.getLatitude(),Location.FORMAT_DEGREES);
-                    String longitide = Location.convert(lastWaypoint.getLongitude(),Location.FORMAT_DEGREES);
-                    String altitude = Location.convert(lastWaypoint.getAltitude(),Location.FORMAT_DEGREES);
+                    //Construct the json message
+                    String latitude = Location.convert(waypoint.getLatitude(),Location.FORMAT_DEGREES);
+                    String longitude = Location.convert(waypoint.getLongitude(),Location.FORMAT_DEGREES);
+                    String altitude = Location.convert(waypoint.getAltitude(),Location.FORMAT_DEGREES);
 
-                    //TODO: Send the latest waypoint to the server
+                    JSONObject object = new JSONObject();
+                    object.put(ALTITUDE,altitude);
+                    object.put(LONGITUDE,longitude);
+                    object.put(LATITUDE,latitude);
+
+                    String msg = object.toString();
+
+                    //Send the json message to the server (UASC)
+                    OutputStreamWriter outputStreamWriter = new OutputStreamWriter(tempConnection.getOutputStream());
+                    outputStreamWriter.write(msg);
+                    outputStreamWriter.flush();
+                    outputStreamWriter.close();
+                    Log.d(TAG,"Waypoint "+tempConnection.getResponseCode());
+                    tempConnection.disconnect();
+
 
 
                 } catch (MalformedURLException e) {
-                    e.printStackTrace();
+                    Log.e(TAG,e.getMessage());
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.e(TAG,e.getMessage());
+                } catch (JSONException e) {
+                    Log.e(TAG,e.getMessage());
                 }
 
             }

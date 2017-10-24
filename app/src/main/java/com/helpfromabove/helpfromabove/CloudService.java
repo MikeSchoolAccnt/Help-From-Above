@@ -40,7 +40,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
     private final IBinder mBinder = new CloudServiceBinder();
 
     private static final String APP_FOLDER = "Help_From_Above";
-    private final String CLOUD_APP_FOLDER = File.pathSeparator + APP_FOLDER;
+    private final String CLOUD_APP_FOLDER = "/" + APP_FOLDER;
     private String sessionFolder;
     private CompressFormat compressionFormat;
     private int compressionQuality;
