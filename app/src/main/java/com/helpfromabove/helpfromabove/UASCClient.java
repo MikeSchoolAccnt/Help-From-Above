@@ -142,6 +142,10 @@ public class UASCClient {
         return this.imageBitmap;
     }
 
+    protected Location getNewUasLocation() {
+        Log.d(TAG, "getNewUasLocation: NOT YET IMPLEMENTED!");
+        return null;
+    }
 
     public void startGPSAccess(String gpsEndpoint, int gpsAccessDelay){
         this.gpsEndpoint = gpsEndpoint;
@@ -253,7 +257,7 @@ public class UASCClient {
 
                     //Only broadcast new image if there is one.
                     if(imageBitmap != null)
-                        CommandService.notifyUiNewImageAvailable(context);
+                        CommandService.notifyNewUasImageAvailable(context);
 
                 } catch (MalformedURLException e) {
                     e.printStackTrace();

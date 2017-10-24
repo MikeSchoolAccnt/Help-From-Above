@@ -308,7 +308,7 @@ public class LocationService extends Service {
             pushHhmdLocation(location);
             Location waypoint = generateWaypoint();
             pushWaypointLocation(waypoint);
-            CommandService.sendUasWaypoint(getApplicationContext());
+            CommandService.notifyNewWaypointAvailable(getApplicationContext());
         }
 
         @Override

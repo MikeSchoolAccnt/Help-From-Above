@@ -32,17 +32,12 @@ import java.util.Stack;
  */
 
 public class CommandService extends Service {
-    protected static final String ACTION_UI_SERVICES_READY = "com.helpfromabove.helpfromabove.action.ACTION_UI_SERVICES_READY";
-    protected static final String ACTION_UI_WIFI_P2P_CONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_UI_WIFI_P2P_CONNECTED";
-    protected static final String ACTION_UI_NEW_IMAGE = "com.helpfromabove.helpfromabove.action.ACTION_UI_NEW_IMAGE";
-    protected static final String ACTION_NEW_WAYPOINT_AVAILABLE = "com.helpfromabove.helpfromabove.command.ACTION_NEW_WAYPOINT_AVAILABLE";
+    protected static final String ACTION_SERVICES_READY = "com.helpfromabove.helpfromabove.action.ACTION_SERVICES_READY";
+    protected static final String ACTION_WIFI_P2P_CONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_CONNECTED";
+    protected static final String ACTION_NEW_UAS_IMAGE = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_IMAGE";
+    protected static final String ACTION_NEW_WAYPOINT = "com.helpfromabove.helpfromabove.action.ACTION_NEW_WAYPOINT";
     protected static final String ACTION_NEW_UAS_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_LOCATION";
     protected static final String ACTION_NEW_HHMD_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_HHMD_LOCATION";
-    protected static final String ACTION_REQUEST_LAST_IMAGE_FILENAME = "com.helpfromabove.helpfromabove.action.ACTION_REQUEST_LAST_IMAGE_FILENAME";
-    protected static final String EXTRA_IMAGE_FILE_NAME = "com.helpfromabove.helpfromabove.extra.EXTRA_IMAGE_FILE_NAME";
-    protected static final String EXTRA_LOCATION = "com.helpfromabove.helpfromabove.extra.EXTRA_LOCATION";
-    protected static final String COMMAND_UAS_IMAGE = "com.helpfromabove.helpfromabove.command.COMMAND_UAS_IMAGE";
-    protected static final String COMMAND_UAS_LOCATION = "com.helpfromabove.helpfromabove.command.COMMAND_UAS_LOCATION";
 
     private final static String TAG = "CommandService";
 
@@ -59,42 +54,19 @@ public class CommandService extends Service {
 
     private CommandServiceBroadcastReceiver commandServiceBroadcastReceiver;
     private IntentFilter intentFilter;
-    private Stack<String> mImageFileNamesStack = new Stack<>();
-
-    // This is for local image testing. Remove once local image testing is complete
-    private int imageDebugCounter = 0;
-    private ArrayList<byte[]> imageBytes = new ArrayList<>();
 
     @Override
     public void onCreate() {
         Log.d(TAG, "onCreate");
         super.onCreate();
 
-        mImageFileNamesStack = new Stack<>();
-
         intentFilter = new IntentFilter();
-        intentFilter.addAction(ACTION_NEW_WAYPOINT_AVAILABLE);
-        intentFilter.addAction(ACTION_REQUEST_LAST_IMAGE_FILENAME);
-        intentFilter.addAction(COMMAND_UAS_IMAGE);
-        intentFilter.addAction(COMMAND_UAS_LOCATION);
+        intentFilter.addAction(ACTION_NEW_WAYPOINT);
+        intentFilter.addAction(ACTION_NEW_UAS_LOCATION);
         commandServiceBroadcastReceiver = new CommandServiceBroadcastReceiver();
         registerReceiver(commandServiceBroadcastReceiver, intentFilter);
 
         startServices();
-
-        // This is for local image testing. Remove once local image testing is complete
-        Bitmap bm = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.imag4240);
-        ByteArrayOutputStream baoStream = new ByteArrayOutputStream();
-        bm.compress(Bitmap.CompressFormat.JPEG, 100, baoStream);
-        imageBytes.add(baoStream.toByteArray());
-        bm = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.imag4366);
-        baoStream = new ByteArrayOutputStream();
-        bm.compress(Bitmap.CompressFormat.JPEG, 100, baoStream);
-        imageBytes.add(baoStream.toByteArray());
-        bm = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.imag4491);
-        baoStream = new ByteArrayOutputStream();
-        bm.compress(Bitmap.CompressFormat.JPEG, 100, baoStream);
-        imageBytes.add(baoStream.toByteArray());
     }
 
     @Override
@@ -181,7 +153,7 @@ public class CommandService extends Service {
         Log.d(TAG, "broadcastIfServicesReady");
 
         if ((uasCommunicationService != null) && (locationService != null) && (emergencyService != null) && (cloudService != null)) {
-            sendBroadcast(new Intent(ACTION_UI_SERVICES_READY));
+            sendBroadcast(new Intent(ACTION_SERVICES_READY));
         }
     }
 
@@ -208,22 +180,22 @@ public class CommandService extends Service {
         uasCommunicationService.connectToDevice(device);
     }
 
-    protected static void notifyUiWifiP2pConnected(Context contest) {
-        Log.d(TAG, "notifyUiWifiP2pConnected");
+    protected static void notifyWifiP2pConnected(Context context) {
+        Log.d(TAG, "notifyWifiP2pConnected");
 
-        contest.sendBroadcast(new Intent(ACTION_UI_WIFI_P2P_CONNECTED));
+        context.sendBroadcast(new Intent(ACTION_WIFI_P2P_CONNECTED));
     }
 
-    protected static void sendUasWaypoint(Context context) {
-        Log.d(TAG, "sendUasWaypoint");
+    protected static void notifyNewWaypointAvailable(Context context) {
+        Log.d(TAG, "notifyNewWaypointAvailable");
 
-        context.sendBroadcast(new Intent(ACTION_NEW_WAYPOINT_AVAILABLE));
+        context.sendBroadcast(new Intent(ACTION_NEW_WAYPOINT));
     }
 
-    protected static void notifyUiNewImageAvailable(Context context) {
-        Log.d(TAG, "notifyUiNewImageAvailable");
+    protected static void notifyNewUasImageAvailable(Context context) {
+        Log.d(TAG, "notifyNewUasImageAvailable");
 
-        context.sendBroadcast(new Intent(ACTION_UI_NEW_IMAGE));
+        context.sendBroadcast(new Intent(ACTION_NEW_UAS_IMAGE));
     }
 
     protected Bitmap getNewImage(){
@@ -231,27 +203,11 @@ public class CommandService extends Service {
         return uasCommunicationService.getNewImage() == null ? null: uasCommunicationService.getNewImage();
     }
 
-    private void handleSendWaypoint() {
-        Log.d(TAG, "handleSendWaypoint");
+    private void handleNewWaypoint() {
+        Log.d(TAG, "handleNewWaypoint");
 
         Location waypoint = locationService.getLastWaypointLocation();
         uasCommunicationService.sendWaypoint(waypoint);
-    }
-
-    public String getLastSessionImageFileName() {
-        Log.d(TAG, "getLastSessionImageFileName");
-
-        String imageFileName;
-        if (!mImageFileNamesStack.empty()) {
-            imageFileName = mImageFileNamesStack.peek();
-        } else {
-            Log.d(TAG, "getLastSessionImageFileName: mImageFileNamesStack is empty.");
-
-            imageFileName = null;
-        }
-
-        Log.d(TAG, "getLastSessionImageFileName: imageFileName=" + imageFileName);
-        return imageFileName;
     }
 
     protected void handleCommandHhmdEmergency() {
@@ -267,14 +223,6 @@ public class CommandService extends Service {
         Log.d(TAG, "handleCommandHhmdLight: lightOnOff=" + lightOnOff);
 
         uasCommunicationService.setLightOnOff(lightOnOff);
-
-        // This is for local image testing. Remove once local image testing is complete
-        if (imageDebugCounter >= 2) {
-            Log.d(TAG, "handleCommandHhmdLight: incoming image example");
-
-            handleCommandUasImage();
-        }
-        imageDebugCounter++;
     }
 
     protected void handleCommandHhmdUasHeightUp() {
@@ -304,31 +252,18 @@ public class CommandService extends Service {
         locationService.stopSession();
     }
 
-    private void handleCommandUasLocation(Location uasLocation) {
-        Log.d(TAG, "handleCommandUasLocation: uasLocation=" + uasLocation);
+    private void handleNewUasLocation() {
+        Log.d(TAG, "handleNewUasLocation");
+
+        Location uasLocation = uasCommunicationService.getNewUasLocation();
         locationService.pushUasLocation(uasLocation);
     }
 
-    private void handleCommandUasImage() {
-        Log.d(TAG, "handleCommandUasImage");
+    private void handleNewUasImage() {
+        Log.d(TAG, "handleNewUasImage");
 
         Bitmap bitmap = uasCommunicationService.getNewImage();
         cloudService.saveImage(bitmap);
-    }
-
-    private void saveImage(String filename) {
-        Log.d(TAG, "saveImage");
-
-        try {
-            FileOutputStream outputStream = openFileOutput(filename, Context.MODE_PRIVATE);
-
-            // This is for local image testing. Modify once local image testing is complete
-            outputStream.write(imageBytes.get(imageDebugCounter % 3));
-
-            outputStream.close();
-        } catch (IOException iOE) {
-            Log.e(TAG, "handleCommandUasImage: IOException: " + iOE.getMessage(), iOE);
-        }
     }
 
     private class CommandServiceBroadcastReceiver extends BroadcastReceiver {
@@ -339,15 +274,14 @@ public class CommandService extends Service {
             String action = intent.getAction();
             if (intent != null && action != null) {
                 switch (action) {
-                    case ACTION_NEW_WAYPOINT_AVAILABLE:
-                        handleSendWaypoint();
+                    case ACTION_NEW_WAYPOINT:
+                        handleNewWaypoint();
                         break;
-                    case COMMAND_UAS_LOCATION:
-                        final Location uasLocation = intent.getExtras().getParcelable(EXTRA_LOCATION);
-                        handleCommandUasLocation(uasLocation);
+                    case ACTION_NEW_UAS_LOCATION:
+                        handleNewUasLocation();
                         break;
-                    case COMMAND_UAS_IMAGE:
-                        handleCommandUasImage();
+                    case ACTION_NEW_UAS_IMAGE:
+                        handleNewUasImage();
                         break;
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);

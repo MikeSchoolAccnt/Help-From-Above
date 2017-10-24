@@ -54,7 +54,7 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
         Log.d(TAG, "onResume");
         super.onResume();
 
-        IntentFilter intentFilter = new IntentFilter(CommandService.ACTION_UI_NEW_IMAGE);
+        IntentFilter intentFilter = new IntentFilter(CommandService.ACTION_NEW_UAS_IMAGE);
         registerReceiver(fullscreenUasImageBroadcastReceiver, intentFilter);
         //handleNewImage();
     }
@@ -136,7 +136,7 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
             String action = intent.getAction();
             if (intent != null && action != null) {
                 switch (action) {
-                    case CommandService.ACTION_UI_NEW_IMAGE:
+                    case CommandService.ACTION_NEW_UAS_IMAGE:
                         handleNewImage();
                         break;
                     default:

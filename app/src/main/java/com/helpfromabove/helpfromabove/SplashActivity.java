@@ -89,7 +89,7 @@ public class SplashActivity extends Activity {
         Log.d(TAG, "onResume");
         super.onResume();
 
-        registerReceiver(splashActivityBroadcastReceiver, new IntentFilter(CommandService.ACTION_UI_SERVICES_READY));
+        registerReceiver(splashActivityBroadcastReceiver, new IntentFilter(CommandService.ACTION_SERVICES_READY));
     }
 
     @Override
@@ -238,7 +238,7 @@ public class SplashActivity extends Activity {
             String action = intent.getAction();
             if (action != null) {
                 switch (action) {
-                    case CommandService.ACTION_UI_SERVICES_READY:
+                    case CommandService.ACTION_SERVICES_READY:
                         servicesReady = true;
                         transitionIfReady();
                         break;

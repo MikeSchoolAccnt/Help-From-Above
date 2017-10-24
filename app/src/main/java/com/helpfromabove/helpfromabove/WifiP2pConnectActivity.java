@@ -45,7 +45,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
 
         intentFilter = new IntentFilter();
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
-        intentFilter.addAction(CommandService.ACTION_UI_WIFI_P2P_CONNECTED);
+        intentFilter.addAction(CommandService.ACTION_WIFI_P2P_CONNECTED);
 
         adapter = new ArrayAdapter(getApplicationContext(), R.layout.wifi_p2p_device, R.id.wifi_p2p_device_name) {
             @Override
@@ -222,7 +222,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
                         WifiP2pDeviceList deviceList = intent.getParcelableExtra(WifiP2pManager.EXTRA_P2P_DEVICE_LIST);
                         handleWifiP2pPeersChanged(deviceList.getDeviceList());
                         break;
-                    case CommandService.ACTION_UI_WIFI_P2P_CONNECTED:
+                    case CommandService.ACTION_WIFI_P2P_CONNECTED:
                         startActivity(new Intent(getApplicationContext(), MainActivity.class));
                         break;
                     default:

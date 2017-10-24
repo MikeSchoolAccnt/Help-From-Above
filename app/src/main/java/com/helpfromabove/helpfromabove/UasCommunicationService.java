@@ -158,7 +158,7 @@ public class UasCommunicationService extends Service {
             this.wifiP2pGroup = wifiP2pGroup;
             uascClient = new UASCClient(getApplicationContext(),wifiP2pInfo.groupOwnerAddress.getHostAddress(),port);
             startHeartbeat();
-            CommandService.notifyUiWifiP2pConnected(getApplicationContext());
+            CommandService.notifyWifiP2pConnected(getApplicationContext());
         } else{
             if(uascClient != null) {
                 uascClient.stopHeartbeat();
@@ -204,6 +204,14 @@ public class UasCommunicationService extends Service {
     public Bitmap getNewImage(){
         if(uascClient != null) {
             return uascClient.getImageBitmap();
+        } else {
+            return null;
+        }
+    }
+
+    public Location getNewUasLocation() {
+        if (uascClient != null) {
+            return uascClient.getNewUasLocation();
         } else {
             return null;
         }
@@ -303,7 +311,7 @@ public class UasCommunicationService extends Service {
             }
 
             // TODO: Used for testing other features on emulator, remove in final production
-            CommandService.notifyUiWifiP2pConnected(getApplicationContext());
+            CommandService.notifyWifiP2pConnected(getApplicationContext());
         }
     }
 }

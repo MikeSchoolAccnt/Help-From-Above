@@ -23,9 +23,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-
 /**
  * Created by Caleb Smith on 5/4/2017.
  *
@@ -70,7 +67,10 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "onResume");
         super.onResume();
 
-        IntentFilter intentFilter = new IntentFilter(CommandService.ACTION_UI_NEW_IMAGE);
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(CommandService.ACTION_NEW_UAS_IMAGE);
+        intentFilter.addAction(CommandService.ACTION_NEW_UAS_LOCATION);
+        intentFilter.addAction(CommandService.ACTION_NEW_HHMD_LOCATION);
         registerReceiver(mainActivityBroadcastReceiver, intentFilter);
         //handleNewImage();
     }
@@ -262,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
             String action = intent.getAction();
             if (intent != null && action != null) {
                 switch (action) {
-                    case CommandService.ACTION_UI_NEW_IMAGE:
+                    case CommandService.ACTION_NEW_UAS_IMAGE:
                         handleNewImage();
                         break;
                     case CommandService.ACTION_NEW_UAS_LOCATION:
