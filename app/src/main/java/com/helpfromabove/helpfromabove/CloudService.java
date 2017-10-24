@@ -3,7 +3,10 @@ package com.helpfromabove.helpfromabove;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
 import android.os.Binder;
+import android.os.Environment;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -13,13 +16,15 @@ import com.cloudrail.si.interfaces.CloudStorage;
 import com.cloudrail.si.services.Dropbox;
 import com.cloudrail.si.services.OneDrive;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
-import java.util.concurrent.ExecutionException;
 
 public class CloudService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String TAG = "CloudService";
@@ -34,15 +39,13 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
 
     private final IBinder mBinder = new CloudServiceBinder();
 
-    private final String CLOUD_APP_FOLDER = "/" + "Help_From_Above";
-    private String cloudSessionFolder;
-    private CloudStorage cloudStorage;
-    private CreateCloudSessionFolder createCloudSessionFolder;
-    public CloudService() {
-        super();
+    private static final String APP_FOLDER = "Help_From_Above";
+    private final String CLOUD_APP_FOLDER = File.pathSeparator + APP_FOLDER;
+    private String sessionFolder;
+    private CompressFormat compressionFormat;
+    private int compressionQuality;
 
-        Log.d(TAG, "CloudService");
-    }
+    private CloudStorage cloudStorage;
 
     @Override
     public void onCreate() {
@@ -53,6 +56,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).registerOnSharedPreferenceChangeListener(this);
 
         initCloudStorage();
+        createAppFolder();
     }
 
     @Override
@@ -76,22 +80,20 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         if (key.equals(getString(R.string.pref_key_cloud_storage_provider))) {
             Log.d(TAG, "onSharedPreferenceChanged: pref_key_cloud_storage_provider");
 
-            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-            String cloudProvider = sharedPref.getString(getString(R.string.pref_key_cloud_storage_provider), null);
-            Log.d(TAG, "onSharedPreferenceChanged: cloudProvider=" + cloudProvider);
-
-            handleSettingChangeCloud(cloudProvider);
+            initCloudStorage();
+            createAppFolder();
         }
     }
 
-    private void initCloudStorage(){
+    private void initCloudStorage() {
 
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-        String cloudType = sharedPref.getString(getString(R.string.pref_key_cloud_storage_provider), getString(R.string.pref_value_cloud_storage_provider_none));
+        String cloudType = sharedPref.getString(getString(R.string.pref_key_cloud_storage_provider), getString(R.string.pref_value_cloud_storage_provider_default));
 
         switch (cloudType) {
             case "-1":
                 Log.d(TAG, "initCloudStorage: None specified");
+                cloudStorage = null;
                 break;
             case "0":
                 Log.d(TAG, "initCloudStorage: Dropbox specified");
@@ -107,64 +109,85 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
                 cloudStorage = new OneDrive(this, ONE_DRIVE_APP_KEY, ONE_DRIVE_APP_SECRET);
                 break;
             default:
-                Log.d(TAG, "initCloudStorage: Unknown cloud storage specified");
-                //Possible set to device storage here
-                //Note: Most of the cloud services allowed for saving in offline mode
+                Log.w(TAG, "initCloudStorage: Unknown cloud storage specified");
                 break;
         }
     }
 
-    private void handleSettingChangeCloud(String cloudType) {
-        Log.d(TAG, "handleSettingChangeCloud");
+    private void createAppFolder() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (cloudStorage == null) {
+                    createLocalAppFolder();
+                } else {
+                    createCloudAppFolder();
+                }
+            }
+        }).start();
+    }
 
-        switch (cloudType) {
-            case "0":
-                Log.d(TAG, "handleSettingChangeCloud: Dropbox Specified");
-                cloudStorage = new Dropbox(this, DROPBOX_APP_KEY, DROPBOX_APP_SECRET);
+    private void createLocalAppFolder() {
+        Log.d(TAG, "createLocalAppFolder");
 
-                createCloudAppFolder();
-                break;
-            case "1":
-                Log.d(TAG, "handleSettingChangeCloud: Google Drive Specified");
-//                cloudStorage = new GoogleDrive();
-//                createCloudAppFolder();
-                break;
-            case "2":
-                Log.d(TAG, "handleSettingChangeCloud: OneDrive Specified");
-                cloudStorage = new OneDrive(this,ONE_DRIVE_APP_KEY,ONE_DRIVE_APP_SECRET);
-
-                createCloudAppFolder();
-                break;
-            default:
-                Log.d(TAG, "handleSettingChangeCloud: No Cloud Specified");
-                //Possible set to device storage here
-                //Note: Most of the cloud services allowed for saving in offline mode
-                break;
+        String dir = Environment.getExternalStorageDirectory() + File.separator + CLOUD_APP_FOLDER;
+        File directory = new File(dir);
+        if (!directory.mkdirs()) {
+            Log.e(TAG, "Could not make directories: " + dir);
         }
     }
 
     private void createCloudAppFolder() {
         Log.d(TAG, "createCloudAppFolder");
 
-        new CreateCloudAppFolder(cloudStorage,CLOUD_APP_FOLDER).execute();
+        try{
+            cloudStorage.createFolder(CLOUD_APP_FOLDER);
+        } catch (com.cloudrail.si.exceptions.HttpException hE){
+            Log.e(TAG, hE.getMessage());
+        }
     }
 
     protected void startSession() {
         Log.d(TAG, "startSession");
 
-        if(cloudStorage != null) {
-            createCloudSessionFolder();
-        } else {
-            //TODO: Handle local storage
-            Log.d(TAG,"startSession: Need to handle local storage option");
-        }
+        createSessionFolder();
+        compressionFormat = CompressFormat.PNG;
+        compressionQuality = 50;
+    }
+
+    private void createSessionFolder() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (cloudStorage == null) {
+                    createLocalSessionFolder();
+                } else {
+                    createCloudSessionFolder();
+                }
+            }
+        }).start();
     }
 
     private void createCloudSessionFolder() {
         Log.d(TAG, "createCloudSessionFolder");
 
-        createCloudSessionFolder = new CreateCloudSessionFolder(cloudStorage,CLOUD_APP_FOLDER);
-        createCloudSessionFolder.execute();
+        String cloudSessionFolder = CLOUD_APP_FOLDER + "/" + getDateTime();
+
+        try {
+            cloudStorage.createFolder(cloudSessionFolder);
+        } catch (com.cloudrail.si.exceptions.HttpException ex) {
+            Log.e(TAG,ex.getMessage());
+        }
+    }
+
+    private void createLocalSessionFolder() {
+        Log.d(TAG, "createLocalSessionFolder");
+
+        sessionFolder = Environment.getExternalStorageDirectory() + File.separator + APP_FOLDER + getDateTime();
+        File directory = new File(sessionFolder);
+        if (!directory.mkdirs()) {
+            Log.e(TAG, "Could not make directories: " + sessionFolder);
+        }
     }
 
     private String getDateTime() {
@@ -172,27 +195,97 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         return df.format(Calendar.getInstance().getTime());
     }
 
-    private void cloudUploadImage(final String filename) {
-        Log.d(TAG, "uploadImage");
-
-        try {
-            final InputStream inputStream = openFileInput(filename);
-
-            //Getting the cloudSessionFolder like this can run into problems if
-            //it is accessed to fast. Possibly make change as suggested
-            //in CreateCloudSessionFolderAsyncTask onPostExecute.
-            cloudSessionFolder = createCloudSessionFolder.get();
-
-            new CloudUploadImage(cloudStorage, CLOUD_APP_FOLDER,cloudSessionFolder,filename).execute(inputStream);
-            
-        } catch (IOException iOE) {
-            Log.e(TAG, "uploadImage: Exception " + iOE.getMessage(), iOE);
-        } catch (InterruptedException ex){
-            Log.e(TAG,ex.getMessage());
-        } catch (ExecutionException ex){
-            Log.e(TAG,ex.getMessage());
+    private String getImageFileExtension() {
+        String extension;
+        if (compressionFormat == CompressFormat.PNG) {
+            extension = ".png";
+        }
+        else if (compressionFormat == CompressFormat.JPEG) {
+            extension = ".jpg";
+        }
+        else {
+            Log.w(TAG, "Unknown compression format: " + compressionFormat);
+            extension = null;
         }
 
+        return extension;
+    }
+
+    protected void saveImage(final Bitmap bitmap) {
+        Log.d(TAG, "saveImage");
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (cloudStorage == null) {
+                    saveLocalImage(bitmap);
+                } else {
+                    saveCloudImage(bitmap);
+                }
+            }
+        }).start();
+    }
+
+    private void saveLocalImage(Bitmap bitmap) {
+        Log.d(TAG, "saveLocalImage");
+
+        try {
+            byte[] byteArray = convertBitmapToByteArray(bitmap, compressionFormat, compressionQuality);
+            String filename = getDateTime() + getImageFileExtension();
+            String path = sessionFolder + File.separator + filename;
+
+            File file = new File(path);
+            file.createNewFile();
+
+            FileOutputStream fos = new FileOutputStream(file);
+            fos.write(byteArray);
+            fos.flush();
+            fos.close();
+        } catch (IOException iOE) {
+            Log.e(TAG, "saveLocalImage: IOException: " + iOE.getMessage(), iOE);
+        }
+    }
+
+    private static byte[] convertBitmapToByteArray(Bitmap bitmap, CompressFormat format, int quality) {
+        byte[] byteArray;
+        if (bitmap == null) {
+            byteArray = null;
+        }
+        else {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            bitmap.compress(format, quality, bos);
+            byteArray = bos.toByteArray();
+        }
+
+        return byteArray;
+    }
+
+    private void saveCloudImage(Bitmap bitmap) {
+        Log.d(TAG, "saveCloudImage");
+
+        ByteArrayInputStream byteArrayInputStream = convertDataToByteArrayInputStream(bitmap, compressionFormat, compressionQuality);
+
+        String filename = getDateTime() + getImageFileExtension();
+        String path = sessionFolder + File.separator + filename;
+        cloudStorage.upload(path, byteArrayInputStream, byteArrayInputStream.available(), false);
+    }
+
+    private static ByteArrayInputStream convertDataToByteArrayInputStream(Bitmap bitmap, CompressFormat format, int quality) {
+        Log.d(TAG, "convertDataToBitmap");
+
+        ByteArrayInputStream byteArrayInputStream;
+
+        if(bitmap == null || bitmap.getByteCount() == 0) {
+            byteArrayInputStream = null;
+        }
+        else {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            bitmap.compress(format, quality, byteArrayOutputStream);
+
+            byte[] imageBytes = byteArrayOutputStream.toByteArray();
+            byteArrayInputStream = new ByteArrayInputStream(imageBytes);
+        }
+
+        return byteArrayInputStream;
     }
 
     protected String getSessionCloudLink() {
@@ -200,15 +293,13 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
 
         String link = null;
         if (cloudStorage != null) {
-            link = cloudStorage.createShareLink(cloudSessionFolder);
+            link = cloudStorage.createShareLink(sessionFolder);
         } else {
-            Log.w(TAG, "getSessionCloudLink: No cloud storage");
+            Log.d(TAG, "getSessionCloudLink: No cloud storage");
         }
 
         return link;
     }
-
-
 
     protected class CloudServiceBinder extends Binder {
         private static final String TAG = "CloudServiceBinder";
@@ -219,5 +310,4 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
             return CloudService.this;
         }
     }
-
 }

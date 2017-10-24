@@ -208,16 +208,6 @@ public class CommandService extends Service {
         uasCommunicationService.connectToDevice(device);
     }
 
-    /******************************************************
-     * In the future, we might want all static methods to
-     * only send action intents (without extras, or very
-     * little data [like ints or strings]). That way when
-     * the dynamic methods are called, they have to get
-     * the latest data values from the service instances.
-     * That would reduce the amount of data sent, and
-     * restrictions on size of data sent through intents
-     ******************************************************/
-
     protected static void notifyUiWifiP2pConnected(Context contest) {
         Log.d(TAG, "notifyUiWifiP2pConnected");
 
@@ -263,13 +253,6 @@ public class CommandService extends Service {
         Log.d(TAG, "getLastSessionImageFileName: imageFileName=" + imageFileName);
         return imageFileName;
     }
-
-    public void addSessionImageFileName(String imageFileName) {
-        Log.d(TAG, "addSessionImageFileName");
-
-        mImageFileNamesStack.push(imageFileName);
-    }
-
 
     protected void handleCommandHhmdEmergency() {
         Log.d(TAG, "handleCommandHhmdEmergency");
@@ -328,12 +311,9 @@ public class CommandService extends Service {
 
     private void handleCommandUasImage() {
         Log.d(TAG, "handleCommandUasImage");
-// TODO: Figure out how this will work
-//        String filename = getDateTime() + ".jpg";
-//        saveImage(filename);
-//        uploadImage(filename);
-//        addSessionImageFileName(filename);
-//        sendNewImageIntent();
+
+        Bitmap bitmap = uasCommunicationService.getNewImage();
+        cloudService.saveImage(bitmap);
     }
 
     private void saveImage(String filename) {
