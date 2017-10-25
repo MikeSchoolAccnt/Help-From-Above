@@ -41,6 +41,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
 
     private static final String APP_FOLDER = "Help_From_Above";
     private final String CLOUD_APP_FOLDER = "/" + APP_FOLDER;
+    private String cloudSessionFolder;
     private String sessionFolder;
     private CompressFormat compressionFormat;
     private int compressionQuality;
@@ -151,7 +152,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         Log.d(TAG, "startSession");
 
         createSessionFolder();
-        compressionFormat = CompressFormat.PNG;
+        compressionFormat = CompressFormat.JPEG;
         compressionQuality = 50;
     }
 
@@ -171,7 +172,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
     private void createCloudSessionFolder() {
         Log.d(TAG, "createCloudSessionFolder");
 
-        String cloudSessionFolder = CLOUD_APP_FOLDER + "/" + getDateTime();
+        cloudSessionFolder = CLOUD_APP_FOLDER + "/" + getDateTime();
 
         try {
             cloudStorage.createFolder(cloudSessionFolder);
@@ -265,7 +266,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         ByteArrayInputStream byteArrayInputStream = convertDataToByteArrayInputStream(bitmap, compressionFormat, compressionQuality);
 
         String filename = getDateTime() + getImageFileExtension();
-        String path = sessionFolder + File.separator + filename;
+        String path = cloudSessionFolder + "/" + filename;
         cloudStorage.upload(path, byteArrayInputStream, byteArrayInputStream.available(), false);
     }
 
@@ -293,7 +294,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
 
         String link = null;
         if (cloudStorage != null) {
-            link = cloudStorage.createShareLink(sessionFolder);
+            link = cloudStorage.createShareLink(cloudSessionFolder);
         } else {
             Log.d(TAG, "getSessionCloudLink: No cloud storage");
         }

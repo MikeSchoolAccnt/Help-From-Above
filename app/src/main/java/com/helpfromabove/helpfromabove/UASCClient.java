@@ -140,7 +140,10 @@ public class UASCClient {
         this.imageEndpoint = imageEndpoint;
         this.imageAccessDelay = imageAccessDelay;
         initializeAccessServerImage();
-        constantHandler.postDelayed(accessServerImageRunnable,0);
+
+        //Need to wait at least a second before grabbing images so that
+        //the session folder has time to be made in the users cloud service.
+        constantHandler.postDelayed(accessServerImageRunnable,1000);
 
     }
 

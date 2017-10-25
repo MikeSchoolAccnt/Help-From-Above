@@ -63,6 +63,7 @@ public class CommandService extends Service {
         intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_NEW_WAYPOINT);
         intentFilter.addAction(ACTION_NEW_UAS_LOCATION);
+        intentFilter.addAction(ACTION_NEW_UAS_IMAGE);
         commandServiceBroadcastReceiver = new CommandServiceBroadcastReceiver();
         registerReceiver(commandServiceBroadcastReceiver, intentFilter);
 
