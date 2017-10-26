@@ -305,13 +305,13 @@ public class LocationService extends Service {
     protected void incrementHeightOffset() {
         Log.d(TAG, "incrementHeightOffset");
 
-        setHeightOffset(heightOffset++);
+        setHeightOffset(++heightOffset);
     }
 
     protected void decrementHeightOffset() {
         Log.d(TAG, "decrementHeightOffset");
 
-        setHeightOffset(heightOffset--);
+        setHeightOffset(--heightOffset);
     }
 
     protected class LocationServiceBinder extends Binder {
