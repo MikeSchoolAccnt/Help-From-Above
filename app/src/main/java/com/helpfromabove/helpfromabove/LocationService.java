@@ -34,8 +34,9 @@ public class LocationService extends Service {
 
     private int accurateCount = 0;
     private boolean calibrationComplete = false;
+    private boolean sessionActive = false;
 
-    private static final int MIN_ACCURACY_DISTANCE = 10;
+    private static final int MIN_ACCURACY_DISTANCE = 100;
     private static final int MIN_ACCURATE_COUNT = 3;
     protected static final int CONSTANT_LOCATION_UPDATE_SECONDS = 3;
 
@@ -63,7 +64,7 @@ public class LocationService extends Service {
 
     protected void startSession() {
         Log.d(TAG, "startSession");
-
+        sessionActive = true;
         setCalibrationComplete(false);
         resetHeightOffset();
         clearLocations();
@@ -79,6 +80,7 @@ public class LocationService extends Service {
     }
 
     private void testCalibration (Location location) {
+        Log.d(TAG,"Location accuracy: "+ location.getAccuracy());
         if (location.getAccuracy() <= MIN_ACCURACY_DISTANCE) {
             accurateCount++;
         } else {
@@ -135,7 +137,9 @@ public class LocationService extends Service {
 
     protected void stopSession() {
         Log.d(TAG, "stopSession");
-
+        sessionActive = false;
+        calibrationComplete = false;
+        accurateCount = 0;
         stopLocationUpdates();
     }
 
@@ -143,6 +147,10 @@ public class LocationService extends Service {
         Log.d(TAG, "stopLocationUpdates");
 
         locationManager.removeUpdates(locationServiceLocationListener);
+    }
+
+    protected boolean isSessionActive(){
+        return sessionActive;
     }
 
     protected void pushUasLocation(Location uasLocation) {

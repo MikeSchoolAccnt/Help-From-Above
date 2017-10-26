@@ -40,6 +40,7 @@ public class UasCommunicationService extends Service {
 
     private UASCClient uascClient;
     private String port = "5000";
+    private boolean sessionActive = false;
 
     //debugging variable. Remove before final testing.
     private boolean canConnect = false;
@@ -176,17 +177,23 @@ public class UasCommunicationService extends Service {
     }
 
     protected void startSession() {
+        sessionActive = true;
         Log.d(TAG, "startSession: NOT FULLY IMPLEMENTED!");
         if(uascClient != null) {
-            uascClient.startImageAccess("image", 10000);
+            uascClient.startImageAccess("image", 1000);
         }
     }
 
     protected void stopSession() {
+        sessionActive = false;
         Log.d(TAG, "stopSession: NOT FULLY IMPLEMENTED!");
         if(uascClient != null){
             uascClient.stopImageAccess();
         }
+    }
+
+    protected boolean isSessionActive(){
+        return sessionActive;
     }
 
     protected void setLightOnOff(boolean lightOnOff) {

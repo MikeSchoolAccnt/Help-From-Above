@@ -25,6 +25,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class CloudService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String TAG = "CloudService";
@@ -45,6 +46,9 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
     private String sessionFolder;
     private CompressFormat compressionFormat;
     private int compressionQuality;
+
+    //Read that this is thread safe and using it to check that all images have been uploaded.
+    private AtomicInteger atomicImageUploadCount = new AtomicInteger(0);
 
     private CloudStorage cloudStorage;
 
@@ -150,11 +154,12 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
 
     protected void startSession() {
         Log.d(TAG, "startSession");
-
+        atomicImageUploadCount = new AtomicInteger(0);
         createSessionFolder();
         compressionFormat = CompressFormat.JPEG;
         compressionQuality = 50;
     }
+
 
     private void createSessionFolder() {
         new Thread(new Runnable() {
@@ -212,8 +217,13 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         return extension;
     }
 
+    protected int getUploadCount(){
+        return atomicImageUploadCount.get();
+    }
+
     protected void saveImage(final Bitmap bitmap) {
         Log.d(TAG, "saveImage");
+
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -268,6 +278,9 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         String filename = getDateTime() + getImageFileExtension();
         String path = cloudSessionFolder + "/" + filename;
         cloudStorage.upload(path, byteArrayInputStream, byteArrayInputStream.available(), false);
+
+        //Same as <int>++
+        atomicImageUploadCount.getAndIncrement();
     }
 
     private static ByteArrayInputStream convertDataToByteArrayInputStream(Bitmap bitmap, CompressFormat format, int quality) {

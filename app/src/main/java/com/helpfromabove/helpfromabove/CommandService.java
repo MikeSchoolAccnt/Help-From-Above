@@ -45,6 +45,9 @@ public class CommandService extends Service {
     ServiceConnection cloudServiceConnection;
     CloudService cloudService;
 
+    private static boolean startAllSessions = false;
+    private static int receivedImagesCount = 0;
+    private static int uploadedImagesCount = 0;
 
     private CommandServiceBroadcastReceiver commandServiceBroadcastReceiver;
     private IntentFilter intentFilter;
@@ -58,6 +61,7 @@ public class CommandService extends Service {
         intentFilter.addAction(ACTION_NEW_WAYPOINT);
         intentFilter.addAction(ACTION_NEW_UAS_LOCATION);
         intentFilter.addAction(ACTION_NEW_UAS_IMAGE);
+        intentFilter.addAction(ACTION_LOCATION_CALIBRATION_COMPLETE);
         commandServiceBroadcastReceiver = new CommandServiceBroadcastReceiver();
         registerReceiver(commandServiceBroadcastReceiver, intentFilter);
 
@@ -184,6 +188,7 @@ public class CommandService extends Service {
     protected static void notifyLocationCalibrationComplete(Context context) {
         Log.d(TAG, "notifyLocationCalibrationComplete");
 
+        startAllSessions = true;
         context.sendBroadcast(new Intent(ACTION_LOCATION_CALIBRATION_COMPLETE));
     }
 
@@ -196,6 +201,7 @@ public class CommandService extends Service {
     protected static void notifyNewUasImageAvailable(Context context) {
         Log.d(TAG, "notifyNewUasImageAvailable");
 
+        receivedImagesCount++;
         context.sendBroadcast(new Intent(ACTION_NEW_UAS_IMAGE));
     }
 
@@ -241,9 +247,20 @@ public class CommandService extends Service {
     protected void handleCommandHhmdSessionStart() {
         Log.d(TAG, "handleCommandHhmdSessionStart");
 
-        uasCommunicationService.startSession();
-        cloudService.startSession();
-        locationService.startSession();
+        //Don't call other start sessions until calibration is complete
+        //and don't start a new session if cloud service is still uploading images
+        if (startAllSessions) {
+            if(receivedImagesCount == cloudService.getUploadCount()) {
+                receivedImagesCount = 0;
+                uasCommunicationService.startSession();
+                cloudService.startSession();
+            } else {
+                Log.d(TAG,"Still uploading images form the last session");
+            }
+        } else if(!locationService.isSessionActive()){
+            //This needs to start no matter what so calibration can be completed
+            locationService.startSession();
+        }
     }
 
     protected void handleCommandHhmdSessionEnd() {
@@ -251,6 +268,7 @@ public class CommandService extends Service {
 
         uasCommunicationService.stopSession();
         locationService.stopSession();
+
     }
 
     private void handleNewUasLocation() {
@@ -284,6 +302,8 @@ public class CommandService extends Service {
                     case ACTION_NEW_UAS_IMAGE:
                         handleNewUasImage();
                         break;
+                    case ACTION_LOCATION_CALIBRATION_COMPLETE:
+                        handleCommandHhmdSessionStart();
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);
                         break;
