@@ -3,7 +3,6 @@ package com.helpfromabove.helpfromabove;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Criteria;
@@ -26,13 +25,18 @@ public class LocationService extends Service {
     private final IBinder mBinder = new LocationServiceBinder();
 
     private LocationManager locationManager;
-    private LocationListener commandLocationListener;
+    private LocationListener locationServiceLocationListener;
     private Criteria locationCriteria = new Criteria();
     private Stack<Location> hhmdLocations = new Stack<>();
     private Stack<Location> uasLocations = new Stack<>();
     private Stack<Location> waypointLocations = new Stack<>();
     private int heightOffset;
 
+    private int accurateCount = 0;
+    private boolean calibrationComplete = false;
+
+    private static final int MIN_ACCURACY_DISTANCE = 10;
+    private static final int MIN_ACCURATE_COUNT = 3;
     protected static final int CONSTANT_LOCATION_UPDATE_SECONDS = 3;
 
     public LocationService() {
@@ -48,7 +52,6 @@ public class LocationService extends Service {
         locationCriteria.setAccuracy(Criteria.ACCURACY_FINE);
         locationCriteria.setVerticalAccuracy(Criteria.ACCURACY_HIGH);
         locationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
-
     }
 
     @Nullable
@@ -61,11 +64,32 @@ public class LocationService extends Service {
     protected void startSession() {
         Log.d(TAG, "startSession");
 
+        setCalibrationComplete(false);
         resetHeightOffset();
-        requestLocationUpdates();
         clearLocations();
+        askLocationPermissionsAndRequestLocationUpdates();
     }
 
+    private synchronized boolean isCalibrationComplete() {
+        return calibrationComplete;
+    }
+
+    private synchronized void setCalibrationComplete(boolean calibrationComplete) {
+        this.calibrationComplete = calibrationComplete;
+    }
+
+    private void testCalibration (Location location) {
+        if (location.getAccuracy() <= MIN_ACCURACY_DISTANCE) {
+            accurateCount++;
+        } else {
+            accurateCount = 0;
+        }
+
+        if (accurateCount >= MIN_ACCURATE_COUNT) {
+            setCalibrationComplete(true);
+            CommandService.notifyLocationCalibrationComplete(getApplicationContext());
+        }
+    }
 
     private void resetHeightOffset() {
         Log.d(TAG, "resetHeightOffset");
@@ -75,16 +99,16 @@ public class LocationService extends Service {
         setHeightOffset(startHeight);
     }
 
-    private void requestLocationUpdates() {
-        Log.d(TAG, "requestLocationUpdates");
+    private void askLocationPermissionsAndRequestLocationUpdates() {
+        Log.d(TAG, "askLocationPermissionsAndRequestLocationUpdates");
 
-        commandLocationListener = new LocationServiceLocationListener();
+        locationServiceLocationListener = new LocationServiceLocationListener();
 
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             int response = getApplicationContext().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION);
             if (response == PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "onCreate: permission FEATURE_LOCATION is GRANTED");
-                locationManager.requestLocationUpdates(1000 * CONSTANT_LOCATION_UPDATE_SECONDS, 0, locationCriteria, commandLocationListener, getMainLooper());
+                locationManager.requestLocationUpdates(1000 * CONSTANT_LOCATION_UPDATE_SECONDS, 0, locationCriteria, locationServiceLocationListener, getMainLooper());
             } else {
                 Log.w(TAG, "onCreate: permission FEATURE_LOCATION is DENIED");
                 // TODO : Request permission from user on devices at or above Android M
@@ -95,9 +119,11 @@ public class LocationService extends Service {
                 // gets the broadcast, it should then request the permission.
             }
         } else {
-            locationManager.requestLocationUpdates(1000 * CONSTANT_LOCATION_UPDATE_SECONDS, 0, locationCriteria, commandLocationListener, getMainLooper());
+            locationManager.requestLocationUpdates(1000 * CONSTANT_LOCATION_UPDATE_SECONDS, 0, locationCriteria, locationServiceLocationListener, getMainLooper());
         }
     }
+
+
 
     private void clearLocations() {
         Log.d(TAG, "clearLocations");
@@ -109,13 +135,14 @@ public class LocationService extends Service {
 
     protected void stopSession() {
         Log.d(TAG, "stopSession");
+
         stopLocationUpdates();
     }
 
     private void stopLocationUpdates() {
         Log.d(TAG, "stopLocationUpdates");
 
-        locationManager.removeUpdates(commandLocationListener);
+        locationManager.removeUpdates(locationServiceLocationListener);
     }
 
     protected void pushUasLocation(Location uasLocation) {
@@ -287,28 +314,27 @@ public class LocationService extends Service {
         setHeightOffset(heightOffset--);
     }
 
-
     protected class LocationServiceBinder extends Binder {
         protected LocationService getService() {
             return LocationService.this;
         }
     }
 
-
     private class LocationServiceLocationListener implements LocationListener {
-        private static final String TAG = "CommandLocationListener";
-
-        LocationServiceLocationListener() {
-            Log.d(TAG, "CommandLocationListener");
-        }
+        private static final String TAG = "LocationServ...Listener";
 
         @Override
         public void onLocationChanged(Location location) {
             Log.d(TAG, "onLocationChanged");
-            pushHhmdLocation(location);
-            Location waypoint = generateWaypoint();
-            pushWaypointLocation(waypoint);
-            CommandService.sendUasWaypoint(getApplicationContext());
+
+            if (isCalibrationComplete()) {
+                pushHhmdLocation(location);
+                Location waypoint = generateWaypoint();
+                pushWaypointLocation(waypoint);
+                CommandService.notifyNewWaypointAvailable(getApplicationContext());
+            } else {
+                testCalibration(location);
+            }
         }
 
         @Override

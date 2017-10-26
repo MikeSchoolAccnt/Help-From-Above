@@ -8,19 +8,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
-
-import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Stack;
 
 /**
  * Created by Caleb Smith on 5/13/2017.
@@ -32,28 +25,14 @@ import java.util.Stack;
  */
 
 public class CommandService extends Service {
-    protected static final String ACTION_REQUEST_SERVICES_READY = "com.helpfromabove.helpfromabove.action.ACTION_REQUEST_SERVICES_READY";
-    protected static final String ACTION_UI_SERVICES_READY = "com.helpfromabove.helpfromabove.action.ACTION_UI_SERVICES_READY";
-    protected static final String ACTION_UI_WIFI_P2P_CONNECTING = "com.helpfromabove.helpfromabove.action.ACTION_UI_WIFI_P2P_CONNECTING";
-    protected static final String ACTION_UI_WIFI_P2P_CONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_UI_WIFI_P2P_CONNECTED";
-    protected static final String ACTION_NEW_WAYPOINT_AVAILABLE = "com.helpfromabove.helpfromabove.command.ACTION_NEW_WAYPOINT_AVAILABLE";
-
+    protected static final String ACTION_SERVICES_READY = "com.helpfromabove.helpfromabove.action.ACTION_SERVICES_READY";
+    protected static final String ACTION_WIFI_P2P_CONNECTING = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_CONNECTING";
+    protected static final String ACTION_WIFI_P2P_CONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_CONNECTED";
     protected static final String ACTION_NEW_UAS_IMAGE = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_IMAGE";
+    protected static final String ACTION_LOCATION_CALIBRATION_COMPLETE = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_CALIBRATION_COMPLETE";
+    protected static final String ACTION_NEW_WAYPOINT = "com.helpfromabove.helpfromabove.action.ACTION_NEW_WAYPOINT";
     protected static final String ACTION_NEW_UAS_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_LOCATION";
     protected static final String ACTION_NEW_HHMD_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_HHMD_LOCATION";
-    protected static final String ACTION_REQUEST_LAST_IMAGE_FILENAME = "com.helpfromabove.helpfromabove.action.ACTION_REQUEST_LAST_IMAGE_FILENAME";
-    protected static final String EXTRA_LIGHT_ON_OFF = "com.helpfromabove.helpfromabove.extra.EXTRA_LIGHT_ON_OFF";
-    protected static final String EXTRA_IMAGE_FILE_NAME = "com.helpfromabove.helpfromabove.extra.EXTRA_IMAGE_FILE_NAME";
-    protected static final String EXTRA_LOCATION = "com.helpfromabove.helpfromabove.extra.EXTRA_LOCATION";
-    protected static final String COMMAND_HHMD_EMERGENCY = "com.helpfromabove.helpfromabove.command.COMMAND_HHMD_EMERGENCY";
-    protected static final String COMMAND_HHMD_LIGHT = "com.helpfromabove.helpfromabove.command.COMMAND_HHMD_LIGHT";
-    protected static final String COMMAND_HHMD_UAS_HEIGHT_UP = "com.helpfromabove.helpfromabove.command.COMMAND_HHMD_UAS_HEIGHT_UP";
-    protected static final String COMMAND_HHMD_UAS_HEIGHT_DOWN = "com.helpfromabove.helpfromabove.command.COMMAND_HHMD_UAS_HEIGHT_DOWN";
-    protected static final String COMMAND_HHMD_SESSION_START = "com.helpfromabove.helpfromabove.command.COMMAND_HHMD_SESSION_START";
-    protected static final String COMMAND_HHMD_SESSION_END = "com.helpfromabove.helpfromabove.command.COMMAND_HHMD_SESSION_END";
-    protected static final String COMMAND_UAS_IMAGE = "com.helpfromabove.helpfromabove.command.COMMAND_UAS_IMAGE";
-    protected static final String COMMAND_UAS_LOCATION = "com.helpfromabove.helpfromabove.command.COMMAND_UAS_LOCATION";
-    protected static final String SETTING_CHANGE_START_HEIGHT = "com.helpfromabove.helpfromabove.setting.SETTING_CHANGE_START_HEIGHT";
 
     private final static String TAG = "CommandService";
 
@@ -70,50 +49,20 @@ public class CommandService extends Service {
 
     private CommandServiceBroadcastReceiver commandServiceBroadcastReceiver;
     private IntentFilter intentFilter;
-    private Stack<String> mImageFileNamesStack = new Stack<>();
-
-    // This is for local image testing. Remove once local image testing is complete
-    private int imageDebugCounter = 0;
-    private ArrayList<byte[]> imageBytes = new ArrayList<>();
 
     @Override
     public void onCreate() {
         Log.d(TAG, "onCreate");
         super.onCreate();
 
-        mImageFileNamesStack = new Stack<>();
-
         intentFilter = new IntentFilter();
-        intentFilter.addAction(ACTION_REQUEST_SERVICES_READY);
-        intentFilter.addAction(ACTION_NEW_WAYPOINT_AVAILABLE);
-        intentFilter.addAction(ACTION_REQUEST_LAST_IMAGE_FILENAME);
-        intentFilter.addAction(COMMAND_HHMD_EMERGENCY);
-        intentFilter.addAction(COMMAND_HHMD_LIGHT);
-        intentFilter.addAction(COMMAND_HHMD_UAS_HEIGHT_UP);
-        intentFilter.addAction(COMMAND_HHMD_UAS_HEIGHT_DOWN);
-        intentFilter.addAction(COMMAND_HHMD_SESSION_START);
-        intentFilter.addAction(COMMAND_HHMD_SESSION_END);
-        intentFilter.addAction(COMMAND_UAS_IMAGE);
-        intentFilter.addAction(COMMAND_UAS_LOCATION);
-        intentFilter.addAction(SETTING_CHANGE_START_HEIGHT);
+        intentFilter.addAction(ACTION_NEW_WAYPOINT);
+        intentFilter.addAction(ACTION_NEW_UAS_LOCATION);
+        intentFilter.addAction(ACTION_NEW_UAS_IMAGE);
         commandServiceBroadcastReceiver = new CommandServiceBroadcastReceiver();
         registerReceiver(commandServiceBroadcastReceiver, intentFilter);
 
         startServices();
-
-        // This is for local image testing. Remove once local image testing is complete
-        Bitmap bm = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.imag4240);
-        ByteArrayOutputStream baoStream = new ByteArrayOutputStream();
-        bm.compress(Bitmap.CompressFormat.JPEG, 100, baoStream);
-        imageBytes.add(baoStream.toByteArray());
-        bm = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.imag4366);
-        baoStream = new ByteArrayOutputStream();
-        bm.compress(Bitmap.CompressFormat.JPEG, 100, baoStream);
-        imageBytes.add(baoStream.toByteArray());
-        bm = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.imag4491);
-        baoStream = new ByteArrayOutputStream();
-        bm.compress(Bitmap.CompressFormat.JPEG, 100, baoStream);
-        imageBytes.add(baoStream.toByteArray());
     }
 
     @Override
@@ -196,11 +145,11 @@ public class CommandService extends Service {
         broadcastIfServicesReady();
     }
 
-    private void broadcastIfServicesReady() {
+    protected void broadcastIfServicesReady() {
         Log.d(TAG, "broadcastIfServicesReady");
 
         if ((uasCommunicationService != null) && (locationService != null) && (emergencyService != null) && (cloudService != null)) {
-            sendBroadcast(new Intent(ACTION_UI_SERVICES_READY));
+            sendBroadcast(new Intent(ACTION_SERVICES_READY));
         }
     }
 
@@ -227,61 +176,46 @@ public class CommandService extends Service {
         uasCommunicationService.connectToDevice(device);
     }
 
-    /******************************************************
-     * In the future, we might want all static methods to
-     * only send action intents (without extras, or very
-     * little data [like ints or strings]). That way when
-     * the dynamic methods are called, they have to get
-     * the latest data values from the service instances.
-     * That would reduce the amount of data sent, and
-     * restrictions on size of data sent through intents
-     ******************************************************/
+    protected static void notifyWifiP2pConnecting(Context context) {
+        Log.d(TAG, "notifyWifiP2pConnecting");
 
-    protected static void notifyUiWifiP2pConnecting(Context context) {
-        Log.d(TAG, "notifyUiWifiP2pConnecting");
-
-        context.sendBroadcast(new Intent(ACTION_UI_WIFI_P2P_CONNECTING));
+        context.sendBroadcast(new Intent(ACTION_WIFI_P2P_CONNECTING));
     }
 
-    protected static void notifyUiWifiP2pConnected(Context context) {
-        Log.d(TAG, "notifyUiWifiP2pConnected");
+    protected static void notifyWifiP2pConnected(Context context) {
+        Log.d(TAG, "notifyWifiP2pConnected");
 
-        context.sendBroadcast(new Intent(ACTION_UI_WIFI_P2P_CONNECTED));
+        context.sendBroadcast(new Intent(ACTION_WIFI_P2P_CONNECTED));
     }
 
-    protected static void sendUasWaypoint(Context context) {
-        Log.d(TAG, "sendUasWaypoint");
+    protected static void notifyLocationCalibrationComplete(Context context) {
+        Log.d(TAG, "notifyLocationCalibrationComplete");
 
-        context.sendBroadcast(new Intent(ACTION_NEW_WAYPOINT_AVAILABLE));
+        context.sendBroadcast(new Intent(ACTION_LOCATION_CALIBRATION_COMPLETE));
     }
 
-    private void handleSendWaypoint() {
-        Log.d(TAG, "handleSendWaypoint");
+    protected static void notifyNewWaypointAvailable(Context context) {
+        Log.d(TAG, "notifyNewWaypointAvailable");
+
+        context.sendBroadcast(new Intent(ACTION_NEW_WAYPOINT));
+    }
+
+    protected static void notifyNewUasImageAvailable(Context context) {
+        Log.d(TAG, "notifyNewUasImageAvailable");
+
+        context.sendBroadcast(new Intent(ACTION_NEW_UAS_IMAGE));
+    }
+
+    protected Bitmap getNewImage(){
+
+        return uasCommunicationService.getNewImage() == null ? null: uasCommunicationService.getNewImage();
+    }
+
+    private void handleNewWaypoint() {
+        Log.d(TAG, "handleNewWaypoint");
 
         Location waypoint = locationService.getLastWaypointLocation();
         uasCommunicationService.sendWaypoint(waypoint);
-    }
-
-    public String getLastSessionImageFileName() {
-        Log.d(TAG, "getLastSessionImageFileName");
-
-        String imageFileName;
-        if (!mImageFileNamesStack.empty()) {
-            imageFileName = mImageFileNamesStack.peek();
-        } else {
-            Log.d(TAG, "getLastSessionImageFileName: mImageFileNamesStack is empty.");
-
-            imageFileName = null;
-        }
-
-        Log.d(TAG, "getLastSessionImageFileName: imageFileName=" + imageFileName);
-        return imageFileName;
-    }
-
-    public void addSessionImageFileName(String imageFileName) {
-        Log.d(TAG, "addSessionImageFileName");
-
-        mImageFileNamesStack.push(imageFileName);
     }
 
     protected void handleCommandHhmdEmergency() {
@@ -296,13 +230,7 @@ public class CommandService extends Service {
     protected void handleCommandHhmdLight(boolean lightOnOff) {
         Log.d(TAG, "handleCommandHhmdLight: lightOnOff=" + lightOnOff);
 
-        // This is for local image testing. Remove once local image testing is complete
-        if (imageDebugCounter >= 2) {
-            Log.d(TAG, "handleCommandHhmdLight: incoming image example");
-
-            handleCommandUasImage();
-        }
-        imageDebugCounter++;
+        uasCommunicationService.setLightOnOff(lightOnOff);
     }
 
     protected void handleCommandHhmdUasHeightUp() {
@@ -320,6 +248,7 @@ public class CommandService extends Service {
     protected void handleCommandHhmdSessionStart() {
         Log.d(TAG, "handleCommandHhmdSessionStart");
 
+        uasCommunicationService.startSession();
         cloudService.startSession();
         locationService.startSession();
     }
@@ -327,49 +256,22 @@ public class CommandService extends Service {
     protected void handleCommandHhmdSessionEnd() {
         Log.d(TAG, "handleCommandHhmdSessionEnd");
 
+        uasCommunicationService.stopSession();
         locationService.stopSession();
     }
 
-    private void handleCommandUasLocation(Location uasLocation) {
-        Log.d(TAG, "handleCommandUasLocation: uasLocation=" + uasLocation);
+    private void handleNewUasLocation() {
+        Log.d(TAG, "handleNewUasLocation");
+
+        Location uasLocation = uasCommunicationService.getNewUasLocation();
         locationService.pushUasLocation(uasLocation);
     }
 
-    private void handleCommandUasImage() {
-        Log.d(TAG, "handleCommandUasImage");
-// TODO: Figure out how this will work
-//        String filename = getDateTime() + ".jpg";
-//        saveImage(filename);
-//        uploadImage(filename);
-//        addSessionImageFileName(filename);
-//        sendNewImageIntent();
-    }
+    private void handleNewUasImage() {
+        Log.d(TAG, "handleNewUasImage");
 
-    private void handleSettingChangeStartHeight() {
-        Log.d(TAG, "handleSettingChangeStartHeight");
-    }
-
-    private void sendNewImageIntent() {
-        Log.d(TAG, "sendNewImageIntent");
-
-        Intent newImageIntent = new Intent(ACTION_NEW_UAS_IMAGE);
-        newImageIntent.putExtra(EXTRA_IMAGE_FILE_NAME, getLastSessionImageFileName());
-        sendBroadcast(newImageIntent);
-    }
-
-    private void saveImage(String filename) {
-        Log.d(TAG, "saveImage");
-
-        try {
-            FileOutputStream outputStream = openFileOutput(filename, Context.MODE_PRIVATE);
-
-            // This is for local image testing. Modify once local image testing is complete
-            outputStream.write(imageBytes.get(imageDebugCounter % 3));
-
-            outputStream.close();
-        } catch (IOException iOE) {
-            Log.e(TAG, "handleCommandUasImage: IOException: " + iOE.getMessage(), iOE);
-        }
+        Bitmap bitmap = uasCommunicationService.getNewImage();
+        cloudService.saveImage(bitmap);
     }
 
     private class CommandServiceBroadcastReceiver extends BroadcastReceiver {
@@ -380,43 +282,14 @@ public class CommandService extends Service {
             String action = intent.getAction();
             if (intent != null && action != null) {
                 switch (action) {
-                    case ACTION_REQUEST_SERVICES_READY:
-                        broadcastIfServicesReady();
+                    case ACTION_NEW_WAYPOINT:
+                        handleNewWaypoint();
                         break;
-                    case ACTION_NEW_WAYPOINT_AVAILABLE:
-                        handleSendWaypoint();
+                    case ACTION_NEW_UAS_LOCATION:
+                        handleNewUasLocation();
                         break;
-                    case ACTION_REQUEST_LAST_IMAGE_FILENAME:
-                        sendNewImageIntent();
-                        break;
-                    case COMMAND_HHMD_EMERGENCY:
-                        handleCommandHhmdEmergency();
-                        break;
-                    case COMMAND_HHMD_LIGHT:
-                        final boolean lightOnOff = intent.getBooleanExtra(EXTRA_LIGHT_ON_OFF, true);
-                        handleCommandHhmdLight(lightOnOff);
-                        break;
-                    case COMMAND_HHMD_UAS_HEIGHT_UP:
-                        handleCommandHhmdUasHeightUp();
-                        break;
-                    case COMMAND_HHMD_UAS_HEIGHT_DOWN:
-                        handleCommandHhmdUasHeightDown();
-                        break;
-                    case COMMAND_HHMD_SESSION_START:
-                        handleCommandHhmdSessionStart();
-                        break;
-                    case COMMAND_HHMD_SESSION_END:
-                        handleCommandHhmdSessionEnd();
-                        break;
-                    case COMMAND_UAS_LOCATION:
-                        final Location uasLocation = intent.getExtras().getParcelable(EXTRA_LOCATION);
-                        handleCommandUasLocation(uasLocation);
-                        break;
-                    case COMMAND_UAS_IMAGE:
-                        handleCommandUasImage();
-                        break;
-                    case SETTING_CHANGE_START_HEIGHT:
-                        handleSettingChangeStartHeight();
+                    case ACTION_NEW_UAS_IMAGE:
+                        handleNewUasImage();
                         break;
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);

@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Bitmap;
 import android.location.Location;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
@@ -43,6 +44,18 @@ public class UasCommunicationService extends Service {
     private WifiP2pInfo wifiP2pInfo;
     private NetworkInfo networkInfo;
     private WifiP2pGroup wifiP2pGroup;
+
+    private UASCClient uascClient;
+    private String port = "5000";
+
+    //debugging variable. Remove before final testing.
+    private boolean canConnect = false;
+
+    public UasCommunicationService() {
+        super();
+
+        Log.d(TAG, "UasCommunicationService");
+    }
 
     @Override
     public void onCreate() {
@@ -93,8 +106,6 @@ public class UasCommunicationService extends Service {
     protected void startScanning() {
         Log.d(TAG, "startScanning");
 
-        initiator = Initiator.NONE;
-
         wifiP2pManager = (WifiP2pManager) this.getSystemService(Context.WIFI_P2P_SERVICE);
         wifiP2pChannel = wifiP2pManager.initialize(this, getMainLooper(), null);
         wifiP2pManager.discoverPeers(wifiP2pChannel, wifiP2pScanListener);
@@ -103,10 +114,9 @@ public class UasCommunicationService extends Service {
     protected void connectToDevice(WifiP2pDevice device) {
         Log.d(TAG, "connectToDevice: device.toString()=" + device.toString());
 
-        initiator = Initiator.HHMD;
-
         WifiP2pConfig config = new WifiP2pConfig();
         config.deviceAddress = device.deviceAddress;
+        config.groupOwnerIntent = 0;
         config.wps.setup = WpsInfo.PBC;
 
         wifiP2pManager.connect(wifiP2pChannel, config, wifiP2pConnectionListener);
@@ -153,28 +163,71 @@ public class UasCommunicationService extends Service {
             this.networkInfo = networkInfo;
             this.wifiP2pGroup = wifiP2pGroup;
 
-            // If connection was established by the HHMD, then cancel the connection and start scanning.
-            // That way, the UASC can establish the connection with the HHMD.
             if (initiator == Initiator.HHMD) {
-                CommandService.notifyUiWifiP2pConnecting(getApplicationContext());
+                CommandService.notifyWifiP2pConnecting(getApplicationContext());
                 wifiP2pManager.cancelConnect(wifiP2pChannel, wifiP2pConnectionListener);
                 startScanning();
             } else {
-                CommandService.notifyUiWifiP2pConnected(getApplicationContext());
+                uascClient = new UASCClient(getApplicationContext(),wifiP2pInfo.groupOwnerAddress.getHostAddress(),port);
+                startHeartbeat();
+                CommandService.notifyWifiP2pConnected(getApplicationContext());
+            }
+        } else{
+            if(uascClient != null) {
+                uascClient.stopHeartbeat();
+                uascClient.stopImageAccess();
             }
         }
+    }
+
+    private void startHeartbeat(){
+        uascClient.startHeartbeat(10000);
     }
 
     private void handleThisDeviceDetailsChanged() {
         Log.d(TAG, "handleThisDeviceDetailsChanged");
     }
 
+    protected void startSession() {
+        Log.d(TAG, "startSession: NOT FULLY IMPLEMENTED!");
+        if(uascClient != null) {
+            uascClient.startImageAccess("image", 10000);
+        }
+    }
+
+    protected void stopSession() {
+        Log.d(TAG, "stopSession: NOT FULLY IMPLEMENTED!");
+        if(uascClient != null){
+            uascClient.stopImageAccess();
+        }
+    }
+
+    protected void setLightOnOff(boolean lightOnOff) {
+        Log.d(TAG, "lightOnOff: lightOnOff=" + lightOnOff + ": NOT IMPLEMENTED!");
+    }
+
     protected void sendWaypoint(Location location) {
-        Log.d(TAG, "sendWaypoint: location=" + location);
+        Log.d(TAG, "sendWaypoint: location=" + location + ": NOT IMPLEMENTED!");
     }
 
     protected void startEmergency() {
         Log.d(TAG, "startEmergency: NOT IMPLEMENTED!");
+    }
+
+    public Bitmap getNewImage(){
+        if(uascClient != null) {
+            return uascClient.getImageBitmap();
+        } else {
+            return null;
+        }
+    }
+
+    public Location getNewUasLocation() {
+        if (uascClient != null) {
+            return uascClient.getNewUasLocation();
+        } else {
+            return null;
+        }
     }
 
     protected class UasCommunicationServiceBinder extends Binder {
@@ -271,7 +324,7 @@ public class UasCommunicationService extends Service {
             }
 
             // TODO: Used for testing other features on emulator, remove in final production
-            CommandService.notifyUiWifiP2pConnected(getApplicationContext());
+            CommandService.notifyWifiP2pConnected(getApplicationContext());
         }
     }
 }

@@ -2,14 +2,16 @@ package com.helpfromabove.helpfromabove;
 
 import android.Manifest;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SwitchCompat;
@@ -20,9 +22,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
-
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 
 /**
  * Created by Caleb Smith on 5/4/2017.
@@ -35,6 +34,9 @@ import java.io.FileNotFoundException;
 public class MainActivity extends AppCompatActivity {
     private final String TAG = "MainActivity";
     private MainActivityBroadcastReceiver mainActivityBroadcastReceiver = new MainActivityBroadcastReceiver();
+
+    private CommandService commandService;
+    private ServiceConnection commandServiceConnection;
 
     private Button endSessionButton;
     private Button startSessionButton;
@@ -56,6 +58,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         Log.d(TAG, "onStart");
         super.onStart();
+
+        bindCommandService();
     }
 
     @Override
@@ -63,8 +67,12 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "onResume");
         super.onResume();
 
-        registerReceiver(mainActivityBroadcastReceiver, new IntentFilter(CommandService.ACTION_NEW_UAS_IMAGE));
-        sendBroadcast(new Intent(CommandService.ACTION_REQUEST_LAST_IMAGE_FILENAME));
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(CommandService.ACTION_NEW_UAS_IMAGE);
+        intentFilter.addAction(CommandService.ACTION_NEW_UAS_LOCATION);
+        intentFilter.addAction(CommandService.ACTION_NEW_HHMD_LOCATION);
+        registerReceiver(mainActivityBroadcastReceiver, intentFilter);
+        //handleNewImage();
     }
 
     @Override
@@ -79,6 +87,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onStop() {
         Log.d(TAG, "onStop");
         super.onStop();
+
+        unbindCommandService();
     }
 
     @Override
@@ -116,6 +126,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    private void bindCommandService(){
+        Intent commandServiceIntent = new Intent(getApplicationContext(), CommandService.class);
+        startService(commandServiceIntent);
+        commandServiceConnection = new MainActivityServiceConnection();
+        bindService(commandServiceIntent, commandServiceConnection, Context.BIND_NOT_FOREGROUND);
+    }
+
+    private void unbindCommandService() {
+        Log.d(TAG, "unbindCommandService");
+
+        unbindService(commandServiceConnection);
+    }
+
     /*
      * OnClick handler methods
      */
@@ -132,42 +155,41 @@ public class MainActivity extends AppCompatActivity {
             int response = getApplicationContext().checkSelfPermission(Manifest.permission.SEND_SMS);
             if (response == PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "onCreate: permission SEND_SMS is GRANTED");
-                sendBroadcast(new Intent(CommandService.COMMAND_HHMD_EMERGENCY));
+                commandService.handleCommandHhmdEmergency();
             } else {
                 ActivityCompat.requestPermissions(this,new String[]{android.Manifest.permission.SEND_SMS},0);
             }
         } else {
-            sendBroadcast(new Intent(CommandService.COMMAND_HHMD_EMERGENCY));
+            commandService.handleCommandHhmdEmergency();
         }
-
     }
 
     public void lightSwitchOnClick(View view) {
         Log.d(TAG, "lightSwitchOnClick");
 
         boolean isChecked = ((SwitchCompat) view).isChecked();
-        Intent lightIntent = new Intent(CommandService.COMMAND_HHMD_LIGHT);
-        lightIntent.putExtra(CommandService.EXTRA_LIGHT_ON_OFF, isChecked);
-        sendBroadcast(lightIntent);
+        commandService.handleCommandHhmdLight(isChecked);
     }
 
     public void uasHeightUpButtonOnClick(View view) {
         Log.d(TAG, "uasHeightUpButtonOnClick ");
 
-        sendBroadcast(new Intent(CommandService.COMMAND_HHMD_UAS_HEIGHT_UP));
+        commandService.handleCommandHhmdUasHeightUp();
     }
 
     public void uasHeightDownButtonOnClick(View view) {
         Log.d(TAG, "uasHeightDownButtonOnClick");
 
-        sendBroadcast(new Intent(CommandService.COMMAND_HHMD_UAS_HEIGHT_DOWN));
+        commandService.handleCommandHhmdUasHeightDown();
     }
 
     public void sessionStartButtonOnCLick(View view) {
         Log.d(TAG, "sessionStartButtonOnCLick");
+
         endSessionButton.setEnabled(true);
         startSessionButton.setEnabled(false);
-        sendBroadcast(new Intent(CommandService.COMMAND_HHMD_SESSION_START));
+
+        commandService.handleCommandHhmdSessionStart();
     }
 
     public void sessionEndButtonOnCLick(View view) {
@@ -176,7 +198,7 @@ public class MainActivity extends AppCompatActivity {
         endSessionButton.setEnabled(false);
         startSessionButton.setEnabled(true);
 
-        sendBroadcast(new Intent(CommandService.COMMAND_HHMD_SESSION_END));
+        commandService.handleCommandHhmdSessionEnd();
     }
 
     /*
@@ -192,20 +214,44 @@ public class MainActivity extends AppCompatActivity {
     /*
      * Methods for handling events caused by receiving new broadcasts
      */
-    private void updateUasImageView(String uasImageFileName) {
-        Log.d(TAG, "updateUasImageView: uasImageFileName=" + uasImageFileName);
+    private void handleNewImage() {
+        Log.d(TAG, "handleNewImage");
 
-        if (uasImageFileName != null) {
-            try {
-                FileInputStream fis = openFileInput(uasImageFileName);
-                Bitmap imageBitmap = BitmapFactory.decodeStream(fis);
-                ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
-                imageView.setImageBitmap(imageBitmap);
-            } catch (FileNotFoundException fNFE) {
-                Log.e(TAG, "setUasImage: FileNotFoundException: " + fNFE.getMessage(), fNFE);
-            } catch (NullPointerException nPE) {
-                Log.e(TAG, "setUasImage: NullPointerException: " + nPE.getMessage(), nPE);
-            }
+        ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
+        Bitmap bitmap = commandService.getNewImage();
+
+        if ((imageView != null) && (bitmap != null)) {
+            imageView.setImageBitmap(bitmap);
+        }
+    }
+
+    private void handleLocationCalibrationComplete() {
+        Log.d(TAG, "handleLocationCalibrationComplete: NOT YET IMPLEMENTED!");
+        // TODO: This is where we will remove the "calibrating" dialog that will be shown when the user starts a session.
+    }
+
+    private void setConnectedService(IBinder service) {
+        Log.d(TAG, "setConnectedService");
+
+        String serviceClassName = service.getClass().getName();
+        if (serviceClassName.equals(CommandService.CommandServiceBinder.class.getName())) {
+            commandService = ((CommandService.CommandServiceBinder) service).getService();
+        }
+    }
+
+    private class MainActivityServiceConnection implements ServiceConnection{
+
+        private static final String TAG = "MainActivityServiceC...";
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(TAG, "onServiceConnected");
+            setConnectedService(service);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d(TAG, "onServiceDisconnected");
         }
     }
 
@@ -222,10 +268,10 @@ public class MainActivity extends AppCompatActivity {
             if (intent != null && action != null) {
                 switch (action) {
                     case CommandService.ACTION_NEW_UAS_IMAGE:
-                        Log.d(TAG, "onReceive: ACTION_NEW_UAS_IMAGE");
-
-                        String uasImageFileName = intent.getStringExtra(CommandService.EXTRA_IMAGE_FILE_NAME);
-                        updateUasImageView(uasImageFileName);
+                        handleNewImage();
+                        break;
+                    case CommandService.ACTION_LOCATION_CALIBRATION_COMPLETE:
+                        handleLocationCalibrationComplete();
                         break;
                     case CommandService.ACTION_NEW_UAS_LOCATION:
                         Log.d(TAG, "onReceive: ACTION_NEW_UAS_LOCATION");
