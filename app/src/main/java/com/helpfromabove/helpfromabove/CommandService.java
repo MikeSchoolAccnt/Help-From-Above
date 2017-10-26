@@ -8,19 +8,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
-
-import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Stack;
 
 /**
  * Created by Caleb Smith on 5/13/2017.
@@ -35,6 +28,7 @@ public class CommandService extends Service {
     protected static final String ACTION_SERVICES_READY = "com.helpfromabove.helpfromabove.action.ACTION_SERVICES_READY";
     protected static final String ACTION_WIFI_P2P_CONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_CONNECTED";
     protected static final String ACTION_NEW_UAS_IMAGE = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_IMAGE";
+    protected static final String ACTION_LOCATION_CALIBRATION_COMPLETE = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_CALIBRATION_COMPLETE";
     protected static final String ACTION_NEW_WAYPOINT = "com.helpfromabove.helpfromabove.action.ACTION_NEW_WAYPOINT";
     protected static final String ACTION_NEW_UAS_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_LOCATION";
     protected static final String ACTION_NEW_HHMD_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_HHMD_LOCATION";
@@ -185,6 +179,12 @@ public class CommandService extends Service {
         Log.d(TAG, "notifyWifiP2pConnected");
 
         context.sendBroadcast(new Intent(ACTION_WIFI_P2P_CONNECTED));
+    }
+
+    protected static void notifyLocationCalibrationComplete(Context context) {
+        Log.d(TAG, "notifyLocationCalibrationComplete");
+
+        context.sendBroadcast(new Intent(ACTION_LOCATION_CALIBRATION_COMPLETE));
     }
 
     protected static void notifyNewWaypointAvailable(Context context) {

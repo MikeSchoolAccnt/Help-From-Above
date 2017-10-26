@@ -225,6 +225,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void handleLocationCalibrationComplete() {
+        Log.d(TAG, "handleLocationCalibrationComplete: NOT YET IMPLEMENTED!");
+        // TODO: This is where we will remove the "calibrating" dialog that will be shown when the user starts a session.
+    }
+
     private void setConnectedService(IBinder service) {
         Log.d(TAG, "setConnectedService");
 
@@ -264,6 +269,9 @@ public class MainActivity extends AppCompatActivity {
                 switch (action) {
                     case CommandService.ACTION_NEW_UAS_IMAGE:
                         handleNewImage();
+                        break;
+                    case CommandService.ACTION_LOCATION_CALIBRATION_COMPLETE:
+                        handleLocationCalibrationComplete();
                         break;
                     case CommandService.ACTION_NEW_UAS_LOCATION:
                         Log.d(TAG, "onReceive: ACTION_NEW_UAS_LOCATION");
