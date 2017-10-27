@@ -359,12 +359,36 @@ public class UASCClient {
                 try {
 
                     URL tempURL = new URL("http://"+hostIP+":"+port+"/"+startSessionEndpoint);
-                    //Server can detect this and act off of it.
-                    tempURL.openConnection();
+
+                    InputStreamReader inputStreamReader = new InputStreamReader(tempURL.openStream());
+                    BufferedReader reader = new BufferedReader(inputStreamReader);
+                    StringBuilder stringBuilder = new StringBuilder();
+                    String line;
+                    while((line = reader.readLine()) != null){
+                        stringBuilder.append(line);
+                    }
+                    reader.close();
+
+                    JSONObject jsonObject = new JSONObject(stringBuilder.toString());
+
+                    String status = jsonObject.getString(STATUS);
+
+                    if(status.equals("OK"))
+                    {
+                        //When the uasc is ready for gps access,image access and sending new waypoints
+                        CommandService.notifyUasReady(context);
+                    }
+                    else
+                    {
+                        //If the uasc is not read try again in x seconds
+                        oneTimeHandler.postDelayed(this,3000);
+                    }
 
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
                 } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (JSONException e) {
                     e.printStackTrace();
                 }
 
