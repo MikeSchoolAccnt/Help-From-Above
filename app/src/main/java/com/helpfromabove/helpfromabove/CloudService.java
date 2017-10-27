@@ -41,8 +41,8 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
     private final IBinder mBinder = new CloudServiceBinder();
 
     private static final String APP_FOLDER = "Help_From_Above";
-    private final String CLOUD_APP_FOLDER = "/" + APP_FOLDER;
-    private String cloudSessionFolder;
+    private static final String LOCAL_APP_FOLDER = Environment.getDataDirectory() + "/" + APP_FOLDER;
+    private static final String CLOUD_APP_FOLDER = "/" + APP_FOLDER;
     private String sessionFolder;
     private CompressFormat compressionFormat;
     private int compressionQuality;
@@ -135,10 +135,9 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
     private void createLocalAppFolder() {
         Log.d(TAG, "createLocalAppFolder");
 
-        String dir = Environment.getExternalStorageDirectory() + File.separator + CLOUD_APP_FOLDER;
-        File directory = new File(dir);
+        File directory = new File(LOCAL_APP_FOLDER);
         if (!directory.mkdirs()) {
-            Log.e(TAG, "Could not make directories: " + dir);
+            Log.e(TAG, "Could not make directory: " + LOCAL_APP_FOLDER);
         }
     }
 
@@ -181,10 +180,10 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
     private void createCloudSessionFolder() {
         Log.d(TAG, "createCloudSessionFolder");
 
-        cloudSessionFolder = CLOUD_APP_FOLDER + "/" + getDateTime();
+        sessionFolder = CLOUD_APP_FOLDER + "/" + getDateTime();
 
         try {
-            cloudStorage.createFolder(cloudSessionFolder);
+            cloudStorage.createFolder(sessionFolder);
         } catch (com.cloudrail.si.exceptions.HttpException ex) {
             Log.e(TAG,ex.getMessage());
         }
@@ -193,7 +192,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
     private void createLocalSessionFolder() {
         Log.d(TAG, "createLocalSessionFolder");
 
-        sessionFolder = Environment.getExternalStorageDirectory() + File.separator + APP_FOLDER + getDateTime();
+        sessionFolder = LOCAL_APP_FOLDER + "/" + getDateTime();
         File directory = new File(sessionFolder);
         if (!directory.mkdirs()) {
             Log.e(TAG, "Could not make directories: " + sessionFolder);
@@ -231,22 +230,23 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         new Thread(new Runnable() {
             @Override
             public void run() {
+                String filename = getDateTime() + getImageFileExtension();
+                String path = sessionFolder + "/" + filename;
+
                 if (cloudStorage == null) {
-                    saveLocalImage(bitmap);
+                    saveLocalImage(bitmap, path);
                 } else {
-                    saveCloudImage(bitmap);
+                    saveCloudImage(bitmap, path);
                 }
             }
         }).start();
     }
 
-    private void saveLocalImage(Bitmap bitmap) {
+    private void saveLocalImage(Bitmap bitmap, final String path) {
         Log.d(TAG, "saveLocalImage");
 
         try {
             byte[] byteArray = convertBitmapToByteArray(bitmap, compressionFormat, compressionQuality);
-            String filename = getDateTime() + getImageFileExtension();
-            String path = sessionFolder + File.separator + filename;
 
             File file = new File(path);
             file.createNewFile();
@@ -274,13 +274,11 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         return byteArray;
     }
 
-    private void saveCloudImage(Bitmap bitmap) {
+    private void saveCloudImage(Bitmap bitmap, final String path) {
         Log.d(TAG, "saveCloudImage");
 
         ByteArrayInputStream byteArrayInputStream = convertDataToByteArrayInputStream(bitmap, compressionFormat, compressionQuality);
 
-        String filename = getDateTime() + getImageFileExtension();
-        String path = cloudSessionFolder + "/" + filename;
         cloudStorage.upload(path, byteArrayInputStream, byteArrayInputStream.available(), false);
 
         //Same as <int>++
@@ -311,7 +309,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
 
         String link = null;
         if (cloudStorage != null) {
-            link = cloudStorage.createShareLink(cloudSessionFolder);
+            link = cloudStorage.createShareLink(sessionFolder);
         } else {
             Log.d(TAG, "getSessionCloudLink: No cloud storage");
         }
