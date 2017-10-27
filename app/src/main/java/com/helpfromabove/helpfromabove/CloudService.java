@@ -153,13 +153,17 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
     }
 
     protected void startSession() {
-        Log.d(TAG, "startSession");
+        Log.d(TAG, "startSession: NOT YET IMPLEMENTED!");
+    }
+
+    protected void onLocationCalibrationComplete() {
+        Log.d(TAG, "onLocationCalibrationComplete");
+
         atomicImageUploadCount = new AtomicInteger(0);
         createSessionFolder();
         compressionFormat = CompressFormat.JPEG;
         compressionQuality = 50;
     }
-
 
     private void createSessionFolder() {
         new Thread(new Runnable() {

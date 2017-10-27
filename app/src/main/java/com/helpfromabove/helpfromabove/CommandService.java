@@ -247,19 +247,24 @@ public class CommandService extends Service {
     protected void handleCommandHhmdSessionStart() {
         Log.d(TAG, "handleCommandHhmdSessionStart");
 
-        //Don't call other start sessions until calibration is complete
-        //and don't start a new session if cloud service is still uploading images
+        uasCommunicationService.startSession();
+        cloudService.startSession();
+        locationService.startSession();
+    }
+
+    private void handleLocationCalibrationComplete() {
+        Log.d(TAG, "handleLocationCalibrationComplete");
+
+        locationService.onLocationCalibrationComplete();
+
         if (startAllSessions) {
-            if(receivedImagesCount == cloudService.getUploadCount()) {
+            if (receivedImagesCount == cloudService.getUploadCount()) {
                 receivedImagesCount = 0;
-                uasCommunicationService.startSession();
-                cloudService.startSession();
+                uasCommunicationService.onLocationCalibrationComplete();
+                cloudService.onLocationCalibrationComplete();
             } else {
-                Log.d(TAG,"Still uploading images form the last session");
+                Log.d(TAG, "Still uploading images form the last session");
             }
-        } else if(!locationService.isSessionActive()){
-            //This needs to start no matter what so calibration can be completed
-            locationService.startSession();
         }
     }
 
@@ -268,7 +273,6 @@ public class CommandService extends Service {
 
         uasCommunicationService.stopSession();
         locationService.stopSession();
-
     }
 
     private void handleNewUasLocation() {
@@ -303,7 +307,8 @@ public class CommandService extends Service {
                         handleNewUasImage();
                         break;
                     case ACTION_LOCATION_CALIBRATION_COMPLETE:
-                        handleCommandHhmdSessionStart();
+                        handleLocationCalibrationComplete();
+                        break;
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);
                         break;
