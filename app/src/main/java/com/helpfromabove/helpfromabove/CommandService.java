@@ -32,7 +32,6 @@ public class CommandService extends Service {
     protected static final String ACTION_NEW_WAYPOINT = "com.helpfromabove.helpfromabove.action.ACTION_NEW_WAYPOINT";
     protected static final String ACTION_NEW_UAS_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_LOCATION";
     protected static final String ACTION_NEW_HHMD_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_HHMD_LOCATION";
-    protected static final String ACTION_UAS_READY = "com.helpfromabove.helpfromabove.action.ACTION_UAS_READY";
 
     private final static String TAG = "CommandService";
 
@@ -184,11 +183,6 @@ public class CommandService extends Service {
         Log.d(TAG, "notifyWifiP2pConnected");
 
         context.sendBroadcast(new Intent(ACTION_WIFI_P2P_CONNECTED));
-    }
-
-    protected static void notifyUasReady(Context context){
-
-        context.sendBroadcast(new Intent(ACTION_UAS_READY));
     }
 
     protected static void notifyLocationCalibrationComplete(Context context) {
