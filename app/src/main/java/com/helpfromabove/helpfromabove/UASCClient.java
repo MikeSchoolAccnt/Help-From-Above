@@ -59,14 +59,6 @@ public class UASCClient {
     private HandlerThread oneTimeHandlerThread;
     private Handler oneTimeHandler;
 
-    //Need a separate set of these for each one because how handlers work
-    private URL connectionURL;
-    private HttpURLConnection connection;
-    private URL imageConnectionURL;
-    private HttpURLConnection imageConnection;
-    private URL gpsConnectionURL;
-    private HttpURLConnection gpsConneciton;
-
 
     //Time based runnables
     private Runnable heartbeatRunnable;
@@ -215,9 +207,8 @@ public class UASCClient {
                 try {
 
                     Log.d(TAG,hostIP+":"+port);
-                    connectionURL = new URL("http://"+hostIP+":"+port);
-
-                    connection = (HttpURLConnection) connectionURL.openConnection();
+                    URL url = new URL("http://"+hostIP+":"+port);
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                     connection.setRequestMethod("POST");
                     connection.setDoOutput(true);
 
@@ -256,7 +247,7 @@ public class UASCClient {
 
                     //Testing code needed for until the server is set up
                     //Start of testing code
-                    imageConnectionURL = new URL(testURLs.get(currentImageNumber));
+                    URL url = new URL(testURLs.get(currentImageNumber));
                     if(currentImageNumber == testURLs.size()-1) {
                         currentImageNumber = 0;
                     }
@@ -265,7 +256,7 @@ public class UASCClient {
                     }
                     //End of testing code
 
-                    InputStream inputStream = imageConnectionURL.openStream();
+                    InputStream inputStream = url.openStream();
 
                     imageBitmap = BitmapFactory.decodeStream(inputStream);
 
@@ -288,9 +279,9 @@ public class UASCClient {
             @Override
             public void run() {
                 try {
-                    gpsConnectionURL = new URL("http://"+hostIP+":"+port+"/"+gpsEndpoint);
+                    URL url = new URL("http://"+hostIP+":"+port+"/"+gpsEndpoint);
 
-                    InputStreamReader inputStreamReader = new InputStreamReader(gpsConnectionURL.openStream());
+                    InputStreamReader inputStreamReader = new InputStreamReader(url.openStream());
                     BufferedReader reader = new BufferedReader(inputStreamReader);
                     StringBuilder stringBuilder = new StringBuilder();
                     String line;
@@ -337,9 +328,9 @@ public class UASCClient {
 
                 try {
 
-                    URL tempURL = new URL("http://"+hostIP+":"+port+"/"+lightEndpoint);
+                    URL url = new URL("http://"+hostIP+":"+port+"/"+lightEndpoint);
                     //Server can detect this and act off of it.
-                    tempURL.openConnection();
+                    url.openConnection();
 
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
@@ -358,9 +349,9 @@ public class UASCClient {
 
                 try {
 
-                    URL tempURL = new URL("http://"+hostIP+":"+port+"/"+startSessionEndpoint);
+                    URL url = new URL("http://"+hostIP+":"+port+"/"+startSessionEndpoint);
 
-                    InputStreamReader inputStreamReader = new InputStreamReader(tempURL.openStream());
+                    InputStreamReader inputStreamReader = new InputStreamReader(url.openStream());
                     BufferedReader reader = new BufferedReader(inputStreamReader);
                     StringBuilder stringBuilder = new StringBuilder();
                     String line;
@@ -403,9 +394,9 @@ public class UASCClient {
 
                 try {
 
-                    URL tempURL = new URL("http://"+hostIP+":"+port+"/"+endSessionEndpoint);
+                    URL url = new URL("http://"+hostIP+":"+port+"/"+endSessionEndpoint);
                     //Server can detect this and act off of it.
-                    tempURL.openConnection();
+                    url.openConnection();
 
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
@@ -426,12 +417,12 @@ public class UASCClient {
 
                 try {
 
-                    URL tempURL = new URL("http://"+hostIP+":"+port+"/"+newWaypointEndpoint);
-                    HttpURLConnection tempConnection = (HttpURLConnection) tempURL.openConnection();
-                    tempConnection.setRequestMethod("POST");
-                    tempConnection.setDoInput(true);
-                    tempConnection.setDoOutput(true);
-                    tempConnection.setUseCaches(false);
+                    URL url = new URL("http://"+hostIP+":"+port+"/"+newWaypointEndpoint);
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("POST");
+                    connection.setDoInput(true);
+                    connection.setDoOutput(true);
+                    connection.setUseCaches(false);
 
                     //Construct the json message
                     String latitude = Location.convert(waypoint.getLatitude(),Location.FORMAT_DEGREES);
@@ -446,12 +437,12 @@ public class UASCClient {
                     String msg = object.toString();
 
                     //Send the json message to the server (UASC)
-                    OutputStreamWriter outputStreamWriter = new OutputStreamWriter(tempConnection.getOutputStream());
+                    OutputStreamWriter outputStreamWriter = new OutputStreamWriter(connection.getOutputStream());
                     outputStreamWriter.write(msg);
                     outputStreamWriter.flush();
                     outputStreamWriter.close();
-                    Log.d(TAG,"Waypoint "+tempConnection.getResponseCode());
-                    tempConnection.disconnect();
+                    Log.d(TAG,"Waypoint "+connection.getResponseCode());
+                    connection.disconnect();
 
 
 
