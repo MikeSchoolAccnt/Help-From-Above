@@ -359,12 +359,35 @@ public class UASCClient {
                 try {
 
                     URL tempURL = new URL("http://"+hostIP+":"+port+"/"+startSessionEndpoint);
-                    //Server can detect this and act off of it.
-                    tempURL.openConnection();
+                    InputStreamReader inputStreamReader = new InputStreamReader(tempURL.openStream());
+                    BufferedReader reader = new BufferedReader(inputStreamReader);
+                    StringBuilder stringBuilder = new StringBuilder();
+                    String line;
+                    while((line = reader.readLine()) != null){
+                        stringBuilder.append(line);
+                    }
+                    reader.close();
+
+                    JSONObject jsonObject = new JSONObject(stringBuilder.toString());
+
+                    String status = jsonObject.getString(STATUS);
+
+                    if(status.equals("OK"))
+                    {
+                        //If the uasc is ready to start sending images and gps location and receive waypoints
+                        CommandService.notifyUasReady(context);
+                    }
+                    else
+                    {
+                        //If the uasc is not ready ask it again in x amount of seconds
+                        oneTimeHandler.postDelayed(this,3000);
+                    }
 
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
                 } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (JSONException e) {
                     e.printStackTrace();
                 }
 
