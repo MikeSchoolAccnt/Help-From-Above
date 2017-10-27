@@ -63,6 +63,7 @@ public class CommandService extends Service {
         intentFilter.addAction(ACTION_NEW_UAS_LOCATION);
         intentFilter.addAction(ACTION_NEW_UAS_IMAGE);
         intentFilter.addAction(ACTION_LOCATION_CALIBRATION_COMPLETE);
+        intentFilter.addAction(ACTION_UAS_READY);
         commandServiceBroadcastReceiver = new CommandServiceBroadcastReceiver();
         registerReceiver(commandServiceBroadcastReceiver, intentFilter);
 
@@ -192,7 +193,6 @@ public class CommandService extends Service {
         context.sendBroadcast(new Intent(ACTION_UAS_READY));
 
     }
-
     protected static void notifyLocationCalibrationComplete(Context context) {
         Log.d(TAG, "notifyLocationCalibrationComplete");
 
@@ -283,6 +283,10 @@ public class CommandService extends Service {
         locationService.stopSession();
     }
 
+    private void checkUasReady(){
+        uasCommunicationService.sendStartSession();
+    }
+
     private void handleNewUasLocation() {
         Log.d(TAG, "handleNewUasLocation");
 
@@ -315,6 +319,9 @@ public class CommandService extends Service {
                         handleNewUasImage();
                         break;
                     case ACTION_LOCATION_CALIBRATION_COMPLETE:
+                        checkUasReady();
+                        break;
+                    case ACTION_UAS_READY:
                         handleLocationCalibrationComplete();
                         break;
                     default:

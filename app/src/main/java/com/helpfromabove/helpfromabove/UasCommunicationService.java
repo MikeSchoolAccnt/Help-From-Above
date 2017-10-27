@@ -157,7 +157,7 @@ public class UasCommunicationService extends Service {
             this.wifiP2pInfo = wifiP2pInfo;
             this.networkInfo = networkInfo;
             this.wifiP2pGroup = wifiP2pGroup;
-            uascClient = new UASCClient(getApplicationContext(),wifiP2pInfo.groupOwnerAddress.getHostAddress(),port);
+            uascClient = new UASCClient(getApplicationContext(),"192.168.49.187",port);
             startHeartbeat();
             CommandService.notifyWifiP2pConnected(getApplicationContext());
         } else{
@@ -182,11 +182,15 @@ public class UasCommunicationService extends Service {
         sessionActive = true;
     }
 
+    protected void sendStartSession(){
+        uascClient.sendStartSession("start_session");
+    }
+
     protected void onLocationCalibrationComplete() {
         Log.d(TAG, "onLocationCalibrationComplete");
 
         if(uascClient != null) {
-            uascClient.startImageAccess("image", 1000);
+            uascClient.startImageAccess("static/img/img.jpg", 1000);
         }
     }
 

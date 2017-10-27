@@ -243,17 +243,17 @@ public class UASCClient {
             @Override
             public void run() {
                 try {
-                    //imageConnectionURL = new URL("http://"+hostIP+":"+port+"/"+imageEndpoint);
+                    URL url = new URL("http://"+hostIP+":"+port+"/"+imageEndpoint);
 
                     //Testing code needed for until the server is set up
                     //Start of testing code
-                    URL url = new URL(testURLs.get(currentImageNumber));
-                    if(currentImageNumber == testURLs.size()-1) {
-                        currentImageNumber = 0;
-                    }
-                    else {
-                        currentImageNumber++;
-                    }
+//                    URL url = new URL(testURLs.get(currentImageNumber));
+//                    if(currentImageNumber == testURLs.size()-1) {
+//                        currentImageNumber = 0;
+//                    }
+//                    else {
+//                        currentImageNumber++;
+//                    }
                     //End of testing code
 
                     InputStream inputStream = url.openStream();
