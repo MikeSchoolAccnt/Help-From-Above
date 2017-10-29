@@ -34,8 +34,9 @@ public class LocationService extends Service {
 
     private int accurateCount = 0;
     private boolean calibrationComplete = false;
+    private boolean sessionActive = false;
 
-    private static final int MIN_ACCURACY_DISTANCE = 10;
+    private static final int MIN_ACCURACY_DISTANCE = 100;
     private static final int MIN_ACCURATE_COUNT = 3;
     protected static final int CONSTANT_LOCATION_UPDATE_SECONDS = 3;
 
@@ -64,10 +65,17 @@ public class LocationService extends Service {
     protected void startSession() {
         Log.d(TAG, "startSession");
 
+        sessionActive = true;
         setCalibrationComplete(false);
         resetHeightOffset();
         clearLocations();
         askLocationPermissionsAndRequestLocationUpdates();
+    }
+
+    protected void onLocationCalibrationComplete() {
+        Log.d(TAG, "onLocationCalibrationComplete");
+
+        setCalibrationComplete(true);
     }
 
     private synchronized boolean isCalibrationComplete() {
@@ -79,6 +87,8 @@ public class LocationService extends Service {
     }
 
     private void testCalibration (Location location) {
+        Log.d(TAG, "testCalibration: location.getAccuracy()=" + location.getAccuracy());
+
         if (location.getAccuracy() <= MIN_ACCURACY_DISTANCE) {
             accurateCount++;
         } else {
@@ -86,7 +96,6 @@ public class LocationService extends Service {
         }
 
         if (accurateCount >= MIN_ACCURATE_COUNT) {
-            setCalibrationComplete(true);
             CommandService.notifyLocationCalibrationComplete(getApplicationContext());
         }
     }
@@ -123,8 +132,6 @@ public class LocationService extends Service {
         }
     }
 
-
-
     private void clearLocations() {
         Log.d(TAG, "clearLocations");
 
@@ -136,6 +143,9 @@ public class LocationService extends Service {
     protected void stopSession() {
         Log.d(TAG, "stopSession");
 
+        sessionActive = false;
+        calibrationComplete = false;
+        accurateCount = 0;
         stopLocationUpdates();
     }
 
@@ -143,6 +153,10 @@ public class LocationService extends Service {
         Log.d(TAG, "stopLocationUpdates");
 
         locationManager.removeUpdates(locationServiceLocationListener);
+    }
+
+    protected boolean isSessionActive() {
+        return sessionActive;
     }
 
     protected void pushUasLocation(Location uasLocation) {
@@ -305,13 +319,13 @@ public class LocationService extends Service {
     protected void incrementHeightOffset() {
         Log.d(TAG, "incrementHeightOffset");
 
-        setHeightOffset(heightOffset++);
+        setHeightOffset(++heightOffset);
     }
 
     protected void decrementHeightOffset() {
         Log.d(TAG, "decrementHeightOffset");
 
-        setHeightOffset(heightOffset--);
+        setHeightOffset(--heightOffset);
     }
 
     protected class LocationServiceBinder extends Binder {

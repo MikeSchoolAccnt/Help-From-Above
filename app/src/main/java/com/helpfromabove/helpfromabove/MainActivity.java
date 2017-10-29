@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -13,6 +14,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SwitchCompat;
 import android.support.v7.widget.Toolbar;
@@ -22,6 +24,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 
 /**
  * Created by Caleb Smith on 5/4/2017.
@@ -38,9 +41,19 @@ public class MainActivity extends AppCompatActivity {
     private CommandService commandService;
     private ServiceConnection commandServiceConnection;
 
+    private AlertDialog calibratingAlertDialog;
     private Button endSessionButton;
     private Button startSessionButton;
+    private Button emergencyButton;
+    private Button uasHeightDownButton;
+    private Button uasHeightUpButton;
+    private SwitchCompat lightSwitch;
 
+    private enum ButtonState {
+        SESSION_STOPPED,
+        CALIBRATING,
+        SESSION_STARTED,
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate");
@@ -48,10 +61,16 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
         startSessionButton = (Button) findViewById(R.id.session_start_button);
         endSessionButton = (Button) findViewById(R.id.session_end_button);
-        endSessionButton.setEnabled(false);
-        setSupportActionBar(toolbar);
+        emergencyButton = (Button) findViewById(R.id.emergency_button);
+        uasHeightDownButton = (Button) findViewById(R.id.uas_height_down_button);
+        uasHeightUpButton = (Button) findViewById(R.id.uas_height_up_button);
+        lightSwitch = (SwitchCompat) findViewById(R.id.light_switch);
+
+        enableButtons(ButtonState.SESSION_STOPPED);
     }
 
     @Override
@@ -69,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(CommandService.ACTION_NEW_UAS_IMAGE);
+        intentFilter.addAction(CommandService.ACTION_LOCATION_CALIBRATION_COMPLETE);
         intentFilter.addAction(CommandService.ACTION_NEW_UAS_LOCATION);
         intentFilter.addAction(CommandService.ACTION_NEW_HHMD_LOCATION);
         registerReceiver(mainActivityBroadcastReceiver, intentFilter);
@@ -186,21 +206,52 @@ public class MainActivity extends AppCompatActivity {
     public void sessionStartButtonOnCLick(View view) {
         Log.d(TAG, "sessionStartButtonOnCLick");
 
-        endSessionButton.setEnabled(true);
-        startSessionButton.setEnabled(false);
-
+        displayCalibratingDialog();
+        enableButtons(ButtonState.CALIBRATING);
         commandService.handleCommandHhmdSessionStart();
     }
 
     public void sessionEndButtonOnCLick(View view) {
         Log.d(TAG, "sessionEndButtonOnCLick");
 
-        endSessionButton.setEnabled(false);
-        startSessionButton.setEnabled(true);
+        enableButtons(ButtonState.SESSION_STOPPED);
 
         commandService.handleCommandHhmdSessionEnd();
     }
 
+
+    private void enableButtons(ButtonState state) {
+        Log.d(TAG, "enableButtons: state=" + state);
+        switch (state) {
+            case CALIBRATING:
+                emergencyButton.setEnabled(false);
+                lightSwitch.setEnabled(false);
+                uasHeightUpButton.setEnabled(false);
+                uasHeightDownButton.setEnabled(false);
+                startSessionButton.setEnabled(false);
+                endSessionButton.setEnabled(false);
+                break;
+            case SESSION_STARTED:
+                emergencyButton.setEnabled(true);
+                lightSwitch.setEnabled(true);
+                uasHeightUpButton.setEnabled(true);
+                uasHeightDownButton.setEnabled(true);
+                startSessionButton.setEnabled(false);
+                endSessionButton.setEnabled(true);
+                break;
+            case SESSION_STOPPED:
+                emergencyButton.setEnabled(false);
+                lightSwitch.setEnabled(false);
+                uasHeightUpButton.setEnabled(false);
+                uasHeightDownButton.setEnabled(false);
+                startSessionButton.setEnabled(true);
+                endSessionButton.setEnabled(false);
+                break;
+            default:
+                Log.e(TAG, "enableButtons: default");
+                break;
+        }
+    }
     /*
      * Method for starting the fullscreen activity
      */
@@ -225,9 +276,22 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void displayCalibratingDialog() {
+        Log.d(TAG, "displayCalibratingDialog");
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(new ProgressBar(getApplicationContext()))
+                .setTitle("Calibrating...")
+                .setCancelable(false);
+        calibratingAlertDialog = builder.create();
+        calibratingAlertDialog.show();
+    }
+
     private void handleLocationCalibrationComplete() {
-        Log.d(TAG, "handleLocationCalibrationComplete: NOT YET IMPLEMENTED!");
-        // TODO: This is where we will remove the "calibrating" dialog that will be shown when the user starts a session.
+        Log.d(TAG, "handleLocationCalibrationComplete");
+
+        enableButtons(ButtonState.SESSION_STARTED);
+        calibratingAlertDialog.dismiss();
     }
 
     private void setConnectedService(IBinder service) {

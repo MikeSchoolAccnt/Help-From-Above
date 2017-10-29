@@ -33,6 +33,7 @@ public class CommandService extends Service {
     protected static final String ACTION_NEW_WAYPOINT = "com.helpfromabove.helpfromabove.action.ACTION_NEW_WAYPOINT";
     protected static final String ACTION_NEW_UAS_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_LOCATION";
     protected static final String ACTION_NEW_HHMD_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_HHMD_LOCATION";
+    protected static final String ACTION_UAS_READY = "com.helpfromabove.helpfromabove.action.ACTION_UAS_READY";
 
     private final static String TAG = "CommandService";
 
@@ -46,6 +47,9 @@ public class CommandService extends Service {
     ServiceConnection cloudServiceConnection;
     CloudService cloudService;
 
+    private static boolean startAllSessions = false;
+    private static int receivedImagesCount = 0;
+    private static int uploadedImagesCount = 0;
 
     private CommandServiceBroadcastReceiver commandServiceBroadcastReceiver;
     private IntentFilter intentFilter;
@@ -59,6 +63,8 @@ public class CommandService extends Service {
         intentFilter.addAction(ACTION_NEW_WAYPOINT);
         intentFilter.addAction(ACTION_NEW_UAS_LOCATION);
         intentFilter.addAction(ACTION_NEW_UAS_IMAGE);
+        intentFilter.addAction(ACTION_LOCATION_CALIBRATION_COMPLETE);
+        intentFilter.addAction(ACTION_UAS_READY);
         commandServiceBroadcastReceiver = new CommandServiceBroadcastReceiver();
         registerReceiver(commandServiceBroadcastReceiver, intentFilter);
 
@@ -188,9 +194,16 @@ public class CommandService extends Service {
         context.sendBroadcast(new Intent(ACTION_WIFI_P2P_CONNECTED));
     }
 
+    protected static void notifyUasReady(Context context){
+        Log.d(TAG,"notifyUasReady");
+
+        context.sendBroadcast(new Intent(ACTION_UAS_READY));
+
+    }
     protected static void notifyLocationCalibrationComplete(Context context) {
         Log.d(TAG, "notifyLocationCalibrationComplete");
 
+        startAllSessions = true;
         context.sendBroadcast(new Intent(ACTION_LOCATION_CALIBRATION_COMPLETE));
     }
 
@@ -203,6 +216,7 @@ public class CommandService extends Service {
     protected static void notifyNewUasImageAvailable(Context context) {
         Log.d(TAG, "notifyNewUasImageAvailable");
 
+        receivedImagesCount++;
         context.sendBroadcast(new Intent(ACTION_NEW_UAS_IMAGE));
     }
 
@@ -253,11 +267,31 @@ public class CommandService extends Service {
         locationService.startSession();
     }
 
+    private void handleLocationCalibrationComplete() {
+        Log.d(TAG, "handleLocationCalibrationComplete");
+
+        locationService.onLocationCalibrationComplete();
+
+        if (startAllSessions) {
+            if (receivedImagesCount == cloudService.getUploadCount()) {
+                receivedImagesCount = 0;
+                uasCommunicationService.onLocationCalibrationComplete();
+                cloudService.onLocationCalibrationComplete();
+            } else {
+                Log.d(TAG, "Still uploading images form the last session");
+            }
+        }
+    }
+
     protected void handleCommandHhmdSessionEnd() {
         Log.d(TAG, "handleCommandHhmdSessionEnd");
 
         uasCommunicationService.stopSession();
         locationService.stopSession();
+    }
+
+    private void checkUasReady(){
+        uasCommunicationService.sendStartSession();
     }
 
     private void handleNewUasLocation() {
@@ -290,6 +324,12 @@ public class CommandService extends Service {
                         break;
                     case ACTION_NEW_UAS_IMAGE:
                         handleNewUasImage();
+                        break;
+                    case ACTION_LOCATION_CALIBRATION_COMPLETE:
+                        checkUasReady();
+                        break;
+                    case ACTION_UAS_READY:
+                        handleLocationCalibrationComplete();
                         break;
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);

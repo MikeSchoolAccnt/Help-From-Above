@@ -46,6 +46,7 @@ public class UasCommunicationService extends Service {
 
     private UASCClient uascClient;
     private String port = "5000";
+    private boolean sessionActive = false;
 
     public UasCommunicationService() {
         super();
@@ -167,7 +168,7 @@ public class UasCommunicationService extends Service {
                 wifiP2pManager.cancelConnect(wifiP2pChannel, wifiP2pConnectionListener);
                 startScanning();
             } else {
-                uascClient = new UASCClient(getApplicationContext(),wifiP2pInfo.groupOwnerAddress.getHostAddress(),port);
+                uascClient = new UASCClient(getApplicationContext(), "192.168.49.187", port);
                 startHeartbeat();
                 CommandService.notifyWifiP2pConnected(getApplicationContext());
             }
@@ -189,16 +190,33 @@ public class UasCommunicationService extends Service {
 
     protected void startSession() {
         Log.d(TAG, "startSession: NOT FULLY IMPLEMENTED!");
+
+        sessionActive = true;
+    }
+
+    protected void sendStartSession(){
+        uascClient.sendStartSession("start_session");
+    }
+
+    protected void onLocationCalibrationComplete() {
+        Log.d(TAG, "onLocationCalibrationComplete");
+
         if(uascClient != null) {
-            uascClient.startImageAccess("image", 10000);
+            uascClient.startImageAccess("static/img/img.jpg", 1000);
         }
     }
 
     protected void stopSession() {
         Log.d(TAG, "stopSession: NOT FULLY IMPLEMENTED!");
+
+        sessionActive = false;
         if(uascClient != null){
             uascClient.stopImageAccess();
         }
+    }
+
+    protected boolean isSessionActive(){
+        return sessionActive;
     }
 
     protected void setLightOnOff(boolean lightOnOff) {
