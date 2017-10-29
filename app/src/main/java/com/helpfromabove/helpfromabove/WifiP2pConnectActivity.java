@@ -32,9 +32,9 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
     ServiceConnection commandServiceConnection;
 
     private WifiP2pConnectActivityBroadcastReceiver broadcastReceiver;
-    private IntentFilter intentFilter ;
+    private IntentFilter intentFilter;
     private ListView devicesListView;
-    private ArrayAdapter adapter;
+    private ArrayAdapter<WifiP2pDevice> adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +49,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         intentFilter.addAction(CommandService.ACTION_WIFI_P2P_CONNECTING);
         intentFilter.addAction(CommandService.ACTION_WIFI_P2P_CONNECTED);
 
-        adapter = new ArrayAdapter(getApplicationContext(), R.layout.wifi_p2p_device, R.id.wifi_p2p_device_name) {
+        adapter = new ArrayAdapter<WifiP2pDevice>(getApplicationContext(), R.layout.wifi_p2p_device, R.id.wifi_p2p_device_name) {
             @Override
             public void notifyDataSetChanged() {
                 Log.d(TAG, "notifyDataSetChanged");
@@ -154,7 +154,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         Log.d(TAG, "wifiP2pDeviceOnClick: position=" + position);
 
         try {
-            WifiP2pDevice device = (WifiP2pDevice) adapter.getItem(position);
+            WifiP2pDevice device = adapter.getItem(position);
             displayConfirmDialog(device);
         } catch (IndexOutOfBoundsException iOOBE) {
             Log.e(TAG, "wifiP2pDeviceOnClick: IndexOutOfBoundsException: " + iOOBE.getMessage(), iOOBE);
@@ -222,6 +222,18 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         }
     }
 
+    private void handleWifiP2pConnecting() {
+        Log.d(TAG, "handleWifiP2pConnecting");
+
+        displayWifiP2pConnectingDialog();
+    }
+
+    private void handleWifiP2pConnected() {
+        Log.d(TAG, "handleWifiP2pConnected");
+
+        startActivity(new Intent(getApplicationContext(), MainActivity.class));
+    }
+
     private class WifiP2pConnectActivityBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -235,10 +247,10 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
                         handleWifiP2pPeersChanged(deviceList.getDeviceList());
                         break;
                     case CommandService.ACTION_WIFI_P2P_CONNECTING:
-                        displayWifiP2pConnectingDialog();
+                        handleWifiP2pConnecting();
                         break;
                     case CommandService.ACTION_WIFI_P2P_CONNECTED:
-                        startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                        handleWifiP2pConnected();
                         break;
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);

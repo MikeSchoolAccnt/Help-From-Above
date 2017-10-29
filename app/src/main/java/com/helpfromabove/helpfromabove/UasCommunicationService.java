@@ -25,7 +25,6 @@ public class UasCommunicationService extends Service {
 
     private final IBinder mBinder = new UasCommunicationServiceBinder();
 
-    private IntentFilter intentFilter;
     private UasCommunicationServiceBroadcastReceiver broadcastReceiver;
 
     private WifiManager wifiManager;
@@ -48,9 +47,6 @@ public class UasCommunicationService extends Service {
     private UASCClient uascClient;
     private String port = "5000";
 
-    //debugging variable. Remove before final testing.
-    private boolean canConnect = false;
-
     public UasCommunicationService() {
         super();
 
@@ -62,7 +58,7 @@ public class UasCommunicationService extends Service {
         Log.d(TAG, "onCreate");
         super.onCreate();
 
-        intentFilter = new IntentFilter();
+        IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
@@ -106,6 +102,7 @@ public class UasCommunicationService extends Service {
     protected void startScanning() {
         Log.d(TAG, "startScanning");
 
+        initiator = Initiator.NONE;
         wifiP2pManager = (WifiP2pManager) this.getSystemService(Context.WIFI_P2P_SERVICE);
         wifiP2pChannel = wifiP2pManager.initialize(this, getMainLooper(), null);
         wifiP2pManager.discoverPeers(wifiP2pChannel, wifiP2pScanListener);
@@ -113,6 +110,8 @@ public class UasCommunicationService extends Service {
 
     protected void connectToDevice(WifiP2pDevice device) {
         Log.d(TAG, "connectToDevice: device.toString()=" + device.toString());
+
+        initiator = Initiator.HHMD;
 
         WifiP2pConfig config = new WifiP2pConfig();
         config.deviceAddress = device.deviceAddress;
@@ -322,9 +321,6 @@ public class UasCommunicationService extends Service {
                 default:
                     Log.w(TAG, "onFailure: default");
             }
-
-            // TODO: Used for testing other features on emulator, remove in final production
-            CommandService.notifyWifiP2pConnected(getApplicationContext());
         }
     }
 }
