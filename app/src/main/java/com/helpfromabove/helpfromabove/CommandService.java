@@ -33,6 +33,7 @@ public class CommandService extends Service {
     protected static final String ACTION_NEW_UAS_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_LOCATION";
     protected static final String ACTION_NEW_HHMD_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_HHMD_LOCATION";
     protected static final String ACTION_UAS_READY = "com.helpfromabove.helpfromabove.action.ACTION_UAS_READY";
+    protected static final String ACTION_EMERGENCY_MESSAGE_SENT = "com.helpfromabove.helpfromabove.action.ACTION_EMERGENCY_MESSAGE_SENT";
 
     private final static String TAG = "CommandService";
 
@@ -217,6 +218,12 @@ public class CommandService extends Service {
 
         receivedImagesCount++;
         context.sendBroadcast(new Intent(ACTION_NEW_UAS_IMAGE));
+    }
+
+    protected static void notifyEmergencyMessageSent(Context context) {
+        Log.d(TAG, "notifyEmergencyMessageSent");
+
+        context.sendBroadcast(new Intent(ACTION_EMERGENCY_MESSAGE_SENT));
     }
 
     protected Bitmap getNewImage(){

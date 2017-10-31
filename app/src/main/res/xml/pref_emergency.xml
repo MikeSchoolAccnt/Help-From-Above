@@ -14,7 +14,7 @@
     <EditTextPreference
         android:id="@+id/emergency_message_name_preference"
         android:capitalize="words"
-        android:defaultValue="@string/pref_default_emergency_message_name"
+        android:defaultValue="@string/pref_value_emergency_message_name_default"
         android:enabled="true"
         android:inputType="textCapWords"
         android:key="@string/pref_key_emergency_message_name"

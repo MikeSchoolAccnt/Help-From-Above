@@ -12,6 +12,9 @@
     <string name="session_end_button_text">Land</string>
     <string name="light_switch_text">Light</string>
 
+    <!--Message to display to user after sending emergency message-->
+    <string name="emergency_message_sent_text">Emergency message sent</string>
+
     <!--content_wifi_p2p_connect strings-->
     <string name="title_activity_wifi_p2p_connect">Wi-Fi Connect</string>
 
@@ -40,13 +43,13 @@
     <string name="pref_key_emergency_message_text">emergency_message_text_key</string>
     <string name="pref_title_emergency_message_name">Name</string>
     <string name="pref_key_emergency_message_name">emergency_message_name_key</string>
-    <string name="pref_default_emergency_message_name">a \"Help From Above\" user</string>
+    <string name="pref_value_emergency_message_name_default">a \"Help From Above\" user</string>
 
     <!--Emergency message text entries and values-->
     <string name="pref_entry_emergency_message_text_short">Help!</string>
     <string name="pref_entry_emergency_message_text_medium">Please help me!</string>
     <string name="pref_entry_emergency_message_text_long">
-        I\'m (Name), and I need Help! Location: (lat., long., alt.) Images: (link to images on cloud)
+        I\'m (Name), and I need Help! \nLocation: (Location) \nImages: (Cloud Link)
     </string>
     <string name="pref_value_emergency_message_text_short">0</string>
     <string name="pref_value_emergency_message_text_medium">1</string>

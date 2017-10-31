@@ -25,6 +25,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 /**
  * Created by Caleb Smith on 5/4/2017.
@@ -89,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(CommandService.ACTION_NEW_UAS_IMAGE);
         intentFilter.addAction(CommandService.ACTION_LOCATION_CALIBRATION_COMPLETE);
+        intentFilter.addAction(CommandService.ACTION_EMERGENCY_MESSAGE_SENT);
         intentFilter.addAction(CommandService.ACTION_NEW_UAS_LOCATION);
         intentFilter.addAction(CommandService.ACTION_NEW_HHMD_LOCATION);
         registerReceiver(mainActivityBroadcastReceiver, intentFilter);
@@ -294,6 +296,10 @@ public class MainActivity extends AppCompatActivity {
         calibratingAlertDialog.dismiss();
     }
 
+    private void handleEmergencyMessageSent() {
+        Toast.makeText(getApplicationContext(), R.string.emergency_message_sent_text, Toast.LENGTH_LONG).show();
+    }
+
     private void setConnectedService(IBinder service) {
         Log.d(TAG, "setConnectedService");
 
@@ -336,6 +342,9 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case CommandService.ACTION_LOCATION_CALIBRATION_COMPLETE:
                         handleLocationCalibrationComplete();
+                        break;
+                    case CommandService.ACTION_EMERGENCY_MESSAGE_SENT:
+                        handleEmergencyMessageSent();
                         break;
                     case CommandService.ACTION_NEW_UAS_LOCATION:
                         Log.d(TAG, "onReceive: ACTION_NEW_UAS_LOCATION");
