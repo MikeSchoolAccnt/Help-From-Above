@@ -16,8 +16,4 @@
         android:fragment="com.helpfromabove.helpfromabove.SettingsActivity$SessionStartPreferenceFragment"
         android:title="@string/pref_header_session_start" />
 
-    <header
-        android:fragment="com.helpfromabove.helpfromabove.SettingsActivity$EmergencyContactsPreferenceFragment"
-        android:title="@string/pref_header_emergency_contacts" />
-
 </preference-headers>

@@ -175,8 +175,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         return PreferenceFragment.class.getName().equals(fragmentName)
                 || CloudPreferenceFragment.class.getName().equals(fragmentName)
                 || EmergencyPreferenceFragment.class.getName().equals(fragmentName)
-                || SessionStartPreferenceFragment.class.getName().equals(fragmentName)
-                || EmergencyContactsPreferenceFragment.class.getName().equals(fragmentName);
+                || SessionStartPreferenceFragment.class.getName().equals(fragmentName);
     }
 
     /**
@@ -223,6 +222,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     public static class EmergencyPreferenceFragment extends PreferenceFragment {
         private static final String TAG = "EmergencyPreferenceF...";
 
+        ArrayList<ContactInfo> contactInfos = new ArrayList<>();
+
         @Override
         public void onCreate(Bundle savedInstanceState) {
             Log.d(TAG, "onCreate");
@@ -255,6 +256,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         public void onStart() {
             Log.d(TAG, "onStart");
             super.onStart();
+
+            updateContactsArrayList();
             refreshContactsList();
         }
 
@@ -265,37 +268,44 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             contactsListPreference.setEntryValues(getContactIdCharSequenceArray());
         }
 
-        private ContactInfo[] getContactsArray() {
-            Log.d(TAG, "getContactsArray");
-            ArrayList<ContactInfo> contacts = new ArrayList<>();
+        private void updateContactsArrayList() {
+            Log.d(TAG, "updateContactsArrayList");
 
-            ContentResolver resolver = SettingsActivity.resolver;
-            Cursor cursor = resolver.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
 
-            while (cursor.moveToNext()) {
-                String currentID = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
-                Cursor phoneNumberCursor = resolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
-                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?", new String[]{currentID}, null);
+                    ArrayList<ContactInfo> newContacts = new ArrayList<>();
 
-                while (phoneNumberCursor.moveToNext()) {
-                    Long id = phoneNumberCursor.getLong(phoneNumberCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.CONTACT_ID));
-                    String name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-                    String number = phoneNumberCursor.getString(phoneNumberCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                    Uri uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, id);
-                    InputStream photo = ContactsContract.Contacts.openContactPhotoInputStream(resolver, uri);
-                    contacts.add(new ContactInfo(id, name, number, photo));
+                    ContentResolver resolver = SettingsActivity.resolver;
+                    Cursor cursor = resolver.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
+
+                    while (cursor.moveToNext()) {
+                        String currentID = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
+                        Cursor phoneNumberCursor = resolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
+                                ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?", new String[]{currentID}, null);
+
+                        while (phoneNumberCursor.moveToNext()) {
+                            Long id = phoneNumberCursor.getLong(phoneNumberCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.CONTACT_ID));
+                            String name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                            String number = phoneNumberCursor.getString(phoneNumberCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                            Uri uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, id);
+                            InputStream photo = ContactsContract.Contacts.openContactPhotoInputStream(resolver, uri);
+                            newContacts.add(new ContactInfo(id, name, number, photo));
+                        }
+                    }
+
+                    contactInfos = newContacts;
+                    refreshContactsList();
                 }
-            }
-
-            return contacts.toArray(new ContactInfo[contacts.size()]);
+            }).start();
         }
 
         private CharSequence[] getContactInfoCharSequenceArray() {
             Log.d(TAG, "getContactInfoCharSequenceArray");
-            ContactInfo[] contactInfos = getContactsArray();
-            CharSequence[] contactCharSequences = new CharSequence[contactInfos.length];
-            for (int i = 0; i < contactInfos.length; i++) {
-                contactCharSequences[i] = contactInfos[i].toString();
+            CharSequence[] contactCharSequences = new CharSequence[contactInfos.size()];
+            for (int i = 0; i < contactInfos.size(); i++) {
+                contactCharSequences[i] = contactInfos.get(i).toString();
             }
 
             return contactCharSequences;
@@ -303,10 +313,9 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
         private CharSequence[] getContactIdCharSequenceArray() {
             Log.d(TAG, "getContactIdCharSequenceArray");
-            ContactInfo[] contactInfos = getContactsArray();
-            CharSequence[] contactCharSequences = new CharSequence[contactInfos.length];
-            for (int i = 0; i < contactInfos.length; i++) {
-                contactCharSequences[i] = contactInfos[i].number.toString();
+            CharSequence[] contactCharSequences = new CharSequence[contactInfos.size()];
+            for (int i = 0; i < contactInfos.size(); i++) {
+                contactCharSequences[i] = contactInfos.get(i).number;
             }
 
             return contactCharSequences;
@@ -330,105 +339,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                 return name + "\n" + number;
             }
         }
-    }
-
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    public static class EmergencyContactsPreferenceFragment extends PreferenceFragment {
-        private static final String TAG = "EmergencyContactsPre...";
-        //These two arrays are connected in data where contactNames[x] matches to contactNumbers[x]
-        private ArrayList<String> contactNames = new ArrayList<String>();    //Need to do something about the size
-        private ArrayList<String> contactNumbers = new ArrayList<String>();  //Need to do something about the size
-
-        @Override
-        public void onCreate(Bundle savedInstanceState) {
-            Log.d(TAG, "onCreate");
-            super.onCreate(savedInstanceState);
-
-            addPreferencesFromResource(R.xml.pref_contacts);
-            setHasOptionsMenu(true);
-
-            //Need to handle these different so it's not overwriting itself every time
-            if(emergencyContactsPreferenceScreen == null) {
-                collectContactInformation();
-                fillContactData();
-            } else {
-                setPreferenceScreen(emergencyContactsPreferenceScreen);
-            }
-
-            // Bind the summaries of EditText/List/Dialog/Ringtone preferences
-            // to their values. When their values change, their summaries are
-            // updated to reflect the new value, per the Android Design
-            // guidelines.
-
-            //Haven't done anything here and not sure if I need to.
-
-        }
-
-
-
-        @Override
-        public boolean onOptionsItemSelected(MenuItem item) {
-            Log.d(TAG, "onOptionsItemSelected");
-
-            int id = item.getItemId();
-            if (id == android.R.id.home) {
-                startActivity(new Intent(getActivity(), SettingsActivity.class));
-                return true;
-            }
-            return super.onOptionsItemSelected(item);
-        }
-
-        //Collects the contact information form the users contact list.
-        private void collectContactInformation(){
-
-            ContentResolver resolver = SettingsActivity.resolver;
-            Cursor cursor = resolver.query(ContactsContract.Contacts.CONTENT_URI,null,null,null,null);
-
-            int numberOfContacts = 0;
-            while(cursor.moveToNext()){
-
-                //to errors because how the storage arrays are set up right now.
-                if(numberOfContacts == 50)
-                    break;
-
-
-                String currentID = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
-
-                Cursor phoneNumberCursor = resolver.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,null,
-                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",new String[]{currentID},null);
-
-                while(phoneNumberCursor.moveToNext()){
-                    contactNames.add(cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)));
-                    contactNumbers.add(phoneNumberCursor.getString(phoneNumberCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)));
-
-                    numberOfContacts++;
-                }
-
-            }
-
-        }
-
-        //Creates and fills this preference with names and numbers from the users contacts.
-        //TODO: Handle how to access the numbers of checked contacts and keep contacts checked.
-        //TODO: Get the images of contacts and add them in.
-        private void fillContactData(){
-
-            emergencyContactsPreferenceScreen = getPreferenceScreen();
-
-            for(int i = 0; i < contactNames.size(); i++) {
-                Log.d(TAG, "ContactName: " + contactNames.get(i) + ": " + contactNumbers.get(i));
-
-                CheckBoxPreference box = new CheckBoxPreference(emergencyContactsPreferenceScreen.getContext());
-                box.setTitle(contactNames.get(i));
-                box.setSummary(contactNumbers.get(i));
-                box.setIcon(R.mipmap.ic_launcher_round); //Temp icon.
-                emergencyContactsPreferenceScreen.addItemFromInflater(box);
-
-            }
-            setPreferenceScreen(emergencyContactsPreferenceScreen);
-            Log.d(TAG, "Test Get Number [0]: " + getPreferenceScreen().getPreference(0).getSummary());
-        }
-
     }
 
     /**
