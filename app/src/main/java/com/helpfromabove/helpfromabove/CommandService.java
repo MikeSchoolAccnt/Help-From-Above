@@ -54,6 +54,12 @@ public class CommandService extends Service {
     private IntentFilter intentFilter;
 
     @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        super.onStartCommand(intent, flags, startId);
+        return START_NOT_STICKY;
+    }
+
+    @Override
     public void onCreate() {
         Log.d(TAG, "onCreate");
         super.onCreate();
