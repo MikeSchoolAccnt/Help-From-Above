@@ -263,9 +263,13 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
         private void refreshContactsList() {
             Log.d(TAG, "refreshContactsList");
-            MultiSelectListPreference contactsListPreference = (MultiSelectListPreference) findPreference(getString(R.string.pref_key_emergency_contacts));
-            contactsListPreference.setEntries(getContactInfoCharSequenceArray());
-            contactsListPreference.setEntryValues(getContactIdCharSequenceArray());
+            try {
+                MultiSelectListPreference contactsListPreference = (MultiSelectListPreference) findPreference(getString(R.string.pref_key_emergency_contacts));
+                contactsListPreference.setEntries(getContactInfoCharSequenceArray());
+                contactsListPreference.setEntryValues(getContactIdCharSequenceArray());
+            } catch (IllegalStateException iSE) {
+                Log.e(TAG, iSE.getLocalizedMessage(), iSE);
+            }
         }
 
         private void updateContactsArrayList() {
