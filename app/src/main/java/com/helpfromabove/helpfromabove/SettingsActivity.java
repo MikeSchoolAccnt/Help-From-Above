@@ -227,6 +227,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
         ArrayList<ContactInfo> contactInfos = new ArrayList<>();
 
+        ContactInfo emergencyContact = new ContactInfo(null, "Local Emergency Dispatch", "911", null);
+
         @Override
         public void onCreate(Bundle savedInstanceState) {
             Log.d(TAG, "onCreate");
@@ -304,6 +306,9 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
                     Collections.sort(newContacts);
                     contactInfos = newContacts;
+
+                    //TODO : Enable this in final version. This is commented out so that we do not accidentally text during testing
+//                    contactInfos.add(0, emergencyContact);
                     refreshContactsList();
                 }
             }).start();
