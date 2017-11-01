@@ -19,6 +19,7 @@ import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.provider.ContactsContract;
+import android.support.annotation.NonNull;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBar;
 import android.preference.PreferenceFragment;
@@ -31,6 +32,8 @@ import android.support.v4.app.NavUtils;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.zip.Inflater;
 
@@ -299,6 +302,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                         }
                     }
 
+                    Collections.sort(newContacts);
                     contactInfos = newContacts;
                     refreshContactsList();
                 }
@@ -325,7 +329,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             return contactCharSequences;
         }
 
-        private class ContactInfo {
+        private class ContactInfo implements Comparable<ContactInfo> {
             private Long contactId;
             private String name;
             private String number;
@@ -341,6 +345,11 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             @Override
             public String toString() {
                 return name + "\n" + number;
+            }
+
+            @Override
+            public int compareTo(@NonNull ContactInfo contactInfo) {
+                return this.name.compareTo(contactInfo.name);
             }
         }
     }
