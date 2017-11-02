@@ -102,7 +102,7 @@ public class LocationService extends Service {
         }
 
         if (accurateCount >= MIN_ACCURATE_COUNT) {
-            CommandService.notifyLocationCalibrationComplete(getApplicationContext());
+            CommandService.notifyLocationHhmdCalibrationComplete(getApplicationContext());
         }
     }
 
@@ -123,6 +123,7 @@ public class LocationService extends Service {
             int response = getApplicationContext().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION);
             if (response == PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "onCreate: permission FEATURE_LOCATION is GRANTED");
+                CommandService.notifyLocationCalibrating(getApplicationContext());
                 locationManager.requestLocationUpdates(1000 * CONSTANT_LOCATION_UPDATE_SECONDS, 0, locationCriteria, locationServiceLocationListener, getMainLooper());
             } else {
                 Log.w(TAG, "onCreate: permission FEATURE_LOCATION is DENIED");
@@ -134,6 +135,7 @@ public class LocationService extends Service {
                 // gets the broadcast, it should then request the permission.
             }
         } else {
+            CommandService.notifyLocationCalibrating(getApplicationContext());
             locationManager.requestLocationUpdates(1000 * CONSTANT_LOCATION_UPDATE_SECONDS, 0, locationCriteria, locationServiceLocationListener, getMainLooper());
         }
     }

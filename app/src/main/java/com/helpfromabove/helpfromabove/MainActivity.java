@@ -50,11 +50,6 @@ public class MainActivity extends AppCompatActivity {
     private Button uasHeightUpButton;
     private SwitchCompat lightSwitch;
 
-    private enum ButtonState {
-        SESSION_STOPPED,
-        CALIBRATING,
-        SESSION_STARTED,
-    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate");
@@ -70,8 +65,6 @@ public class MainActivity extends AppCompatActivity {
         uasHeightDownButton = (Button) findViewById(R.id.uas_height_down_button);
         uasHeightUpButton = (Button) findViewById(R.id.uas_height_up_button);
         lightSwitch = (SwitchCompat) findViewById(R.id.light_switch);
-
-        enableButtons(ButtonState.SESSION_STOPPED);
     }
 
     @Override
@@ -88,12 +81,14 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
 
         IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(CommandService.ACTION_SESSION_STATE_CHANGED);
+        intentFilter.addAction(CommandService.ACTION_LOCATION_STATE_CHANGED);
         intentFilter.addAction(CommandService.ACTION_NEW_UAS_IMAGE);
-        intentFilter.addAction(CommandService.ACTION_LOCATION_CALIBRATION_COMPLETE);
-        intentFilter.addAction(CommandService.ACTION_EMERGENCY_MESSAGE_SENT);
         intentFilter.addAction(CommandService.ACTION_NEW_UAS_LOCATION);
         intentFilter.addAction(CommandService.ACTION_NEW_HHMD_LOCATION);
         registerReceiver(mainActivityBroadcastReceiver, intentFilter);
+
+        updateUiState();
         //handleNewImage();
     }
 
@@ -147,8 +142,12 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    private void updateUiState() {
+        handleSessionStateChanged();
+        handleLocationStateChanged();
+    }
 
-    private void bindCommandService(){
+    private void bindCommandService() {
         Intent commandServiceIntent = new Intent(getApplicationContext(), CommandService.class);
         startService(commandServiceIntent);
         commandServiceConnection = new MainActivityServiceConnection();
@@ -208,24 +207,21 @@ public class MainActivity extends AppCompatActivity {
     public void sessionStartButtonOnCLick(View view) {
         Log.d(TAG, "sessionStartButtonOnCLick");
 
-        displayCalibratingDialog();
-        enableButtons(ButtonState.CALIBRATING);
         commandService.handleCommandHhmdSessionStart();
     }
 
     public void sessionEndButtonOnCLick(View view) {
         Log.d(TAG, "sessionEndButtonOnCLick");
 
-        enableButtons(ButtonState.SESSION_STOPPED);
-
         commandService.handleCommandHhmdSessionEnd();
     }
 
 
-    private void enableButtons(ButtonState state) {
-        Log.d(TAG, "enableButtons: state=" + state);
-        switch (state) {
-            case CALIBRATING:
+    private void enableButtons(CommandService.SessionState sessionState) {
+        Log.d(TAG, "enableButtons: sessionState=" + sessionState);
+        switch (sessionState) {
+            case SESSION_STARTING:
+            case SESSION_STOPPING:
                 emergencyButton.setEnabled(false);
                 lightSwitch.setEnabled(false);
                 uasHeightUpButton.setEnabled(false);
@@ -233,7 +229,7 @@ public class MainActivity extends AppCompatActivity {
                 startSessionButton.setEnabled(false);
                 endSessionButton.setEnabled(false);
                 break;
-            case SESSION_STARTED:
+            case SESSION_RUNNING:
                 emergencyButton.setEnabled(true);
                 lightSwitch.setEnabled(true);
                 uasHeightUpButton.setEnabled(true);
@@ -267,6 +263,41 @@ public class MainActivity extends AppCompatActivity {
     /*
      * Methods for handling events caused by receiving new broadcasts
      */
+    private void handleSessionStateChanged() {
+        if (commandService != null) {
+            enableButtons(commandService.getState().getSessionState());
+
+            switch (commandService.getState().getSessionState()) {
+                case SESSION_EMERGENCY_MESSAGES_SENT:
+                    displayEmergencyMessagesSent();
+                    break;
+                default:
+                    Log.w(TAG, "handleSessionStateChanged: default");
+            }
+        }
+    }
+
+    private void handleLocationStateChanged() {
+        if (commandService != null) {
+            switch (commandService.getState().getLocationState()) {
+                case LOCATION_CALIBRATING:
+                    displayCalibratingDialog();
+                    break;
+                case LOCATION_HHMD_CALIBRATED:
+                    calibratingAlertDialog.setTitle("HHMD Calibtated");
+                    break;
+                case LOCATION_UASC_CALIBRATED:
+                    calibratingAlertDialog.setTitle("UASC Calibtated");
+                    break;
+                case LOCATION_CALIBRATED:
+                    hideCalibratingDialog();
+                    break;
+                default:
+                    Log.w(TAG, "handleLocationStateChanged: default");
+            }
+        }
+    }
+
     private void handleNewImage() {
         Log.d(TAG, "handleNewImage");
 
@@ -289,14 +320,15 @@ public class MainActivity extends AppCompatActivity {
         calibratingAlertDialog.show();
     }
 
-    private void handleLocationCalibrationComplete() {
-        Log.d(TAG, "handleLocationCalibrationComplete");
-
-        enableButtons(ButtonState.SESSION_STARTED);
-        calibratingAlertDialog.dismiss();
+    private void hideCalibratingDialog() {
+        if (calibratingAlertDialog != null) {
+            calibratingAlertDialog.dismiss();
+        }
     }
 
-    private void handleEmergencyMessageSent() {
+
+
+    private void displayEmergencyMessagesSent() {
         Toast.makeText(getApplicationContext(), R.string.emergency_message_sent_text, Toast.LENGTH_LONG).show();
     }
 
@@ -317,11 +349,13 @@ public class MainActivity extends AppCompatActivity {
         public void onServiceConnected(ComponentName name, IBinder service) {
             Log.d(TAG, "onServiceConnected");
             setConnectedService(service);
+            updateUiState();
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             Log.d(TAG, "onServiceDisconnected");
+            updateUiState();
         }
     }
 
@@ -337,14 +371,14 @@ public class MainActivity extends AppCompatActivity {
             String action = intent.getAction();
             if (intent != null && action != null) {
                 switch (action) {
+                    case CommandService.ACTION_SESSION_STATE_CHANGED:
+                        handleSessionStateChanged();
+                        break;
+                    case CommandService.ACTION_LOCATION_STATE_CHANGED:
+                        handleLocationStateChanged();
+                        break;
                     case CommandService.ACTION_NEW_UAS_IMAGE:
                         handleNewImage();
-                        break;
-                    case CommandService.ACTION_LOCATION_CALIBRATION_COMPLETE:
-                        handleLocationCalibrationComplete();
-                        break;
-                    case CommandService.ACTION_EMERGENCY_MESSAGE_SENT:
-                        handleEmergencyMessageSent();
                         break;
                     case CommandService.ACTION_NEW_UAS_LOCATION:
                         Log.d(TAG, "onReceive: ACTION_NEW_UAS_LOCATION");

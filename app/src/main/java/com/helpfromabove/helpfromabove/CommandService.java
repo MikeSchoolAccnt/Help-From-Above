@@ -25,15 +25,26 @@ import android.util.Log;
  */
 
 public class CommandService extends Service {
-    protected static final String ACTION_SERVICES_READY = "com.helpfromabove.helpfromabove.action.ACTION_SERVICES_READY";
-    protected static final String ACTION_WIFI_P2P_CONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_CONNECTED";
+    //Broadcasts to notify UI of state change
+    protected static final String ACTION_SERVICES_STATE_CHANGED = "com.helpfromabove.helpfromabove.action.ACTION_SERVICES_STATE_CHANGED";
+    protected static final String ACTION_WIFI_P2P_STATE_CHANGED = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_STATE_CHANGED";
+    protected static final String ACTION_LOCATION_STATE_CHANGED = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_STATE_CHANGED";
+    protected static final String ACTION_SESSION_STATE_CHANGED = "com.helpfromabove.helpfromabove.action.ACTION_SESSION_STATE_CHANGED";
     protected static final String ACTION_NEW_UAS_IMAGE = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_IMAGE";
-    protected static final String ACTION_LOCATION_CALIBRATION_COMPLETE = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_CALIBRATION_COMPLETE";
     protected static final String ACTION_NEW_WAYPOINT = "com.helpfromabove.helpfromabove.action.ACTION_NEW_WAYPOINT";
     protected static final String ACTION_NEW_UAS_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_LOCATION";
     protected static final String ACTION_NEW_HHMD_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_HHMD_LOCATION";
-    protected static final String ACTION_UAS_READY = "com.helpfromabove.helpfromabove.action.ACTION_UAS_READY";
-    protected static final String ACTION_EMERGENCY_MESSAGE_SENT = "com.helpfromabove.helpfromabove.action.ACTION_EMERGENCY_MESSAGE_SENT";
+
+    // Broadcasts for other services to use
+    private static final String ACTION_WIFI_P2P_DISCONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_DISCONNECTED";
+    private static final String ACTION_WIFI_P2P_CONNECTING = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_CONNECTING";
+    private static final String ACTION_WIFI_P2P_CONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_CONNECTED";
+    private static final String ACTION_LOCATION_CALIBRATING = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_CALIBRATING";
+    private static final String ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE";
+    private static final String ACTION_LOCATION_UASC_CALIBRATION_COMPLETE = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_UASC_CALIBRATION_COMPLETE";
+    private static final String ACTION_LOCATION_CALIBRATION_COMPLETE = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_CALIBRATION_COMPLETE";
+    private static final String ACTION_SESSION_EMERGENCY_MESSAGES_SENT = "com.helpfromabove.helpfromabove.action.ACTION_SESSION_EMERGENCY_MESSAGES_SENT";
+
 
     private final static String TAG = "CommandService";
 
@@ -52,7 +63,88 @@ public class CommandService extends Service {
     private static int uploadedImagesCount = 0;
 
     private CommandServiceBroadcastReceiver commandServiceBroadcastReceiver;
-    private IntentFilter intentFilter;
+
+    protected enum ServicesState {
+        SERVICES_STOPPED,
+        SERVICES_STARTING,
+        SERVICES_STARTED,
+    }
+
+    protected enum WifiP2pState {
+        WIFI_P2P_DISCONNECTED,
+        WIFI_P2P_CONNECTING,
+        WIFI_P2P_CONNECTED,
+    }
+
+    protected enum LocationState {
+        LOCATION_NOT_CALIBRATED,
+        LOCATION_CALIBRATING,
+        LOCATION_HHMD_CALIBRATED,
+        LOCATION_UASC_CALIBRATED,
+        LOCATION_CALIBRATED,
+    }
+
+    protected enum SessionState {
+        SESSION_STARTING,
+        SESSION_RUNNING,
+        SESSION_EMERGENCY_STARTED,
+        SESSION_EMERGENCY_MESSAGES_SENT,
+        SESSION_STOPPING,
+        SESSION_STOPPED,
+    }
+
+    protected class State {
+        private ServicesState servicesState;
+        private WifiP2pState wifiP2pState;
+        private LocationState locationState;
+        private SessionState sessionState;
+
+        public State(ServicesState servicesState, WifiP2pState wifiP2pState, LocationState locationState, SessionState sessionState) {
+            this.servicesState = servicesState;
+            this.wifiP2pState = wifiP2pState;
+            this.locationState = locationState;
+            this.sessionState = sessionState;
+        }
+
+        protected void setServicesState(ServicesState servicesState) {
+            this.servicesState = servicesState;
+            CommandService.notifyServicesStateChanged(getApplicationContext());
+        }
+
+        protected void setWifiP2pState(WifiP2pState wifiP2pState) {
+            this.wifiP2pState = wifiP2pState;
+            CommandService.notifyWifiP2pStateChanged(getApplicationContext());
+        }
+
+        protected void setLocationState(LocationState locationState) {
+            this.locationState = locationState;
+            CommandService.notifyLocationStateChanged(getApplicationContext());
+        }
+
+        protected void setSessionState(SessionState sessionState) {
+            this.sessionState = sessionState;
+            CommandService.notifySessionStateChanged(getApplicationContext());
+        }
+
+        protected ServicesState getServicesState() {
+            return servicesState;
+        }
+
+        protected WifiP2pState getWifiP2pState() {
+            return wifiP2pState;
+        }
+
+        protected LocationState getLocationState() {
+            return locationState;
+        }
+
+        protected SessionState getSessionState() {
+            return sessionState;
+        }
+    }
+
+    private State state;
+
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -65,12 +157,19 @@ public class CommandService extends Service {
         Log.d(TAG, "onCreate");
         super.onCreate();
 
-        intentFilter = new IntentFilter();
+        state = new State(ServicesState.SERVICES_STOPPED, WifiP2pState.WIFI_P2P_DISCONNECTED, LocationState.LOCATION_NOT_CALIBRATED, SessionState.SESSION_STOPPED);
+
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(ACTION_WIFI_P2P_DISCONNECTED);
+        intentFilter.addAction(ACTION_WIFI_P2P_CONNECTING);
+        intentFilter.addAction(ACTION_WIFI_P2P_CONNECTED);
+        intentFilter.addAction(ACTION_LOCATION_CALIBRATING);
+        intentFilter.addAction(ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE);
+        intentFilter.addAction(ACTION_LOCATION_UASC_CALIBRATION_COMPLETE);
+        intentFilter.addAction(ACTION_LOCATION_CALIBRATION_COMPLETE);
         intentFilter.addAction(ACTION_NEW_WAYPOINT);
         intentFilter.addAction(ACTION_NEW_UAS_LOCATION);
         intentFilter.addAction(ACTION_NEW_UAS_IMAGE);
-        intentFilter.addAction(ACTION_LOCATION_CALIBRATION_COMPLETE);
-        intentFilter.addAction(ACTION_UAS_READY);
         commandServiceBroadcastReceiver = new CommandServiceBroadcastReceiver();
         registerReceiver(commandServiceBroadcastReceiver, intentFilter);
 
@@ -92,7 +191,12 @@ public class CommandService extends Service {
         return mBinder;
     }
 
+    protected State getState() {
+        return state;
+    }
+
     private void startServices() {
+        state.setServicesState(ServicesState.SERVICES_STARTING);
         startUasCommunicationService();
         startLocationService();
         startEmergencyService();
@@ -154,14 +258,8 @@ public class CommandService extends Service {
             Log.w(TAG, "Unrecognized service class name: " + serviceClassName);
         }
 
-        broadcastIfServicesReady();
-    }
-
-    protected void broadcastIfServicesReady() {
-        Log.d(TAG, "broadcastIfServicesReady");
-
         if ((uasCommunicationService != null) && (locationService != null) && (emergencyService != null) && (cloudService != null)) {
-            sendBroadcast(new Intent(ACTION_SERVICES_READY));
+            state.setServicesState(ServicesState.SERVICES_STARTED);;
         }
     }
 
@@ -176,6 +274,8 @@ public class CommandService extends Service {
         emergencyService = null;
         unbindService(cloudServiceConnection);
         cloudService = null;
+
+        state.setServicesState(ServicesState.SERVICES_STOPPED);
     }
 
     protected void startWifiP2pScanning() {
@@ -188,23 +288,72 @@ public class CommandService extends Service {
         uasCommunicationService.connectToDevice(device);
     }
 
+    private static void notifyServicesStateChanged(Context context) {
+        Log.d(TAG, "notifyServicesStateChanged");
+
+        context.sendBroadcast(new Intent(ACTION_SERVICES_STATE_CHANGED));
+    }
+
+    private static void notifyWifiP2pStateChanged(Context context) {
+        Log.d(TAG, "notifyWifiP2pStateChanged");
+
+        context.sendBroadcast(new Intent(ACTION_WIFI_P2P_STATE_CHANGED));
+    }
+
+    private static void notifyLocationStateChanged(Context context) {
+        Log.d(TAG, "notifyLocationStateChanged");
+
+        context.sendBroadcast(new Intent(ACTION_LOCATION_STATE_CHANGED));
+    }
+
+    private static void notifySessionStateChanged(Context context) {
+        Log.d(TAG, "notifySessionStateChanged");
+
+        context.sendBroadcast(new Intent(ACTION_SESSION_STATE_CHANGED));
+    }
+
+    protected static void notifyWifiP2pConnecting(Context context) {
+        Log.d(TAG, "notifyWifiP2pConnecting");
+
+        context.sendBroadcast(new Intent(ACTION_WIFI_P2P_CONNECTING));
+    }
+
     protected static void notifyWifiP2pConnected(Context context) {
         Log.d(TAG, "notifyWifiP2pConnected");
 
         context.sendBroadcast(new Intent(ACTION_WIFI_P2P_CONNECTED));
     }
 
-    protected static void notifyUasReady(Context context){
-        Log.d(TAG,"notifyUasReady");
+    protected static void notifyLocationCalibrating(Context context) {
+        Log.d(TAG, "notifyLocationCalibrating");
 
-        context.sendBroadcast(new Intent(ACTION_UAS_READY));
+        context.sendBroadcast(new Intent(ACTION_LOCATION_CALIBRATING));
 
     }
+
+    protected static void notifyLocationHhmdCalibrationComplete(Context context) {
+        Log.d(TAG, "notifyLocationHhmdCalibrationComplete");
+
+        startAllSessions = true;
+        context.sendBroadcast(new Intent(ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE));
+    }
+
+    protected static void notifyLocationUascCalibrationComplete(Context context) {
+        Log.d(TAG, "notifyLocationUascCalibrationComplete");
+
+        context.sendBroadcast(new Intent(ACTION_LOCATION_UASC_CALIBRATION_COMPLETE));
+    }
+
     protected static void notifyLocationCalibrationComplete(Context context) {
         Log.d(TAG, "notifyLocationCalibrationComplete");
 
-        startAllSessions = true;
         context.sendBroadcast(new Intent(ACTION_LOCATION_CALIBRATION_COMPLETE));
+    }
+
+    protected static void notifyEmergencyMessagesSent(Context context) {
+        Log.d(TAG, "notifyEmergencyMessagesSent");
+
+        context.sendBroadcast(new Intent(ACTION_SESSION_EMERGENCY_MESSAGES_SENT));
     }
 
     protected static void notifyNewWaypointAvailable(Context context) {
@@ -218,12 +367,6 @@ public class CommandService extends Service {
 
         receivedImagesCount++;
         context.sendBroadcast(new Intent(ACTION_NEW_UAS_IMAGE));
-    }
-
-    protected static void notifyEmergencyMessageSent(Context context) {
-        Log.d(TAG, "notifyEmergencyMessageSent");
-
-        context.sendBroadcast(new Intent(ACTION_EMERGENCY_MESSAGE_SENT));
     }
 
     protected Bitmap getNewImage(){
@@ -240,6 +383,8 @@ public class CommandService extends Service {
 
     protected void handleCommandHhmdEmergency() {
         Log.d(TAG, "handleCommandHhmdEmergency");
+
+        state.setSessionState(SessionState.SESSION_EMERGENCY_STARTED);
 
         String sessionCloudLink = cloudService.getSessionCloudLink();
         Location lastHhmdLocation = locationService.getLastHhmdLocation();
@@ -268,13 +413,37 @@ public class CommandService extends Service {
     protected void handleCommandHhmdSessionStart() {
         Log.d(TAG, "handleCommandHhmdSessionStart");
 
+        state.setSessionState(SessionState.SESSION_STARTING);
+
         uasCommunicationService.startSession();
         cloudService.startSession();
         locationService.startSession();
     }
 
+    private void handleLocationHhmdCalibrationComplete() {
+        if (state.getLocationState() == LocationState.LOCATION_CALIBRATING) {
+            state.setLocationState(LocationState.LOCATION_HHMD_CALIBRATED);
+            uasCommunicationService.sendStartSession();
+        }
+        else if (state.getLocationState() == LocationState.LOCATION_UASC_CALIBRATED) {
+            notifyLocationCalibrationComplete(getApplicationContext());
+        }
+    }
+
+    private void handleLocationUascCalibrationComplete() {
+        if (state.getLocationState() == LocationState.LOCATION_CALIBRATING) {
+            state.setLocationState(LocationState.LOCATION_UASC_CALIBRATED);
+        }
+        else if (state.getLocationState() == LocationState.LOCATION_HHMD_CALIBRATED) {
+            notifyLocationCalibrationComplete(getApplicationContext());
+        }
+    }
+
+
     private void handleLocationCalibrationComplete() {
         Log.d(TAG, "handleLocationCalibrationComplete");
+
+        state.setLocationState(LocationState.LOCATION_CALIBRATED);
 
         locationService.onLocationCalibrationComplete();
 
@@ -287,17 +456,23 @@ public class CommandService extends Service {
                 Log.d(TAG, "Still uploading images form the last session");
             }
         }
+
+        state.setSessionState(SessionState.SESSION_RUNNING);
+    }
+
+    private void handleSessionEmergencyMessagesSent() {
+        state.setSessionState(SessionState.SESSION_EMERGENCY_MESSAGES_SENT);
     }
 
     protected void handleCommandHhmdSessionEnd() {
         Log.d(TAG, "handleCommandHhmdSessionEnd");
 
+        state.setSessionState(SessionState.SESSION_STOPPING);
+
         uasCommunicationService.stopSession();
         locationService.stopSession();
-    }
 
-    private void checkUasReady(){
-        uasCommunicationService.sendStartSession();
+        state.setSessionState(SessionState.SESSION_STOPPED);
     }
 
     private void handleNewUasLocation() {
@@ -322,6 +497,30 @@ public class CommandService extends Service {
             String action = intent.getAction();
             if (intent != null && action != null) {
                 switch (action) {
+                    case ACTION_WIFI_P2P_DISCONNECTED:
+                        state.setWifiP2pState(WifiP2pState.WIFI_P2P_DISCONNECTED);
+                        break;
+                    case ACTION_WIFI_P2P_CONNECTING:
+                        state.setWifiP2pState(WifiP2pState.WIFI_P2P_CONNECTING);
+                        break;
+                    case ACTION_WIFI_P2P_CONNECTED:
+                        state.setWifiP2pState(WifiP2pState.WIFI_P2P_CONNECTED);
+                        break;
+                    case ACTION_LOCATION_CALIBRATING:
+                        state.setLocationState(LocationState.LOCATION_CALIBRATING);
+                        break;
+                    case ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE:
+                        handleLocationHhmdCalibrationComplete();
+                        break;
+                    case ACTION_LOCATION_UASC_CALIBRATION_COMPLETE:
+                        handleLocationUascCalibrationComplete();
+                        break;
+                    case ACTION_LOCATION_CALIBRATION_COMPLETE:
+                        handleLocationCalibrationComplete();
+                        break;
+                    case ACTION_SESSION_EMERGENCY_MESSAGES_SENT:
+                        handleSessionEmergencyMessagesSent();
+                        break;
                     case ACTION_NEW_WAYPOINT:
                         handleNewWaypoint();
                         break;
@@ -330,12 +529,6 @@ public class CommandService extends Service {
                         break;
                     case ACTION_NEW_UAS_IMAGE:
                         handleNewUasImage();
-                        break;
-                    case ACTION_LOCATION_CALIBRATION_COMPLETE:
-                        checkUasReady();
-                        break;
-                    case ACTION_UAS_READY:
-                        handleLocationCalibrationComplete();
                         break;
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);

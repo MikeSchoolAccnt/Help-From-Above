@@ -367,7 +367,7 @@ public class UASCClient {
                     if(status.equals("OK"))
                     {
                         //When the uasc is ready for gps access,image access and sending new waypoints
-                        CommandService.notifyUasReady(context);
+                        CommandService.notifyLocationUascCalibrationComplete(context);
                     }
                     else
                     {

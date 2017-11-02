@@ -45,7 +45,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
 
         intentFilter = new IntentFilter();
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
-        intentFilter.addAction(CommandService.ACTION_WIFI_P2P_CONNECTED);
+        intentFilter.addAction(CommandService.ACTION_WIFI_P2P_STATE_CHANGED);
 
         adapter = new ArrayAdapter(getApplicationContext(), R.layout.wifi_p2p_device, R.id.wifi_p2p_device_name) {
             @Override
@@ -136,8 +136,6 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         unbindService(commandServiceConnection);
     }
 
-
-
     private void setConnectedService(IBinder service) {
         Log.d(TAG, "setConnectedService");
 
@@ -210,6 +208,22 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         }
     }
 
+    private void handleWifiP2pStateChanged() {
+        if (commandService != null) {
+            switch (commandService.getState().getWifiP2pState()) {
+                case WIFI_P2P_CONNECTING:
+                    //TODO : Add connecting dialog box
+                    break;
+                case WIFI_P2P_CONNECTED:
+                    // TODO : Remove connecting dialog box before launching MainActivity
+                    startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                    break;
+                default:
+                    Log.w(TAG, "handleWifiP2pStateChanged: default");
+            }
+        }
+    }
+
     private class WifiP2pConnectActivityBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -222,8 +236,8 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
                         WifiP2pDeviceList deviceList = intent.getParcelableExtra(WifiP2pManager.EXTRA_P2P_DEVICE_LIST);
                         handleWifiP2pPeersChanged(deviceList.getDeviceList());
                         break;
-                    case CommandService.ACTION_WIFI_P2P_CONNECTED:
-                        startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                    case CommandService.ACTION_WIFI_P2P_STATE_CHANGED:
+                        handleWifiP2pStateChanged();
                         break;
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);

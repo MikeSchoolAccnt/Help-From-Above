@@ -99,6 +99,7 @@ public class EmergencyService extends Service implements SharedPreferences.OnSha
         // TODO: Remove after testing complete
 //        sendSMSMessage("your number here", emergencyMessage);
 
+        CommandService.notifyEmergencyMessagesSent(getApplicationContext());
     }
 
     private String getFormattedEmergencyMessage(Location location, String cloudLink) {
@@ -131,7 +132,6 @@ public class EmergencyService extends Service implements SharedPreferences.OnSha
         try {
             SmsManager smsManager = SmsManager.getDefault();
             smsManager.sendTextMessage(recipientNumber, null, message, null, null);
-            CommandService.notifyEmergencyMessageSent(getApplicationContext());
         } catch (IllegalArgumentException e){
             Log.e(TAG,"sendSMSMessage:" + e.getMessage());
         }

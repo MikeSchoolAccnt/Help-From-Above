@@ -38,7 +38,6 @@ public class SplashActivity extends Activity {
 
     private Animation tempAnim;
     private ImageView splash;
-    private boolean servicesReady = false;
     private boolean animationComplete = false;
 
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,7 +46,6 @@ public class SplashActivity extends Activity {
 
         setContentView(R.layout.activity_splash);
 
-        servicesReady = false;
         animationComplete = false;
 
         splash = (ImageView) findViewById(R.id.splashView);
@@ -63,7 +61,6 @@ public class SplashActivity extends Activity {
             @Override
             public void onAnimationEnd(Animation animation) {
                 animationComplete = true;
-                requestServicesReadyBroadcast();
                 askForPermissions();
             }
 
@@ -89,7 +86,7 @@ public class SplashActivity extends Activity {
         Log.d(TAG, "onResume");
         super.onResume();
 
-        registerReceiver(splashActivityBroadcastReceiver, new IntentFilter(CommandService.ACTION_SERVICES_READY));
+        registerReceiver(splashActivityBroadcastReceiver, new IntentFilter(CommandService.ACTION_SERVICES_STATE_CHANGED));
     }
 
     @Override
@@ -119,17 +116,6 @@ public class SplashActivity extends Activity {
         Log.d(TAG, "unbindCommandService");
 
         unbindService(commandServiceConnection);
-    }
-
-    private void requestServicesReadyBroadcast() {
-        Log.d(TAG, "requestServicesReadyBroadcast");
-
-        if (commandService != null) {
-            commandService.broadcastIfServicesReady();
-        }
-        else {
-            Log.e(TAG, "commandService is null!!!");
-        }
     }
 
     private void askForPermissions() {
@@ -168,13 +154,15 @@ public class SplashActivity extends Activity {
     private void transitionIfReady() {
         Log.d(TAG, "transitionIfReady");
 
-        if(servicesReady && animationComplete) {
-            Intent i = new Intent(getApplicationContext(), WifiP2pConnectActivity.class);
-            startActivity(i);
-            finish();
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-        } else {
-            Log.d(TAG, "transition: not ready to start WifiP2pConnectActivity");
+        if (commandService != null) {
+            if ((commandService.getState().getServicesState() == CommandService.ServicesState.SERVICES_STARTED) && animationComplete) {
+                Intent i = new Intent(getApplicationContext(), WifiP2pConnectActivity.class);
+                startActivity(i);
+                finish();
+                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+            } else {
+                Log.d(TAG, "transition: not ready to start WifiP2pConnectActivity");
+            }
         }
     }
 
@@ -222,6 +210,7 @@ public class SplashActivity extends Activity {
         public void onServiceConnected(ComponentName name, IBinder service) {
             Log.d(TAG, "onServiceConnected");
             setConnectedService(service);
+            transitionIfReady();
         }
 
         @Override
@@ -238,8 +227,7 @@ public class SplashActivity extends Activity {
             String action = intent.getAction();
             if (action != null) {
                 switch (action) {
-                    case CommandService.ACTION_SERVICES_READY:
-                        servicesReady = true;
+                    case CommandService.ACTION_SERVICES_STATE_CHANGED:
                         transitionIfReady();
                         break;
                     default:

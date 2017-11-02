@@ -378,9 +378,6 @@ public class UasCommunicationService extends Service{
                 default:
                     Log.w(TAG, "onFailure: default");
             }
-
-            // TODO: Used for testing other features on emulator, remove in final production
-            CommandService.notifyWifiP2pConnected(getApplicationContext());
         }
     }
 }
