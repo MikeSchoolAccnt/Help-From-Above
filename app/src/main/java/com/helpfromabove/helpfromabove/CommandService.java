@@ -37,7 +37,9 @@ public class CommandService extends Service {
 
     // Broadcasts for other services to use
     private static final String ACTION_WIFI_P2P_DISCONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_DISCONNECTED";
-    private static final String ACTION_WIFI_P2P_CONNECTING = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_CONNECTING";
+    private static final String ACTION_WIFI_P2P_CONNECTING_TO_UASC = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_CONNECTING_TO_UASC";
+    private static final String ACTION_WIFI_P2P_WAITING_FOR_UASC = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_WAITING_FOR_UASC";
+    private static final String ACTION_WIFI_P2P_CONNECTING_FROM_UASC = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_CONNECTING_FROM_UASC";
     private static final String ACTION_WIFI_P2P_CONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_CONNECTED";
     private static final String ACTION_LOCATION_CALIBRATING = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_CALIBRATING";
     private static final String ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE";
@@ -72,7 +74,9 @@ public class CommandService extends Service {
 
     protected enum WifiP2pState {
         WIFI_P2P_DISCONNECTED,
-        WIFI_P2P_CONNECTING,
+        WIFI_P2P_CONNECTING_TO_UASC,
+        WIFI_P2P_WAITING_FOR_UASC,
+        WIFI_P2P_CONNECTING_FROM_UASC,
         WIFI_P2P_CONNECTED,
     }
 
@@ -161,7 +165,9 @@ public class CommandService extends Service {
 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_WIFI_P2P_DISCONNECTED);
-        intentFilter.addAction(ACTION_WIFI_P2P_CONNECTING);
+        intentFilter.addAction(ACTION_WIFI_P2P_CONNECTING_TO_UASC);
+        intentFilter.addAction(ACTION_WIFI_P2P_WAITING_FOR_UASC);
+        intentFilter.addAction(ACTION_WIFI_P2P_CONNECTING_FROM_UASC);
         intentFilter.addAction(ACTION_WIFI_P2P_CONNECTED);
         intentFilter.addAction(ACTION_LOCATION_CALIBRATING);
         intentFilter.addAction(ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE);
@@ -312,10 +318,22 @@ public class CommandService extends Service {
         context.sendBroadcast(new Intent(ACTION_SESSION_STATE_CHANGED));
     }
 
-    protected static void notifyWifiP2pConnecting(Context context) {
-        Log.d(TAG, "notifyWifiP2pConnecting");
+    protected static void notifyWifiP2pConnectingToUasc(Context context) {
+        Log.d(TAG, "notifyWifiP2pConnectingToUasc");
 
-        context.sendBroadcast(new Intent(ACTION_WIFI_P2P_CONNECTING));
+        context.sendBroadcast(new Intent(ACTION_WIFI_P2P_CONNECTING_TO_UASC));
+    }
+
+    protected static void notifyWifiP2pWaitingForUasc(Context context) {
+        Log.d(TAG, "notifyWifiP2pWaitingForUasc");
+
+        context.sendBroadcast(new Intent(ACTION_WIFI_P2P_WAITING_FOR_UASC));
+    }
+
+    protected static void notifyWifiP2pConnectingFromUasc(Context context) {
+        Log.d(TAG, "notifyWifiP2pConnectingFromUasc");
+
+        context.sendBroadcast(new Intent(ACTION_WIFI_P2P_CONNECTING_FROM_UASC));
     }
 
     protected static void notifyWifiP2pConnected(Context context) {
@@ -500,8 +518,14 @@ public class CommandService extends Service {
                     case ACTION_WIFI_P2P_DISCONNECTED:
                         state.setWifiP2pState(WifiP2pState.WIFI_P2P_DISCONNECTED);
                         break;
-                    case ACTION_WIFI_P2P_CONNECTING:
-                        state.setWifiP2pState(WifiP2pState.WIFI_P2P_CONNECTING);
+                    case ACTION_WIFI_P2P_CONNECTING_TO_UASC:
+                        state.setWifiP2pState(WifiP2pState.WIFI_P2P_CONNECTING_TO_UASC);
+                        break;
+                    case ACTION_WIFI_P2P_WAITING_FOR_UASC:
+                        state.setWifiP2pState(WifiP2pState.WIFI_P2P_WAITING_FOR_UASC);
+                        break;
+                    case ACTION_WIFI_P2P_CONNECTING_FROM_UASC:
+                        state.setWifiP2pState(WifiP2pState.WIFI_P2P_CONNECTING_FROM_UASC);
                         break;
                     case ACTION_WIFI_P2P_CONNECTED:
                         state.setWifiP2pState(WifiP2pState.WIFI_P2P_CONNECTED);

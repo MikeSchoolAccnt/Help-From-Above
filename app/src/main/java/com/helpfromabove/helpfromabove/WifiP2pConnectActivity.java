@@ -230,7 +230,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
     private void handleWifiP2pStateChanged() {
         if (commandService != null) {
             switch (commandService.getState().getWifiP2pState()) {
-                case WIFI_P2P_CONNECTING:
+                case WIFI_P2P_CONNECTING_TO_UASC:
                     displayWifiP2pConnectingDialog();
                     break;
                 case WIFI_P2P_CONNECTED:

@@ -119,7 +119,7 @@ public class UasCommunicationService extends Service{
     protected void connectToDevice(WifiP2pDevice device) {
         Log.d(TAG, "connectToDevice: device.toString()=" + device.toString());
 
-        CommandService.notifyWifiP2pConnecting(getApplicationContext());
+        CommandService.notifyWifiP2pConnectingToUasc(getApplicationContext());
 
         WifiP2pConfig config = new WifiP2pConfig();
         config.deviceAddress = device.deviceAddress;
@@ -134,7 +134,7 @@ public class UasCommunicationService extends Service{
         if(device.toString().contains("HFA") && !connectedOnce){
             Log.d(TAG,"Disconnecting");
 
-            //TODO: Possibly tell the user they are waiting for the UASC to ask to connect
+            CommandService.notifyWifiP2pWaitingForUasc(getApplicationContext());
 
             //Waiting to do this after 3 seconds to make sure the UASC has received our information.
             //***The amount of time needed to wait might need to be higher***
@@ -187,7 +187,10 @@ public class UasCommunicationService extends Service{
         Log.d(TAG, "handleWifiP2pConnectionChangedAction: networkInfo=" + networkInfo);
         Log.d(TAG, "handleWifiP2pConnectionChangedAction: wifiP2pGroup=" + wifiP2pGroup);
 
-        if (networkInfo.getState() == NetworkInfo.State.CONNECTED){
+        if (networkInfo.getState() == NetworkInfo.State.CONNECTING && connectedOnce) {
+            CommandService.notifyWifiP2pConnectingFromUasc(getApplicationContext());
+        }
+        else if (networkInfo.getState() == NetworkInfo.State.CONNECTED) {
             this.wifiP2pInfo = wifiP2pInfo;
             this.networkInfo = networkInfo;
             this.wifiP2pGroup = wifiP2pGroup;
@@ -195,12 +198,12 @@ public class UasCommunicationService extends Service{
             //If connecting to the UASC use its IP
             if(connectedOnce) {
                 uascClient = new UASCClient(getApplicationContext(), "192.168.49.187", port);
+                CommandService.notifyWifiP2pConnected(getApplicationContext());
             }
             else {
                 uascClient = new UASCClient(getApplicationContext(), wifiP2pInfo.groupOwnerAddress.getHostAddress(), port);
             }
             startHeartbeat();
-            CommandService.notifyWifiP2pConnected(getApplicationContext());
         } else{
             if(uascClient != null) {
                 uascClient.stopHeartbeat();
