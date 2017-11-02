@@ -34,7 +34,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
     private WifiP2pConnectActivityBroadcastReceiver broadcastReceiver;
     private IntentFilter intentFilter ;
     private ListView devicesListView;
-    private ArrayAdapter adapter;
+    private ArrayAdapter<WifiP2pDevice> adapter;
     private AlertDialog wifiP2pConnectingDialog;
 
     @Override
@@ -49,7 +49,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
         intentFilter.addAction(CommandService.ACTION_WIFI_P2P_STATE_CHANGED);
 
-        adapter = new ArrayAdapter(getApplicationContext(), R.layout.wifi_p2p_device, R.id.wifi_p2p_device_name) {
+        adapter = new ArrayAdapter<WifiP2pDevice>(getApplicationContext(), R.layout.wifi_p2p_device, R.id.wifi_p2p_device_name) {
             @Override
             public void notifyDataSetChanged() {
                 Log.d(TAG, "notifyDataSetChanged");
@@ -152,7 +152,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         Log.d(TAG, "wifiP2pDeviceOnClick: position=" + position);
 
         try {
-            WifiP2pDevice device = (WifiP2pDevice) adapter.getItem(position);
+            WifiP2pDevice device = adapter.getItem(position);
             displayConfirmDialog(device);
         } catch (IndexOutOfBoundsException iOOBE) {
             Log.e(TAG, "wifiP2pDeviceOnClick: IndexOutOfBoundsException: " + iOOBE.getMessage(), iOOBE);
