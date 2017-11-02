@@ -41,7 +41,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
     private final IBinder mBinder = new CloudServiceBinder();
 
     private static final String APP_FOLDER = "Help_From_Above";
-    private static final String LOCAL_APP_FOLDER = Environment.getDataDirectory() + "/" + APP_FOLDER;
+    private static String LOCAL_APP_FOLDER;
     private static final String CLOUD_APP_FOLDER = "/" + APP_FOLDER;
     private String sessionFolder;
     private CompressFormat compressionFormat;
@@ -62,6 +62,8 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
     public void onCreate() {
         Log.d(TAG, "onCreate");
         super.onCreate();
+
+        LOCAL_APP_FOLDER = getFilesDir() + "/" + APP_FOLDER;
 
         CloudRail.setAppKey(CLOUDRAIL_LICENSE_KEY);
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).registerOnSharedPreferenceChangeListener(this);
