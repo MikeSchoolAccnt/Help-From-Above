@@ -16,11 +16,12 @@ import android.net.wifi.p2p.WifiP2pGroup;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-public class UasCommunicationService extends Service {
+public class UasCommunicationService extends Service{
     private static final String TAG = "UasCommunicationService";
 
     private final IBinder mBinder = new UasCommunicationServiceBinder();
@@ -37,6 +38,9 @@ public class UasCommunicationService extends Service {
     private WifiP2pInfo wifiP2pInfo;
     private NetworkInfo networkInfo;
     private WifiP2pGroup wifiP2pGroup;
+
+    //Used for connection to the UASC
+    private boolean connectedOnce = false;
 
     private UASCClient uascClient;
     private String port = "5000";
@@ -121,6 +125,28 @@ public class UasCommunicationService extends Service {
         config.wps.setup = WpsInfo.PBC;
 
         wifiP2pManager.connect(wifiP2pChannel, config, wifiP2pConnectionListener);
+
+        //Check if its the UASC and if we haven't already tried to connected before
+        //This check also allows for testing with other test servers so we don't
+        //always need the UASC for testing.
+        if(device.toString().contains("HFA") && !connectedOnce){
+            Log.d(TAG,"Disconnecting");
+
+            //TODO: Possibly tell the user they are waiting for the UASC to ask to connect
+
+            //Waiting to do this after 3 seconds to make sure the UASC has received our information.
+            //***The amount of time needed to wait might need to be higher***
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    wifiP2pManager.cancelConnect(wifiP2pChannel,wifiP2pConnectionListener);
+                    connectedOnce = true;
+                    startScanning();
+                }
+            },3000);
+
+        }
     }
 
     private void handleDiscoveryStateChanged(int state) {
@@ -163,7 +189,14 @@ public class UasCommunicationService extends Service {
             this.wifiP2pInfo = wifiP2pInfo;
             this.networkInfo = networkInfo;
             this.wifiP2pGroup = wifiP2pGroup;
-            uascClient = new UASCClient(getApplicationContext(),"192.168.49.187",port);
+
+            //If connecting to the UASC use its IP
+            if(connectedOnce) {
+                uascClient = new UASCClient(getApplicationContext(), "192.168.49.187", port);
+            }
+            else {
+                uascClient = new UASCClient(getApplicationContext(), wifiP2pInfo.groupOwnerAddress.getHostAddress(), port);
+            }
             startHeartbeat();
             CommandService.notifyWifiP2pConnected(getApplicationContext());
         } else{
@@ -299,6 +332,18 @@ public class UasCommunicationService extends Service {
                     break;
                 case WifiP2pManager.BUSY:
                     Log.w(TAG, "onFailure: BUSY");
+                    //This is needed because trying to start scanning right after doing
+                    //an action causes a busy message so this will loop here every second
+                    //until it can start scanning again.
+                    if(connectedOnce){
+                        Handler handler = new Handler();
+                        handler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                startScanning();
+                            }
+                        },1000);
+                    }
                     break;
                 case WifiP2pManager.ERROR:
                     Log.w(TAG, "onFailure: ERROR");
