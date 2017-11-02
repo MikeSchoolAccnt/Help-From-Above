@@ -119,6 +119,8 @@ public class UasCommunicationService extends Service{
     protected void connectToDevice(WifiP2pDevice device) {
         Log.d(TAG, "connectToDevice: device.toString()=" + device.toString());
 
+        CommandService.notifyWifiP2pConnecting(getApplicationContext());
+
         WifiP2pConfig config = new WifiP2pConfig();
         config.deviceAddress = device.deviceAddress;
         config.groupOwnerIntent = 0;

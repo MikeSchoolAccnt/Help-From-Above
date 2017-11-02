@@ -15,6 +15,11 @@
     <!--Message to display to user after sending emergency message-->
     <string name="emergency_message_sent_text">Emergency message sent</string>
 
+    <!--Dialog strings-->
+    <string name="location_calibrating_dialog_title">Calibrating&#x2026;</string>
+    <string name="wifi_p2p_connect_to_device_dialog_title">Connect to %1$s?</string>
+    <string name="wifi_p2p_connecting_dialog_title">Connecting&#x2026;</string>
+
     <!--content_wifi_p2p_connect strings-->
     <string name="title_activity_wifi_p2p_connect">Wi-Fi Connect</string>
 

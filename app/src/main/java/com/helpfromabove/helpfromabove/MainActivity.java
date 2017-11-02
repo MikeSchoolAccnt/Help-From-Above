@@ -314,7 +314,7 @@ public class MainActivity extends AppCompatActivity {
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setView(new ProgressBar(getApplicationContext()))
-                .setTitle("Calibrating...")
+                .setTitle(R.string.location_calibrating_dialog_title)
                 .setCancelable(false);
         calibratingAlertDialog = builder.create();
         calibratingAlertDialog.show();

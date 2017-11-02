@@ -21,6 +21,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 
 import java.util.Collection;
 
@@ -34,6 +35,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
     private IntentFilter intentFilter ;
     private ListView devicesListView;
     private ArrayAdapter adapter;
+    private AlertDialog wifiP2pConnectingDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -163,7 +165,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         Log.d(TAG, "displayConfirmDialog");
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Connect to " + device.deviceName + "?")
+        builder.setTitle(getString(R.string.wifi_p2p_connect_to_device_dialog_title, device.deviceName))
                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -172,6 +174,23 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
+    }
+
+    private void displayWifiP2pConnectingDialog() {
+        Log.d(TAG, "displayWifiP2pConnectingDialog");
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(new ProgressBar(getApplicationContext()))
+                .setTitle(R.string.wifi_p2p_connecting_dialog_title)
+                .setCancelable(false);
+        wifiP2pConnectingDialog = builder.create();
+        wifiP2pConnectingDialog.show();
+    }
+
+    private void hideWifiP2pConnectingDialog() {
+        if (wifiP2pConnectingDialog != null) {
+            wifiP2pConnectingDialog.dismiss();
+        }
     }
 
     private void onArrayAdapterDataSetChanged() {
@@ -212,10 +231,10 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         if (commandService != null) {
             switch (commandService.getState().getWifiP2pState()) {
                 case WIFI_P2P_CONNECTING:
-                    //TODO : Add connecting dialog box
+                    displayWifiP2pConnectingDialog();
                     break;
                 case WIFI_P2P_CONNECTED:
-                    // TODO : Remove connecting dialog box before launching MainActivity
+                    hideWifiP2pConnectingDialog();
                     startActivity(new Intent(getApplicationContext(), MainActivity.class));
                     break;
                 default:
