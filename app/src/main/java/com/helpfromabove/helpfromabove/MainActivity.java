@@ -284,10 +284,14 @@ public class MainActivity extends AppCompatActivity {
                     displayCalibratingDialog();
                     break;
                 case LOCATION_HHMD_CALIBRATED:
-                    calibratingAlertDialog.setTitle("HHMD Calibtated");
+                    setCalibratingDialogTitle(R.string.location_hhmd_calibrated_dialog_title);
                     break;
                 case LOCATION_UASC_CALIBRATED:
-                    calibratingAlertDialog.setTitle("UASC Calibtated");
+                    // This never gets displayed (or if it does, it's extremely brief)
+                    // this is because when once the hhmd and uasc are calibrated, it
+                    // immediately goes to the LOCATION_CALIBRATED state.
+                    // TODO : Maybe delay time between state change?
+                    setCalibratingDialogTitle(R.string.location_uasc_calibrated_dialog_title);
                     break;
                 case LOCATION_CALIBRATED:
                     hideCalibratingDialog();
@@ -318,6 +322,12 @@ public class MainActivity extends AppCompatActivity {
                 .setCancelable(false);
         calibratingAlertDialog = builder.create();
         calibratingAlertDialog.show();
+    }
+
+    private void setCalibratingDialogTitle(int id) {
+        if (calibratingAlertDialog != null){
+            calibratingAlertDialog.setTitle(id);
+        }
     }
 
     private void hideCalibratingDialog() {
