@@ -18,7 +18,9 @@
     <!--Dialog strings-->
     <string name="location_calibrating_dialog_title">Calibrating&#x2026;</string>
     <string name="wifi_p2p_connect_to_device_dialog_title">Connect to %1$s?</string>
-    <string name="wifi_p2p_connecting_dialog_title">Connecting&#x2026;</string>
+    <string name="wifi_p2p_connecting_to_uasc_dialog_title">Establishing connection&#x2026;</string>
+    <string name="wifi_p2p_waiting_on_uasc_dialog_title">Waiting for reply&#x2026;</string>
+    <string name="wifi_p2p_connecting_from_uasc_dialog_title">Connecting&#x2026;</string>
 
     <!--content_wifi_p2p_connect strings-->
     <string name="title_activity_wifi_p2p_connect">Wi-Fi Connect</string>

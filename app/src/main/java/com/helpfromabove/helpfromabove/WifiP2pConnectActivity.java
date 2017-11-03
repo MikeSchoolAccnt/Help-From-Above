@@ -181,10 +181,16 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setView(new ProgressBar(getApplicationContext()))
-                .setTitle(R.string.wifi_p2p_connecting_dialog_title)
+                .setTitle(R.string.wifi_p2p_connecting_to_uasc_dialog_title)
                 .setCancelable(false);
         wifiP2pConnectingDialog = builder.create();
         wifiP2pConnectingDialog.show();
+    }
+
+    private void setWifiP2pConnectingDialogTitle(int id) {
+        if (wifiP2pConnectingDialog != null) {
+            wifiP2pConnectingDialog.setTitle(id);
+        }
     }
 
     private void hideWifiP2pConnectingDialog() {
@@ -232,6 +238,12 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
             switch (commandService.getState().getWifiP2pState()) {
                 case WIFI_P2P_CONNECTING_TO_UASC:
                     displayWifiP2pConnectingDialog();
+                    break;
+                case WIFI_P2P_WAITING_FOR_UASC:
+                    setWifiP2pConnectingDialogTitle(R.string.wifi_p2p_waiting_on_uasc_dialog_title);
+                    break;
+                case WIFI_P2P_CONNECTING_FROM_UASC:
+                    setWifiP2pConnectingDialogTitle(R.string.wifi_p2p_connecting_from_uasc_dialog_title);
                     break;
                 case WIFI_P2P_CONNECTED:
                     hideWifiP2pConnectingDialog();
