@@ -127,15 +127,15 @@ public class UASCClient {
         }
     }
 
-    public void startImageAccess(String imageEndpoint, int imageAccessDelay){
+    public void startImageAccess(String imageEndpoint, String advanceImageEndpoint , int imageAccessDelay){
 
         this.imageEndpoint = imageEndpoint;
         this.imageAccessDelay = imageAccessDelay;
-        initializeAccessServerImage();
+        initializeAccessServerImage(advanceImageEndpoint);
 
         //Need to wait at least a second before grabbing images so that
         //the session folder has time to be made in the users cloud service.
-        constantHandler.postDelayed(accessServerImageRunnable,1000);
+        constantHandler.postDelayed(accessServerImageRunnable,3000);
 
     }
 
@@ -212,6 +212,7 @@ public class UASCClient {
                     connection.setRequestMethod("POST");
                     connection.setDoOutput(true);
 
+
                     OutputStream outputStream = connection.getOutputStream();
 
                     OutputStreamWriter osw = new OutputStreamWriter(outputStream);
@@ -238,31 +239,47 @@ public class UASCClient {
         };
     }
 
-    private void initializeAccessServerImage(){
+    private void initializeAccessServerImage(final String advanceImageEndpoint){
         accessServerImageRunnable = new Runnable() {
             @Override
             public void run() {
                 try {
-                    URL url = new URL("http://"+hostIP+":"+port+"/"+imageEndpoint);
+                    URL url = new URL("http://"+hostIP+":"+port+"/"+ advanceImageEndpoint);
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    connection.getResponseCode();
 
-                    //Testing code needed for until the server is set up
-                    //Start of testing code
-//                    URL url = new URL(testURLs.get(currentImageNumber));
-//                    if(currentImageNumber == testURLs.size()-1) {
-//                        currentImageNumber = 0;
-//                    }
-//                    else {
-//                        currentImageNumber++;
-//                    }
-                    //End of testing code
+                    constantHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                //URL tempUrl = new URL("http://" + hostIP + ":" + port + "/" + imageEndpoint);
 
-                    InputStream inputStream = url.openStream();
+                                //Testing code needed for until the server is set up
+                                //Start of testing code
+                              URL tempUrl = new URL(testURLs.get(currentImageNumber));
+                              if(currentImageNumber == testURLs.size()-1) {
+                                  currentImageNumber = 0;
+                              }
+                              else {
+                                  currentImageNumber++;
+                              }
+                                //End of testing code
 
-                    imageBitmap = BitmapFactory.decodeStream(inputStream);
+                                InputStream inputStream = tempUrl.openStream();
 
-                    //Only broadcast new image if there is one.
-                    if(imageBitmap != null)
-                        CommandService.notifyNewUasImageAvailable(context);
+                                imageBitmap = BitmapFactory.decodeStream(inputStream);
+
+                                //Only broadcast new image if there is one.
+                                if (imageBitmap != null)
+                                    CommandService.notifyNewUasImageAvailable(context);
+
+                            } catch (MalformedURLException e) {
+                                e.printStackTrace();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
 
                 } catch (MalformedURLException e) {
                     e.printStackTrace();

@@ -202,6 +202,7 @@ public class UasCommunicationService extends Service{
             }
             else {
                 uascClient = new UASCClient(getApplicationContext(), wifiP2pInfo.groupOwnerAddress.getHostAddress(), port);
+                CommandService.notifyWifiP2pConnected(getApplicationContext());
             }
             startHeartbeat();
         } else{
@@ -234,7 +235,7 @@ public class UasCommunicationService extends Service{
         Log.d(TAG, "onLocationCalibrationComplete");
 
         if(uascClient != null) {
-            uascClient.startImageAccess("static/img/img.jpg", 1000);
+            uascClient.startImageAccess("static/img/img.jpeg","advance_image", 1000);
         }
     }
 

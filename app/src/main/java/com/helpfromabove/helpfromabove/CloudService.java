@@ -287,7 +287,23 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
 
         ByteArrayInputStream byteArrayInputStream = convertDataToByteArrayInputStream(bitmap, compressionFormat, compressionQuality);
 
-        cloudStorage.upload(path, byteArrayInputStream, byteArrayInputStream.available(), false);
+        try {
+            cloudStorage.upload(path, byteArrayInputStream, byteArrayInputStream.available(), false);
+        } catch (com.cloudrail.si.exceptions.HttpException ex){
+            //Grabbing images as fast as once a second sometimes causes name
+            //conflicts. This fixes those.
+            if(ex.getMessage().contains("same name")) {
+                String pathB = path;
+                if(compressionFormat == CompressFormat.JPEG){
+                    pathB = pathB.replace(".jpg","");
+                    pathB = pathB + "-b.jpg";
+                } else if (compressionFormat == CompressFormat.PNG) {
+                    pathB = pathB.replace(".png","");
+                    pathB = pathB + "-b.png";
+                }
+                saveCloudImage(bitmap, pathB);
+            }
+        }
 
         //Same as <int>++
         atomicImageUploadCount.getAndIncrement();
