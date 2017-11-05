@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -29,7 +28,7 @@ import android.widget.Toast;
 
 /**
  * Created by Caleb Smith on 5/4/2017.
- *
+ * <p>
  * The MainActivity is the main screen for Help From Above.
  * It contains the user commands, the view for displaying images from
  * the UAS, and holding the menu for accessing the SettingsActivity.
@@ -178,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "onCreate: permission SEND_SMS is GRANTED");
                 commandService.handleCommandHhmdEmergency();
             } else {
-                ActivityCompat.requestPermissions(this,new String[]{android.Manifest.permission.SEND_SMS},0);
+                ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.SEND_SMS}, 0);
             }
         } else {
             commandService.handleCommandHhmdEmergency();
@@ -250,6 +249,7 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }
     }
+
     /*
      * Method for starting the fullscreen activity
      */
@@ -325,7 +325,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setCalibratingDialogTitle(int id) {
-        if (calibratingAlertDialog != null){
+        if (calibratingAlertDialog != null) {
             calibratingAlertDialog.setTitle(id);
         }
     }
@@ -335,8 +335,6 @@ public class MainActivity extends AppCompatActivity {
             calibratingAlertDialog.dismiss();
         }
     }
-
-
 
     private void displayEmergencyMessagesSent() {
         Toast.makeText(getApplicationContext(), R.string.emergency_message_sent_text, Toast.LENGTH_LONG).show();
@@ -351,7 +349,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private class MainActivityServiceConnection implements ServiceConnection{
+    private class MainActivityServiceConnection implements ServiceConnection {
 
         private static final String TAG = "MainActivityServiceC...";
 
@@ -379,7 +377,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "onReceive");
 
             String action = intent.getAction();
-            if (intent != null && action != null) {
+            if (action != null) {
                 switch (action) {
                     case CommandService.ACTION_SESSION_STATE_CHANGED:
                         handleSessionStateChanged();

@@ -22,6 +22,8 @@ import java.util.ArrayList;
 
 /**
  * Created by Michael Purcell on 5/5/2017.
+ * This activity is shown while the CommandService
+ * and other services are getting started.
  */
 
 public class SplashActivity extends Activity {
@@ -129,13 +131,13 @@ public class SplashActivity extends Activity {
 
             ArrayList<String> permissions = new ArrayList<>();
 
-            if(PERMISSION_ACCESS_LOCATION == PackageManager.PERMISSION_DENIED){
+            if (PERMISSION_ACCESS_LOCATION == PackageManager.PERMISSION_DENIED) {
                 permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
             }
-            if(PERMISSION_READ_CONTACTS == PackageManager.PERMISSION_DENIED){
+            if (PERMISSION_READ_CONTACTS == PackageManager.PERMISSION_DENIED) {
                 permissions.add(Manifest.permission.READ_CONTACTS);
             }
-            if(PERMISSION_SEND_SMS == PackageManager.PERMISSION_DENIED){
+            if (PERMISSION_SEND_SMS == PackageManager.PERMISSION_DENIED) {
                 permissions.add(Manifest.permission.SEND_SMS);
             }
 
@@ -202,7 +204,7 @@ public class SplashActivity extends Activity {
         }
     }
 
-    private class SplashActivityServiceConnection implements ServiceConnection{
+    private class SplashActivityServiceConnection implements ServiceConnection {
 
         private static final String TAG = "SplashActivityServic...";
 

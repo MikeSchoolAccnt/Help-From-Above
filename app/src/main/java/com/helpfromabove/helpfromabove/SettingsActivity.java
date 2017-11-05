@@ -10,32 +10,23 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
 import android.preference.MultiSelectListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
-import android.preference.PreferenceScreen;
 import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBar;
-import android.preference.PreferenceFragment;
-import android.preference.PreferenceManager;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.support.v4.app.NavUtils;
 
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.zip.Inflater;
 
 /**
  * A {@link PreferenceActivity} that presents a set of application settings. On
@@ -54,7 +45,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     public static ContentResolver resolver;
     //This is used to keep the Emergency Contacts Setting screen after leaving it.
     //It also gives the ability to grab the data such as numbers from it.
-    public static PreferenceScreen emergencyContactsPreferenceScreen;
 
     /**
      * A preference value change listener that updates the preference's summary

@@ -21,7 +21,7 @@ import android.util.Log;
  * The CommandService is the model of the application.
  * Its purpose is to broadcast intents to visible activities, store
  * objects that need to be persistent throughout the life of the
- * application, and perform calculations on locations for waypoints.
+ * application.
  */
 
 public class CommandService extends Service {
@@ -62,7 +62,6 @@ public class CommandService extends Service {
 
     private static boolean startAllSessions = false;
     private static int receivedImagesCount = 0;
-    private static int uploadedImagesCount = 0;
 
     private CommandServiceBroadcastReceiver commandServiceBroadcastReceiver;
 
@@ -103,46 +102,46 @@ public class CommandService extends Service {
         private LocationState locationState;
         private SessionState sessionState;
 
-        public State(ServicesState servicesState, WifiP2pState wifiP2pState, LocationState locationState, SessionState sessionState) {
+        State(ServicesState servicesState, WifiP2pState wifiP2pState, LocationState locationState, SessionState sessionState) {
             this.servicesState = servicesState;
             this.wifiP2pState = wifiP2pState;
             this.locationState = locationState;
             this.sessionState = sessionState;
         }
 
-        protected void setServicesState(ServicesState servicesState) {
+        void setServicesState(ServicesState servicesState) {
             this.servicesState = servicesState;
             CommandService.notifyServicesStateChanged(getApplicationContext());
         }
 
-        protected void setWifiP2pState(WifiP2pState wifiP2pState) {
+        void setWifiP2pState(WifiP2pState wifiP2pState) {
             this.wifiP2pState = wifiP2pState;
             CommandService.notifyWifiP2pStateChanged(getApplicationContext());
         }
 
-        protected void setLocationState(LocationState locationState) {
+        void setLocationState(LocationState locationState) {
             this.locationState = locationState;
             CommandService.notifyLocationStateChanged(getApplicationContext());
         }
 
-        protected void setSessionState(SessionState sessionState) {
+        void setSessionState(SessionState sessionState) {
             this.sessionState = sessionState;
             CommandService.notifySessionStateChanged(getApplicationContext());
         }
 
-        protected ServicesState getServicesState() {
+        ServicesState getServicesState() {
             return servicesState;
         }
 
-        protected WifiP2pState getWifiP2pState() {
+        WifiP2pState getWifiP2pState() {
             return wifiP2pState;
         }
 
-        protected LocationState getLocationState() {
+        LocationState getLocationState() {
             return locationState;
         }
 
-        protected SessionState getSessionState() {
+        SessionState getSessionState() {
             return sessionState;
         }
     }
@@ -265,7 +264,7 @@ public class CommandService extends Service {
         }
 
         if ((uasCommunicationService != null) && (locationService != null) && (emergencyService != null) && (cloudService != null)) {
-            state.setServicesState(ServicesState.SERVICES_STARTED);;
+            state.setServicesState(ServicesState.SERVICES_STARTED);
         }
     }
 
@@ -387,9 +386,9 @@ public class CommandService extends Service {
         context.sendBroadcast(new Intent(ACTION_NEW_UAS_IMAGE));
     }
 
-    protected Bitmap getNewImage(){
+    protected Bitmap getNewImage() {
 
-        return uasCommunicationService.getNewImage() == null ? null: uasCommunicationService.getNewImage();
+        return uasCommunicationService.getNewImage();
     }
 
     private void handleNewWaypoint() {
@@ -442,8 +441,7 @@ public class CommandService extends Service {
         if (state.getLocationState() == LocationState.LOCATION_CALIBRATING) {
             state.setLocationState(LocationState.LOCATION_HHMD_CALIBRATED);
             uasCommunicationService.sendStartSession();
-        }
-        else if (state.getLocationState() == LocationState.LOCATION_UASC_CALIBRATED) {
+        } else if (state.getLocationState() == LocationState.LOCATION_UASC_CALIBRATED) {
             notifyLocationCalibrationComplete(getApplicationContext());
         }
     }
@@ -451,8 +449,7 @@ public class CommandService extends Service {
     private void handleLocationUascCalibrationComplete() {
         if (state.getLocationState() == LocationState.LOCATION_CALIBRATING) {
             state.setLocationState(LocationState.LOCATION_UASC_CALIBRATED);
-        }
-        else if (state.getLocationState() == LocationState.LOCATION_HHMD_CALIBRATED) {
+        } else if (state.getLocationState() == LocationState.LOCATION_HHMD_CALIBRATED) {
             notifyLocationCalibrationComplete(getApplicationContext());
         }
     }
@@ -513,7 +510,7 @@ public class CommandService extends Service {
             Log.d(TAG, "onReceive");
 
             String action = intent.getAction();
-            if (intent != null && action != null) {
+            if (action != null) {
                 switch (action) {
                     case ACTION_WIFI_P2P_DISCONNECTED:
                         state.setWifiP2pState(WifiP2pState.WIFI_P2P_DISCONNECTED);
@@ -562,7 +559,7 @@ public class CommandService extends Service {
         }
     }
 
-    public class CommandServiceBinder extends Binder {
+    class CommandServiceBinder extends Binder {
         CommandService getService() {
             return CommandService.this;
         }

@@ -7,17 +7,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.ImageView;
-
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 
 /**
  * Created by caleb on 5/9/17.
@@ -134,7 +128,7 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
             Log.d(TAG, "onReceive");
 
             String action = intent.getAction();
-            if (intent != null && action != null) {
+            if (action != null) {
                 switch (action) {
                     case CommandService.ACTION_NEW_UAS_IMAGE:
                         handleNewImage();

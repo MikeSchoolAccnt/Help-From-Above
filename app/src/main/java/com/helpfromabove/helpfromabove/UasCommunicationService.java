@@ -21,12 +21,11 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-public class UasCommunicationService extends Service{
+public class UasCommunicationService extends Service {
     private static final String TAG = "UasCommunicationService";
 
     private final IBinder mBinder = new UasCommunicationServiceBinder();
 
-    private IntentFilter intentFilter;
     private UasCommunicationServiceBroadcastReceiver broadcastReceiver;
 
     private WifiManager wifiManager;
@@ -44,10 +43,6 @@ public class UasCommunicationService extends Service{
 
     private UASCClient uascClient;
     private String port = "5000";
-    private boolean sessionActive = false;
-
-    //debugging variable. Remove before final testing.
-    private boolean canConnect = false;
 
     public UasCommunicationService() {
         super();
@@ -66,7 +61,7 @@ public class UasCommunicationService extends Service{
         Log.d(TAG, "onCreate");
         super.onCreate();
 
-        intentFilter = new IntentFilter();
+        IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
@@ -131,8 +126,8 @@ public class UasCommunicationService extends Service{
         //Check if its the UASC and if we haven't already tried to connected before
         //This check also allows for testing with other test servers so we don't
         //always need the UASC for testing.
-        if(device.toString().contains("HFA") && !connectedOnce){
-            Log.d(TAG,"Disconnecting");
+        if (device.toString().contains("HFA") && !connectedOnce) {
+            Log.d(TAG, "Disconnecting");
 
             CommandService.notifyWifiP2pWaitingForUasc(getApplicationContext());
 
@@ -142,12 +137,11 @@ public class UasCommunicationService extends Service{
             handler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    wifiP2pManager.cancelConnect(wifiP2pChannel,wifiP2pConnectionListener);
+                    wifiP2pManager.cancelConnect(wifiP2pChannel, wifiP2pConnectionListener);
                     connectedOnce = true;
                     startScanning();
                 }
-            },3000);
-
+            }, 3000);
         }
     }
 
@@ -189,31 +183,29 @@ public class UasCommunicationService extends Service{
 
         if (networkInfo.getState() == NetworkInfo.State.CONNECTING && connectedOnce) {
             CommandService.notifyWifiP2pConnectingFromUasc(getApplicationContext());
-        }
-        else if (networkInfo.getState() == NetworkInfo.State.CONNECTED) {
+        } else if (networkInfo.getState() == NetworkInfo.State.CONNECTED) {
             this.wifiP2pInfo = wifiP2pInfo;
             this.networkInfo = networkInfo;
             this.wifiP2pGroup = wifiP2pGroup;
 
             //If connecting to the UASC use its IP
-            if(connectedOnce) {
+            if (connectedOnce) {
                 uascClient = new UASCClient(getApplicationContext(), "192.168.49.187", port);
                 CommandService.notifyWifiP2pConnected(getApplicationContext());
-            }
-            else {
+            } else {
                 uascClient = new UASCClient(getApplicationContext(), wifiP2pInfo.groupOwnerAddress.getHostAddress(), port);
                 CommandService.notifyWifiP2pConnected(getApplicationContext());
             }
             startHeartbeat();
-        } else{
-            if(uascClient != null) {
+        } else {
+            if (uascClient != null) {
                 uascClient.stopHeartbeat();
                 uascClient.stopImageAccess();
             }
         }
     }
 
-    private void startHeartbeat(){
+    private void startHeartbeat() {
         uascClient.startHeartbeat(10000);
     }
 
@@ -223,33 +215,26 @@ public class UasCommunicationService extends Service{
 
     protected void startSession() {
         Log.d(TAG, "startSession: NOT FULLY IMPLEMENTED!");
-
-        sessionActive = true;
     }
 
-    protected void sendStartSession(){
+    protected void sendStartSession() {
         uascClient.sendStartSession("start_session");
     }
 
     protected void onLocationCalibrationComplete() {
         Log.d(TAG, "onLocationCalibrationComplete");
 
-        if(uascClient != null) {
-            uascClient.startImageAccess("static/img/img.jpeg","advance_image", 1000);
+        if (uascClient != null) {
+            uascClient.startImageAccess("static/img/img.jpeg", "advance_image", 1000);
         }
     }
 
     protected void stopSession() {
         Log.d(TAG, "stopSession: NOT FULLY IMPLEMENTED!");
 
-        sessionActive = false;
-        if(uascClient != null){
+        if (uascClient != null) {
             uascClient.stopImageAccess();
         }
-    }
-
-    protected boolean isSessionActive(){
-        return sessionActive;
     }
 
     protected void setLightOnOff(boolean lightOnOff) {
@@ -264,8 +249,8 @@ public class UasCommunicationService extends Service{
         Log.d(TAG, "startEmergency: NOT IMPLEMENTED!");
     }
 
-    public Bitmap getNewImage(){
-        if(uascClient != null) {
+    public Bitmap getNewImage() {
+        if (uascClient != null) {
             return uascClient.getImageBitmap();
         } else {
             return null;
@@ -280,7 +265,7 @@ public class UasCommunicationService extends Service{
         }
     }
 
-    protected class UasCommunicationServiceBinder extends Binder {
+    class UasCommunicationServiceBinder extends Binder {
         UasCommunicationService getService() {
             return UasCommunicationService.this;
         }
@@ -341,14 +326,14 @@ public class UasCommunicationService extends Service{
                     //This is needed because trying to start scanning right after doing
                     //an action causes a busy message so this will loop here every second
                     //until it can start scanning again.
-                    if(connectedOnce){
+                    if (connectedOnce) {
                         Handler handler = new Handler();
                         handler.postDelayed(new Runnable() {
                             @Override
                             public void run() {
                                 startScanning();
                             }
-                        },1000);
+                        }, 1000);
                     }
                     break;
                 case WifiP2pManager.ERROR:

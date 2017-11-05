@@ -32,7 +32,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
     ServiceConnection commandServiceConnection;
 
     private WifiP2pConnectActivityBroadcastReceiver broadcastReceiver;
-    private IntentFilter intentFilter ;
+    private IntentFilter intentFilter;
     private ListView devicesListView;
     private ArrayAdapter<WifiP2pDevice> adapter;
     private AlertDialog wifiP2pConnectingDialog;
@@ -261,7 +261,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
             Log.d(TAG, "onReceive");
 
             String action = intent.getAction();
-            if (intent != null && action != null) {
+            if (action != null) {
                 switch (action) {
                     case WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION:
                         WifiP2pDeviceList deviceList = intent.getParcelableExtra(WifiP2pManager.EXTRA_P2P_DEVICE_LIST);

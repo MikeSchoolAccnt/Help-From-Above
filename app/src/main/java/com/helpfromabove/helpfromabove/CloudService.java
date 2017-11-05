@@ -6,7 +6,6 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
 import android.os.Binder;
-import android.os.Environment;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -152,9 +151,9 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
     private void createCloudAppFolder() {
         Log.d(TAG, "createCloudAppFolder");
 
-        try{
+        try {
             cloudStorage.createFolder(CLOUD_APP_FOLDER);
-        } catch (com.cloudrail.si.exceptions.HttpException hE){
+        } catch (com.cloudrail.si.exceptions.HttpException hE) {
             Log.e(TAG, hE.getMessage());
         }
     }
@@ -193,7 +192,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         try {
             cloudStorage.createFolder(sessionFolder);
         } catch (com.cloudrail.si.exceptions.HttpException ex) {
-            Log.e(TAG,ex.getMessage());
+            Log.e(TAG, ex.getMessage());
         }
     }
 
@@ -216,11 +215,9 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         String extension;
         if (compressionFormat == CompressFormat.PNG) {
             extension = ".png";
-        }
-        else if (compressionFormat == CompressFormat.JPEG) {
+        } else if (compressionFormat == CompressFormat.JPEG) {
             extension = ".jpg";
-        }
-        else {
+        } else {
             Log.w(TAG, "Unknown compression format: " + compressionFormat);
             extension = null;
         }
@@ -228,7 +225,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         return extension;
     }
 
-    protected int getUploadCount(){
+    protected int getUploadCount() {
         return atomicImageUploadCount.get();
     }
 
@@ -257,6 +254,8 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
             byte[] byteArray = convertBitmapToByteArray(bitmap, compressionFormat, compressionQuality);
 
             File file = new File(path);
+
+            //TODO : Have the result of this send some notification to command service
             file.createNewFile();
 
             FileOutputStream fos = new FileOutputStream(file);
@@ -272,8 +271,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         byte[] byteArray;
         if (bitmap == null) {
             byteArray = null;
-        }
-        else {
+        } else {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             bitmap.compress(format, quality, bos);
             byteArray = bos.toByteArray();
@@ -289,16 +287,16 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
 
         try {
             cloudStorage.upload(path, byteArrayInputStream, byteArrayInputStream.available(), false);
-        } catch (com.cloudrail.si.exceptions.HttpException ex){
+        } catch (com.cloudrail.si.exceptions.HttpException ex) {
             //Grabbing images as fast as once a second sometimes causes name
             //conflicts. This fixes those.
-            if(ex.getMessage().contains("same name")) {
+            if (ex.getMessage().contains("same name")) {
                 String pathB = path;
-                if(compressionFormat == CompressFormat.JPEG){
-                    pathB = pathB.replace(".jpg","");
+                if (compressionFormat == CompressFormat.JPEG) {
+                    pathB = pathB.replace(".jpg", "");
                     pathB = pathB + "-b.jpg";
                 } else if (compressionFormat == CompressFormat.PNG) {
-                    pathB = pathB.replace(".png","");
+                    pathB = pathB.replace(".png", "");
                     pathB = pathB + "-b.png";
                 }
                 saveCloudImage(bitmap, pathB);
@@ -314,10 +312,9 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
 
         ByteArrayInputStream byteArrayInputStream;
 
-        if(bitmap == null || bitmap.getByteCount() == 0) {
+        if (bitmap == null || bitmap.getByteCount() == 0) {
             byteArrayInputStream = null;
-        }
-        else {
+        } else {
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             bitmap.compress(format, quality, byteArrayOutputStream);
 

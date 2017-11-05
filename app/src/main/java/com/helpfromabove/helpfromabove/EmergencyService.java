@@ -77,8 +77,7 @@ public class EmergencyService extends Service implements SharedPreferences.OnSha
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
                 getApplicationContext().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_DENIED) {
             Log.w(TAG, "checkPermissionAndSendSmsMessages: Permission to ACCESS_FINE_LOCATION is DENIED");
-        }
-        else {
+        } else {
             String emergencyMessage = getFormattedEmergencyMessage(location, cloudLink);
             sendSmsMessages(emergencyMessage);
         }
@@ -112,15 +111,13 @@ public class EmergencyService extends Service implements SharedPreferences.OnSha
         emergencyMessage = emergencyMessage.replace("(Name)", name);
         if (location != null) {
             emergencyMessage = emergencyMessage.replace("(Location)", "(" + location.getLatitude() + ", " + location.getLongitude() + ")");
-        }
-        else {
+        } else {
             emergencyMessage = emergencyMessage.replace("\nLocation: (Location)", "");
         }
 
         if (cloudLink != null) {
             emergencyMessage = emergencyMessage.replace("(Cloud Link)", cloudLink);
-        }
-        else {
+        } else {
             emergencyMessage = emergencyMessage.replace("\nImages: (Cloud Link)", "");
         }
 
@@ -128,12 +125,12 @@ public class EmergencyService extends Service implements SharedPreferences.OnSha
         return emergencyMessage;
     }
 
-    private void sendSMSMessage(String recipientNumber, String message){
+    private void sendSMSMessage(String recipientNumber, String message) {
         try {
             SmsManager smsManager = SmsManager.getDefault();
             smsManager.sendTextMessage(recipientNumber, null, message, null, null);
-        } catch (IllegalArgumentException e){
-            Log.e(TAG,"sendSMSMessage:" + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "sendSMSMessage:" + e.getMessage());
         }
     }
 
