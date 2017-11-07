@@ -36,6 +36,8 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_gravity="start"
+            android:alwaysDrawnWithCache="false"
+            app:headerLayout="@layout/drawer_header"
             app:menu="@menu/nav_menu" />
     </android.support.v4.widget.DrawerLayout>
 </android.support.design.widget.CoordinatorLayout>
