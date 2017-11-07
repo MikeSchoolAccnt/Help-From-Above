@@ -12,7 +12,11 @@ import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SwitchCompat;
@@ -34,7 +38,7 @@ import android.widget.Toast;
  * the UAS, and holding the menu for accessing the SettingsActivity.
  */
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
     private final String TAG = "MainActivity";
     private MainActivityBroadcastReceiver mainActivityBroadcastReceiver = new MainActivityBroadcastReceiver();
 
@@ -55,8 +59,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        NavigationView navigationView = (NavigationView) findViewById(R.id.navigation);
+        navigationView.setNavigationItemSelectedListener(this);
 
         startSessionButton = (Button) findViewById(R.id.session_start_button);
         endSessionButton = (Button) findViewById(R.id.session_end_button);
@@ -114,35 +118,32 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        Log.d(TAG, "onCreateOptionsMenu");
+    public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
+        Log.d(TAG, "onNavigationItemSelected: menuItem.toString()=" + menuItem.toString());
 
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        Log.d(TAG, "onOptionsItemSelected");
-
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        if (id == R.id.action_settings) {
-            Log.d(TAG, "onOptionsItemSelected: action_settings");
-
-            if ((commandService != null) && (commandService.getState().getSessionState() == CommandService.SessionState.SESSION_STOPPED)) {
-                startActivity(new Intent(this, SettingsActivity.class));
-            } else {
-                displaySettingsDisabled();
+        if ((commandService != null) && (commandService.getState().getSessionState() == CommandService.SessionState.SESSION_STOPPED)) {
+            int id = menuItem.getItemId();
+            switch (id) {
+                case R.id.cloud_storage_settings:
+                    Log.d(TAG, "onNavigationItemSelected: cloud_storage_settings");
+                    startActivity(new Intent(this, CloudPreferencesActivity.class));
+                    return true;
+                case R.id.emergency_settings:
+                    Log.d(TAG, "onNavigationItemSelected: emergency_settings");
+                    startActivity(new Intent(this, EmergencyPreferencesActivity.class));
+                    return true;
+                case R.id.session_settings:
+                    Log.d(TAG, "onNavigationItemSelected: session_settings");
+                    startActivity(new Intent(this, SessionPreferencesActivity.class));
+                    return true;
+                default:
+                    Log.e(TAG, "onNavigationItemSelected: default: " + id);
             }
-            return true;
+        } else {
+            displaySettingsDisabled();
         }
 
-        return super.onOptionsItemSelected(item);
+        return false;
     }
 
     private void updateUiState() {
