@@ -32,6 +32,7 @@
 
     <!--Settings-->
     <string name="title_activity_settings">Settings</string>
+    <string name="drawer_image_view_description">Image to be a background for the header</string>
 
     <!--Cloud Storage-->
     <string name="pref_header_cloud_storage">Could storage</string>
