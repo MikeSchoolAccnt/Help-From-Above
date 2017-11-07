@@ -17,5 +17,6 @@
     <item
         android:id="@+id/session_settings"
         android:fragment="com.helpfromabove.helpfromabove.SettingsActivity$SessionStartPreferenceFragment"
+        android:icon="@drawable/ic_start_session_black"
         android:title="@string/pref_header_session_start" />
 </menu>
