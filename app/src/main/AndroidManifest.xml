@@ -9,8 +9,8 @@
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.SEND_SMS"/>
-    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
     <application
         android:allowBackup="true"
@@ -76,9 +76,7 @@
         </activity>
         <activity
             android:name=".WifiP2pConnectActivity"
-            android:label="@string/title_activity_wifi_p2p_connect"
-            android:theme="@style/AppTheme.NoActionBar" />
-
+            android:label="@string/title_activity_wifi_p2p_connect" />
         <service
             android:name=".CommandService"
             android:enabled="true"
