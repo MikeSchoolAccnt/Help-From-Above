@@ -134,7 +134,11 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_settings) {
             Log.d(TAG, "onOptionsItemSelected: action_settings");
 
-            startActivity(new Intent(this, SettingsActivity.class));
+            if ((commandService != null) && (commandService.getState().getSessionState() == CommandService.SessionState.SESSION_STOPPED)) {
+                startActivity(new Intent(this, SettingsActivity.class));
+            } else {
+                displaySettingsDisabled();
+            }
             return true;
         }
 
@@ -338,6 +342,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void displayEmergencyMessagesSent() {
         Toast.makeText(getApplicationContext(), R.string.emergency_message_sent_text, Toast.LENGTH_LONG).show();
+    }
+
+    private void displaySettingsDisabled() {
+        Toast.makeText(getApplicationContext(), R.string.settings_disabled, Toast.LENGTH_LONG).show();
     }
 
     private void setConnectedService(IBinder service) {

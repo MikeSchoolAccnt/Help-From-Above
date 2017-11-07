@@ -15,6 +15,9 @@
     <!--Message to display to user after sending emergency message-->
     <string name="emergency_message_sent_text">Emergency message sent</string>
 
+    <!--Message to display to user if they try to go to settings during a session-->
+    <string name="settings_disabled">Settings disabled during a session</string>
+
     <!--Dialog strings-->
     <string name="location_calibrating_dialog_title">Calibrating&#x2026;</string>
     <string name="location_hhmd_calibrated_dialog_title">Waiting on UASC&#x2026;</string>
