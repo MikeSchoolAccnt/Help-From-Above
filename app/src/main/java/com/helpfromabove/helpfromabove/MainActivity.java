@@ -372,6 +372,7 @@ public class MainActivity extends AppCompatActivity {
         public void onServiceDisconnected(ComponentName name) {
             Log.d(TAG, "onServiceDisconnected");
             updateUiState();
+            handleNewImage();
         }
     }
 

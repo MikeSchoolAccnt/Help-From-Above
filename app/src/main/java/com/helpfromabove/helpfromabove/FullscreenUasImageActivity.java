@@ -109,6 +109,7 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
         public void onServiceConnected(ComponentName name, IBinder service) {
             Log.d(TAG, "onServiceConnected");
             setConnectedService(service);
+            handleNewImage();
         }
 
         @Override
