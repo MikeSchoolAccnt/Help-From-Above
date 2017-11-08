@@ -274,6 +274,7 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
                 case WIFI_P2P_CONNECTED:
                     dismissWifiP2pConnectingDialog();
                     startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                    finish();
                     break;
                 default:
                     Log.w(TAG, "handleWifiP2pStateChanged: default");

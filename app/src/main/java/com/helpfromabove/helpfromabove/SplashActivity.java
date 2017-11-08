@@ -158,10 +158,17 @@ public class SplashActivity extends Activity {
 
         if (commandService != null) {
             if ((commandService.getState().getServicesState() == CommandService.ServicesState.SERVICES_STARTED) && animationComplete) {
-                Intent i = new Intent(getApplicationContext(), WifiP2pConnectActivity.class);
-                startActivity(i);
-                finish();
-                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+                if(commandService.getState().getWifiP2pState() == CommandService.WifiP2pState.WIFI_P2P_CONNECTED){
+                    Intent i = new Intent(getApplicationContext(), MainActivity.class);
+                    startActivity(i);
+                    finish();
+                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+                }else {
+                    Intent i = new Intent(getApplicationContext(), WifiP2pConnectActivity.class);
+                    startActivity(i);
+                    finish();
+                    overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+                }
             } else {
                 Log.d(TAG, "transition: not ready to start WifiP2pConnectActivity");
             }
