@@ -250,6 +250,13 @@ public class MainActivity extends AppCompatActivity {
                 startSessionButton.setEnabled(true);
                 endSessionButton.setEnabled(false);
                 break;
+            case SESSION_EMERGENCY_STARTED:
+                emergencyButton.setEnabled(false);
+                break;
+            case SESSION_EMERGENCY_MESSAGES_SENT:
+                // TODO : Maybe add some sort of delay since messages take a while before received by contacts
+                emergencyButton.setEnabled(true);
+                break;
             default:
                 Log.e(TAG, "enableButtons: default");
                 break;
@@ -271,14 +278,16 @@ public class MainActivity extends AppCompatActivity {
      */
     private void handleSessionStateChanged() {
         if (commandService != null) {
-            enableButtons(commandService.getState().getSessionState());
+            CommandService.SessionState state = commandService.getState().getSessionState();
 
-            switch (commandService.getState().getSessionState()) {
+            enableButtons(state);
+
+            switch (state) {
                 case SESSION_EMERGENCY_MESSAGES_SENT:
                     displayEmergencyMessagesSent();
                     break;
                 default:
-                    Log.w(TAG, "handleSessionStateChanged: default");
+                    Log.w(TAG, "handleSessionStateChanged: default: " + state);
             }
         }
     }

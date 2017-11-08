@@ -172,6 +172,7 @@ public class CommandService extends Service {
         intentFilter.addAction(ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE);
         intentFilter.addAction(ACTION_LOCATION_UASC_CALIBRATION_COMPLETE);
         intentFilter.addAction(ACTION_LOCATION_CALIBRATION_COMPLETE);
+        intentFilter.addAction(ACTION_SESSION_EMERGENCY_MESSAGES_SENT);
         intentFilter.addAction(ACTION_NEW_WAYPOINT);
         intentFilter.addAction(ACTION_NEW_UAS_LOCATION);
         intentFilter.addAction(ACTION_NEW_UAS_IMAGE);
