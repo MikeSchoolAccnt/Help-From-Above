@@ -111,6 +111,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         Log.d(TAG, "onDestroy");
         super.onDestroy();
+
+        dismissCalibratingDialog();
     }
 
     @Override
@@ -285,10 +287,12 @@ public class MainActivity extends AppCompatActivity {
         if (commandService != null) {
             switch (commandService.getState().getLocationState()) {
                 case LOCATION_CALIBRATING:
-                    displayCalibratingDialog();
+                    setCalibratingDialogTitle(R.string.location_calibrating_dialog_title);
+                    showCalibratingDialog();
                     break;
                 case LOCATION_HHMD_CALIBRATED:
                     setCalibratingDialogTitle(R.string.location_hhmd_calibrated_dialog_title);
+                    showCalibratingDialog();
                     break;
                 case LOCATION_UASC_CALIBRATED:
                     // This never gets displayed (or if it does, it's extremely brief)
@@ -296,9 +300,10 @@ public class MainActivity extends AppCompatActivity {
                     // immediately goes to the LOCATION_CALIBRATED state.
                     // TODO : Maybe delay time between state change?
                     setCalibratingDialogTitle(R.string.location_uasc_calibrated_dialog_title);
+                    showCalibratingDialog();
                     break;
                 case LOCATION_CALIBRATED:
-                    hideCalibratingDialog();
+                    dismissCalibratingDialog();
                     break;
                 default:
                     Log.w(TAG, "handleLocationStateChanged: default");
@@ -317,25 +322,40 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void displayCalibratingDialog() {
-        Log.d(TAG, "displayCalibratingDialog");
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setView(new ProgressBar(getApplicationContext()))
-                .setTitle(R.string.location_calibrating_dialog_title)
-                .setCancelable(false);
-        calibratingAlertDialog = builder.create();
-        calibratingAlertDialog.show();
-    }
-
-    private void setCalibratingDialogTitle(int id) {
-        if (calibratingAlertDialog != null) {
-            calibratingAlertDialog.setTitle(id);
+    private void createCalibratingDialog() {
+        if (calibratingAlertDialog == null) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setView(new ProgressBar(getApplicationContext()))
+                    .setCancelable(false);
+            calibratingAlertDialog = builder.create();
         }
     }
 
-    private void hideCalibratingDialog() {
-        if (calibratingAlertDialog != null) {
+    private void setCalibratingDialogTitle(int id) {
+        if (calibratingAlertDialog == null) {
+            createCalibratingDialog();
+        }
+
+        calibratingAlertDialog.setTitle(id);
+    }
+
+    private void showCalibratingDialog() {
+        if (calibratingAlertDialog == null) {
+            createCalibratingDialog();
+        }
+
+        if (!calibratingAlertDialog.isShowing()) {
+            calibratingAlertDialog.show();
+        }
+    }
+
+
+    private void dismissCalibratingDialog() {
+        if (calibratingAlertDialog == null) {
+            createCalibratingDialog();
+        }
+
+        if (calibratingAlertDialog.isShowing()) {
             calibratingAlertDialog.dismiss();
         }
     }

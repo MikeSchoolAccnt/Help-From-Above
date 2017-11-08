@@ -124,6 +124,14 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         unbindCommandService();
     }
 
+    @Override
+    protected void onDestroy() {
+        Log.d(TAG, "onDestroy");
+        super.onDestroy();
+
+        dismissWifiP2pConnectingDialog();
+    }
+
     private void bindCommandService() {
         Log.d(TAG, "bindCommandService");
         Intent commandServiceIntent = new Intent(getApplicationContext(), CommandService.class);
@@ -176,25 +184,40 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
                 .show();
     }
 
-    private void displayWifiP2pConnectingDialog() {
-        Log.d(TAG, "displayWifiP2pConnectingDialog");
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setView(new ProgressBar(getApplicationContext()))
-                .setTitle(R.string.wifi_p2p_connecting_to_uasc_dialog_title)
-                .setCancelable(false);
-        wifiP2pConnectingDialog = builder.create();
-        wifiP2pConnectingDialog.show();
-    }
-
-    private void setWifiP2pConnectingDialogTitle(int id) {
-        if (wifiP2pConnectingDialog != null) {
-            wifiP2pConnectingDialog.setTitle(id);
+    private void createWifiP2pConnectingDialog() {
+        if (wifiP2pConnectingDialog == null) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setView(new ProgressBar(getApplicationContext()))
+                    .setCancelable(false);
+            wifiP2pConnectingDialog = builder.create();
         }
     }
 
-    private void hideWifiP2pConnectingDialog() {
-        if (wifiP2pConnectingDialog != null) {
+    private void setWifiP2pConnectingDialogTitle(int id) {
+        if (wifiP2pConnectingDialog == null) {
+            createWifiP2pConnectingDialog();
+        }
+
+        wifiP2pConnectingDialog.setTitle(id);
+    }
+
+    private void showWifiP2pConnectingDialogDialog() {
+        if (wifiP2pConnectingDialog == null) {
+            createWifiP2pConnectingDialog();
+        }
+
+        if (!wifiP2pConnectingDialog.isShowing()) {
+            wifiP2pConnectingDialog.show();
+        }
+    }
+
+
+    private void dismissWifiP2pConnectingDialog() {
+        if (wifiP2pConnectingDialog == null) {
+            createWifiP2pConnectingDialog();
+        }
+
+        if (wifiP2pConnectingDialog.isShowing()) {
             wifiP2pConnectingDialog.dismiss();
         }
     }
@@ -237,16 +260,19 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         if (commandService != null) {
             switch (commandService.getState().getWifiP2pState()) {
                 case WIFI_P2P_CONNECTING_TO_UASC:
-                    displayWifiP2pConnectingDialog();
+                    setWifiP2pConnectingDialogTitle(R.string.wifi_p2p_connecting_to_uasc_dialog_title);
+                    showWifiP2pConnectingDialogDialog();
                     break;
                 case WIFI_P2P_WAITING_FOR_UASC:
                     setWifiP2pConnectingDialogTitle(R.string.wifi_p2p_waiting_on_uasc_dialog_title);
+                    showWifiP2pConnectingDialogDialog();
                     break;
                 case WIFI_P2P_CONNECTING_FROM_UASC:
                     setWifiP2pConnectingDialogTitle(R.string.wifi_p2p_connecting_from_uasc_dialog_title);
+                    showWifiP2pConnectingDialogDialog();
                     break;
                 case WIFI_P2P_CONNECTED:
-                    hideWifiP2pConnectingDialog();
+                    dismissWifiP2pConnectingDialog();
                     startActivity(new Intent(getApplicationContext(), MainActivity.class));
                     break;
                 default:
