@@ -2,6 +2,7 @@ package com.helpfromabove.helpfromabove;
 
 import android.os.Bundle;
 import android.preference.ListPreference;
+import android.preference.MultiSelectListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceManager;
 import android.support.v4.app.NavUtils;
@@ -9,14 +10,18 @@ import android.support.v7.app.ActionBar;
 import android.util.Log;
 import android.view.MenuItem;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
- * Created by csmith on 11/7/17.
- *
+ * Created by Caleb Smith on 11/7/17.
+ * <p>
  * This is used to make sure the other preference activities are consistent.
  */
 
-public class HFAPreferenceActivity extends AppCompatPreferenceActivity{
+public class HFAPreferenceActivity extends AppCompatPreferenceActivity {
     private static final String TAG = "HFAPreferenceActivity";
+    private Preference.OnPreferenceChangeListener bindPreferenceSummaryToValueListener = new SettingsOnPreferenceChangeListener();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +42,7 @@ public class HFAPreferenceActivity extends AppCompatPreferenceActivity{
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
-        switch (item.getItemId()){
+        switch (item.getItemId()) {
             case android.R.id.home:
                 NavUtils.navigateUpFromSameTask(this);
                 return true;
@@ -47,47 +52,38 @@ public class HFAPreferenceActivity extends AppCompatPreferenceActivity{
 
     }
 
-    private static Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener = new SettingsOnPreferenceChangeListener();
-
-    protected static void bindPreferenceSummaryToValue(Preference preference) {
+    protected void bindPreferenceSummaryToValue(Preference preference) {
         Log.d(TAG, "bindPreferenceSummaryToValue");
 
-        // Set the listener to watch for value changes.
-        preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
+        preference.setOnPreferenceChangeListener(bindPreferenceSummaryToValueListener);
 
-        // Trigger the listener immediately with the preference's
-        // current value.
-        sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
-                PreferenceManager
-                        .getDefaultSharedPreferences(preference.getContext())
-                        .getString(preference.getKey(), ""));
+        if (preference instanceof MultiSelectListPreference) {
+            bindPreferenceSummaryToValueListener.onPreferenceChange(preference,
+                    PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getStringSet(preference.getKey(), new HashSet<String>()));
+        } else {
+            bindPreferenceSummaryToValueListener.onPreferenceChange(preference,
+                    PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getString(preference.getKey(), ""));
+        }
     }
 
-
-    static class SettingsOnPreferenceChangeListener implements  Preference.OnPreferenceChangeListener {
+    private class SettingsOnPreferenceChangeListener implements Preference.OnPreferenceChangeListener {
         @Override
         public boolean onPreferenceChange(Preference preference, Object value) {
-            Log.d(TAG, "onPreferenceChange: preference.getKey()=" + preference.getKey() + ", value.toString()=" + value.toString());
+            Log.d(TAG, "onPreferenceChange: preference.getKey()=" + preference.getKey());
 
-            String stringValue = value.toString();
             if (preference instanceof ListPreference) {
-                // For list preferences, look up the correct display value in
-                // the preference's 'entries' list.
                 ListPreference listPreference = (ListPreference) preference;
-                int index = listPreference.findIndexOfValue(stringValue);
-
-                // Set the summary to reflect the new value.
-                preference.setSummary(
-                        index >= 0
-                                ? listPreference.getEntries()[index]
-                                : null);
+                int index = listPreference.findIndexOfValue(value.toString());
+                CharSequence summary = index >= 0 ? listPreference.getEntries()[index] : "None";
+                preference.setSummary(summary);
+            } else if (preference instanceof MultiSelectListPreference) {
+                Set<String> contactsSet = (Set<String>) value;
+                CharSequence summary = contactsSet.isEmpty() ? "None" : contactsSet.toString();
+                preference.setSummary(summary);
             } else {
-                // For all other preferences, set the summary to the value's
-                // simple string representation.
-                preference.setSummary(stringValue);
+                preference.setSummary(value.toString());
             }
             return true;
         }
     }
-
 }
