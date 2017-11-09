@@ -16,7 +16,7 @@
 
     <style name="AppTheme.Fullscreen" parent="AppTheme.NoActionBar">
         <item name="android:windowContentOverlay">@null</item>
-        <item name="android:background">#42A5F5</item>
+        <item name="android:background">@color/colorPrimary</item>
     </style>
     
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />

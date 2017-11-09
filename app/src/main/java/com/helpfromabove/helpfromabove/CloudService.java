@@ -67,6 +67,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         CloudRail.setAppKey(CLOUDRAIL_LICENSE_KEY);
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).registerOnSharedPreferenceChangeListener(this);
 
+
         initCloudStorage();
         createAppFolder();
     }
@@ -124,6 +125,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
                 Log.w(TAG, "initCloudStorage: Unknown cloud storage specified");
                 break;
         }
+
     }
 
     private void createAppFolder() {
@@ -133,6 +135,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
                 if (cloudStorage == null) {
                     createLocalAppFolder();
                 } else {
+                    cloudStorage.login();
                     createCloudAppFolder();
                 }
             }

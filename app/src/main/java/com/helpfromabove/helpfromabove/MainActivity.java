@@ -52,6 +52,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private Button uasHeightDownButton;
     private Button uasHeightUpButton;
     private SwitchCompat lightSwitch;
+    private DrawerLayout drawerLayout;
+    private NavigationView navigationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,7 +61,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
-        NavigationView navigationView = (NavigationView) findViewById(R.id.navigation);
+        drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        navigationView = (NavigationView) findViewById(R.id.navigation);
         navigationView.setNavigationItemSelectedListener(this);
 
         startSessionButton = (Button) findViewById(R.id.session_start_button);
@@ -115,6 +118,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     protected void onDestroy() {
         Log.d(TAG, "onDestroy");
         super.onDestroy();
+    }
+
+    @Override
+    public void onBackPressed() {
+
+        if(drawerLayout.isDrawerOpen(navigationView)){
+            drawerLayout.closeDrawer(navigationView);
+        }
+        else {
+            super.onBackPressed();
+        }
     }
 
     @Override

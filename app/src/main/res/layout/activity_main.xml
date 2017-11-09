@@ -37,6 +37,7 @@
             android:layout_height="match_parent"
             android:layout_gravity="start"
             android:alwaysDrawnWithCache="false"
+            android:background="@color/colorPrimaryLight"
             app:headerLayout="@layout/drawer_header"
             app:menu="@menu/nav_menu" />
     </android.support.v4.widget.DrawerLayout>
