@@ -12,17 +12,19 @@ import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import java.util.Collection;
 
@@ -56,6 +58,20 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
                 super.notifyDataSetChanged();
 
                 onArrayAdapterDataSetChanged();
+            }
+
+            @NonNull
+            @Override
+            public View getView(int position, View convertView, @NonNull ViewGroup parent) {
+                View view = super.getView(position, convertView, parent);
+                WifiP2pDevice device = this.getItem(position);
+                if (device != null) {
+                    TextView name = (TextView) view.findViewById(R.id.wifi_p2p_device_name);
+                    name.setText(device.deviceName);
+                    TextView address = (TextView) view.findViewById(R.id.wifi_p2p_device_address);
+                    address.setText(device.deviceAddress);
+                }
+                return view;
             }
         };
 

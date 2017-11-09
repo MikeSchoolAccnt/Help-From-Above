@@ -12,6 +12,7 @@
         android:id="@+id/wifi_p2p_connect_listview"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:clickable="true" />
+        android:clickable="true"
+        android:focusable="true" />
 
 </android.support.constraint.ConstraintLayout>
