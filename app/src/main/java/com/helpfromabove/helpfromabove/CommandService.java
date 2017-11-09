@@ -47,6 +47,7 @@ public class CommandService extends Service {
     private static final String ACTION_LOCATION_CALIBRATION_COMPLETE = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_CALIBRATION_COMPLETE";
     private static final String ACTION_SESSION_EMERGENCY_MESSAGES_SENT = "com.helpfromabove.helpfromabove.action.ACTION_SESSION_EMERGENCY_MESSAGES_SENT";
 
+    protected static final String ACTION_SKIPPED_WIFI_CONNECTION = "com.helpfromabove.helpfromabove.action.ACTION_SKIPPED_WIFI_CONNECTION";
 
     private final static String TAG = "CommandService";
 
@@ -385,6 +386,11 @@ public class CommandService extends Service {
 
         receivedImagesCount++;
         context.sendBroadcast(new Intent(ACTION_NEW_UAS_IMAGE));
+    }
+
+    protected static void notifySkippedWifiConnection(Context context){
+
+        context.sendBroadcast(new Intent(ACTION_SKIPPED_WIFI_CONNECTION));
     }
 
     protected Bitmap getNewImage() {
