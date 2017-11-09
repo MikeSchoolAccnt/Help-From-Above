@@ -27,12 +27,10 @@ import java.util.ArrayList;
  */
 
 public class SplashActivity extends Activity {
-    protected static int PERMISSION_READ_CONTACTS;
-    protected static int PERMISSION_ACCESS_LOCATION;
-    protected static int PERMISSION_SEND_SMS;
+    private static final String TAG = "SplashActivity";
+
     private static final int PERMISSIONS_CODE = 0;
 
-    private static final String TAG = "SplashActivity";
     private BroadcastReceiver splashActivityBroadcastReceiver;
 
     private CommandService commandService;
@@ -124,10 +122,10 @@ public class SplashActivity extends Activity {
         Log.d(TAG, "askForPermissions");
 
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-
-            PERMISSION_ACCESS_LOCATION = getApplicationContext().checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION);
-            PERMISSION_READ_CONTACTS = getApplicationContext().checkSelfPermission(Manifest.permission.READ_CONTACTS);
-            PERMISSION_SEND_SMS = getApplicationContext().checkSelfPermission(Manifest.permission.SEND_SMS);
+            final int PERMISSION_ACCESS_LOCATION = getApplicationContext().checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION);
+            final int PERMISSION_READ_CONTACTS = getApplicationContext().checkSelfPermission(Manifest.permission.READ_CONTACTS);
+            final int PERMISSION_SEND_SMS = getApplicationContext().checkSelfPermission(Manifest.permission.SEND_SMS);
+            final int PERMISSION_READ_PHONE_STATE = getApplicationContext().checkSelfPermission(Manifest.permission.READ_PHONE_STATE);
 
             ArrayList<String> permissions = new ArrayList<>();
 
@@ -139,6 +137,9 @@ public class SplashActivity extends Activity {
             }
             if (PERMISSION_SEND_SMS == PackageManager.PERMISSION_DENIED) {
                 permissions.add(Manifest.permission.SEND_SMS);
+            }
+            if (PERMISSION_READ_PHONE_STATE == PackageManager.PERMISSION_DENIED) {
+                permissions.add(Manifest.permission.READ_PHONE_STATE);
             }
 
             if (permissions.size() != 0) {
@@ -158,12 +159,12 @@ public class SplashActivity extends Activity {
 
         if (commandService != null) {
             if ((commandService.getState().getServicesState() == CommandService.ServicesState.SERVICES_STARTED) && animationComplete) {
-                if(commandService.getState().getWifiP2pState() == CommandService.WifiP2pState.WIFI_P2P_CONNECTED){
+                if (commandService.getState().getWifiP2pState() == CommandService.WifiP2pState.WIFI_P2P_CONNECTED) {
                     Intent i = new Intent(getApplicationContext(), MainActivity.class);
                     startActivity(i);
                     finish();
                     overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-                }else {
+                } else {
                     Intent i = new Intent(getApplicationContext(), WifiP2pConnectActivity.class);
                     startActivity(i);
                     finish();
