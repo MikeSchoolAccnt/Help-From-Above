@@ -118,6 +118,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     protected void onDestroy() {
         Log.d(TAG, "onDestroy");
         super.onDestroy();
+
+        dismissCalibratingDialog();
     }
 
     @Override
@@ -263,6 +265,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 startSessionButton.setEnabled(true);
                 endSessionButton.setEnabled(false);
                 break;
+            case SESSION_EMERGENCY_STARTED:
+                emergencyButton.setEnabled(false);
+                break;
+            case SESSION_EMERGENCY_MESSAGES_SENT:
+                // TODO : Maybe add some sort of delay since messages take a while before received by contacts
+                emergencyButton.setEnabled(true);
+                break;
             default:
                 Log.e(TAG, "enableButtons: default");
                 break;
@@ -284,14 +293,16 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
      */
     private void handleSessionStateChanged() {
         if (commandService != null) {
-            enableButtons(commandService.getState().getSessionState());
+            CommandService.SessionState state = commandService.getState().getSessionState();
 
-            switch (commandService.getState().getSessionState()) {
+            enableButtons(state);
+
+            switch (state) {
                 case SESSION_EMERGENCY_MESSAGES_SENT:
                     displayEmergencyMessagesSent();
                     break;
                 default:
-                    Log.w(TAG, "handleSessionStateChanged: default");
+                    Log.w(TAG, "handleSessionStateChanged: default: " + state);
             }
         }
     }
@@ -300,10 +311,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (commandService != null) {
             switch (commandService.getState().getLocationState()) {
                 case LOCATION_CALIBRATING:
-                    displayCalibratingDialog();
+                    setCalibratingDialogTitle(R.string.location_calibrating_dialog_title);
+                    showCalibratingDialog();
                     break;
                 case LOCATION_HHMD_CALIBRATED:
                     setCalibratingDialogTitle(R.string.location_hhmd_calibrated_dialog_title);
+                    showCalibratingDialog();
                     break;
                 case LOCATION_UASC_CALIBRATED:
                     // This never gets displayed (or if it does, it's extremely brief)
@@ -311,9 +324,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     // immediately goes to the LOCATION_CALIBRATED state.
                     // TODO : Maybe delay time between state change?
                     setCalibratingDialogTitle(R.string.location_uasc_calibrated_dialog_title);
+                    showCalibratingDialog();
                     break;
                 case LOCATION_CALIBRATED:
-                    hideCalibratingDialog();
+                    dismissCalibratingDialog();
                     break;
                 default:
                     Log.w(TAG, "handleLocationStateChanged: default");
@@ -332,25 +346,40 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
-    private void displayCalibratingDialog() {
-        Log.d(TAG, "displayCalibratingDialog");
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setView(new ProgressBar(getApplicationContext()))
-                .setTitle(R.string.location_calibrating_dialog_title)
-                .setCancelable(false);
-        calibratingAlertDialog = builder.create();
-        calibratingAlertDialog.show();
-    }
-
-    private void setCalibratingDialogTitle(int id) {
-        if (calibratingAlertDialog != null) {
-            calibratingAlertDialog.setTitle(id);
+    private void createCalibratingDialog() {
+        if (calibratingAlertDialog == null) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setView(new ProgressBar(getApplicationContext()))
+                    .setCancelable(false);
+            calibratingAlertDialog = builder.create();
         }
     }
 
-    private void hideCalibratingDialog() {
-        if (calibratingAlertDialog != null) {
+    private void setCalibratingDialogTitle(int id) {
+        if (calibratingAlertDialog == null) {
+            createCalibratingDialog();
+        }
+
+        calibratingAlertDialog.setTitle(id);
+    }
+
+    private void showCalibratingDialog() {
+        if (calibratingAlertDialog == null) {
+            createCalibratingDialog();
+        }
+
+        if (!calibratingAlertDialog.isShowing()) {
+            calibratingAlertDialog.show();
+        }
+    }
+
+
+    private void dismissCalibratingDialog() {
+        if (calibratingAlertDialog == null) {
+            createCalibratingDialog();
+        }
+
+        if (calibratingAlertDialog.isShowing()) {
             calibratingAlertDialog.dismiss();
         }
     }

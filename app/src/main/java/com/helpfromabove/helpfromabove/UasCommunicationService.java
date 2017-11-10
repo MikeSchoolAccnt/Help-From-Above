@@ -66,6 +66,7 @@ public class UasCommunicationService extends Service {
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
+        intentFilter.addAction(CommandService.ACTION_SKIPPED_WIFI_CONNECTION);
 
         broadcastReceiver = new UasCommunicationServiceBroadcastReceiver();
         registerReceiver(broadcastReceiver, intentFilter);
@@ -213,6 +214,28 @@ public class UasCommunicationService extends Service {
         Log.d(TAG, "handleThisDeviceDetailsChanged");
     }
 
+    private void initUascClient(){
+
+        WifiP2pDevice groupOwner =  wifiP2pGroup.getOwner();
+
+        if(wifiP2pInfo.isGroupOwner){
+            //If the users device is the group owner connections will not work properly
+
+            //This most likely means they are trying to connect to the wrong device
+            //TODO: Notify the user they are connected to the device incorrectly and to reconnect the correct way.
+        }
+        else if(groupOwner.deviceName.contains("HFA")){
+            uascClient = new UASCClient(getApplicationContext(), "192.168.49.187", port);
+            CommandService.notifyWifiP2pConnected(getApplicationContext());
+        }
+        //Used for testing server connection
+        else {
+            uascClient = new UASCClient(getApplicationContext(), wifiP2pInfo.groupOwnerAddress.getHostAddress(), port);
+            CommandService.notifyWifiP2pConnected(getApplicationContext());
+        }
+
+    }
+
     protected void startSession() {
         Log.d(TAG, "startSession: NOT FULLY IMPLEMENTED!");
     }
@@ -298,6 +321,8 @@ public class UasCommunicationService extends Service {
                     case WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION:
                         handleThisDeviceDetailsChanged();
                         break;
+                    case CommandService.ACTION_SKIPPED_WIFI_CONNECTION:
+                        initUascClient();
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);
                         break;
