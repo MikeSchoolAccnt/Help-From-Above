@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
+import android.media.Image;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
@@ -51,6 +52,7 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
         IntentFilter intentFilter = new IntentFilter(CommandService.ACTION_NEW_UAS_IMAGE);
         registerReceiver(fullscreenUasImageBroadcastReceiver, intentFilter);
         //handleNewImage();
+        updateDefaultImage();
     }
 
     @Override
@@ -90,6 +92,24 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
 
         if ((imageView != null) && (bitmap != null)) {
             imageView.setImageBitmap(bitmap);
+        }
+    }
+
+
+    //This doesn't work
+    private void updateDefaultImage(){
+
+        //Michael: This is always null and I'm not sure why
+        //Trying to set the image on full screen to the default image
+        //after a previous session.
+        if(commandService != null){
+            Log.d(TAG,"Not NULL");
+            if(commandService.getState().getSessionState() == CommandService.SessionState.SESSION_STOPPED){
+                ImageView imageView = (ImageView) findViewById(R.id.fullscreen_uas_image_view);
+                if(imageView != null){
+                    imageView.setImageResource(R.drawable.image_placeholder);
+                }
+            }
         }
     }
 

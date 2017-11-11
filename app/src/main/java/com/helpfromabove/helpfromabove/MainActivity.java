@@ -54,6 +54,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private SwitchCompat lightSwitch;
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
+    private ImageView uasImageView;
+
+    private boolean launchFullscreen = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +74,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         uasHeightDownButton = (Button) findViewById(R.id.uas_height_down_button);
         uasHeightUpButton = (Button) findViewById(R.id.uas_height_up_button);
         lightSwitch = (SwitchCompat) findViewById(R.id.light_switch);
+        uasImageView = (ImageView) findViewById(R.id.uas_image_view);
     }
 
     @Override
@@ -132,6 +136,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             super.onBackPressed();
         }
     }
+
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
@@ -264,6 +269,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 uasHeightDownButton.setEnabled(false);
                 startSessionButton.setEnabled(true);
                 endSessionButton.setEnabled(false);
+                uasImageView.setImageResource(R.drawable.image_placeholder);
                 break;
             case SESSION_EMERGENCY_STARTED:
                 emergencyButton.setEnabled(false);

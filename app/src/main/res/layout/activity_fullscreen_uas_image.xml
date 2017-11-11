@@ -2,14 +2,14 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="horizontal">
+    android:layout_height="match_parent">
 
     <ImageView
         android:id="@+id/fullscreen_uas_image_view"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
+        android:background="@color/colorPrimary"
         android:contentDescription="@string/uas_image_view_description"
-        app:srcCompat="@android:color/holo_green_light" />
+        app:srcCompat="@drawable/image_placeholder" />
 </LinearLayout>

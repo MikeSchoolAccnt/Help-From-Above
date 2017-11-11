@@ -35,7 +35,7 @@ public class LocationService extends Service {
     private int accurateCount = 0;
     private boolean calibrationComplete = false;
 
-    private static final int MIN_ACCURACY_DISTANCE = 100;
+    private static final int MIN_ACCURACY_DISTANCE = 1000;
     private static final int MIN_ACCURATE_COUNT = 3;
     protected static final int CONSTANT_LOCATION_UPDATE_SECONDS = 3;
 
