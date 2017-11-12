@@ -90,6 +90,7 @@ public class UASCClient {
     private Bitmap imageBitmap;
     private Location latestUASLocation;
 
+    private boolean sessionActive = false;
 
     //These are only for testing
     private ArrayList<String> testURLs = new ArrayList<>();
@@ -167,9 +168,9 @@ public class UASCClient {
         }
     }
 
-    public void toogleLight(String lightEndpoint){
+    public void toogleLight(String lightEndpoint, boolean on){
         this.lightEndpoint = lightEndpoint;
-        initializeLight();
+        initializeLight(on);
         oneTimeHandler.post(lightRunnable);
     }
 
@@ -180,6 +181,7 @@ public class UASCClient {
     }
 
     public void sendEndSession(String endSessionEndpoint){
+        sessionActive = false;
         this.endSessionEndpoint = endSessionEndpoint;
         initializeEndSession();
         oneTimeHandler.post(endSessionRunnable);
@@ -239,55 +241,40 @@ public class UASCClient {
         };
     }
 
-    private void initializeAccessServerImage(final String advanceImageEndpoint){
+    private void initializeAccessServerImage(final String advanceImageEndpoint) {
         accessServerImageRunnable = new Runnable() {
-            @Override
+
             public void run() {
                 try {
-                    URL url = new URL("http://"+hostIP+":"+port+"/"+ advanceImageEndpoint);
-                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                    connection.getResponseCode();
+                    URL tempUrl = new URL("http://" + hostIP + ":" + port + "/" + imageEndpoint);
 
-                    constantHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                //URL tempUrl = new URL("http://" + hostIP + ":" + port + "/" + imageEndpoint);
+                    //Testing code needed for until the server is set up
+                    //Start of testing code
+//                    URL tempUrl = new URL(testURLs.get(currentImageNumber));
+//                    if (currentImageNumber == testURLs.size() - 1) {
+//                        currentImageNumber = 0;
+//                    } else {
+//                        currentImageNumber++;
+//                    }
+                    //End of testing code
 
-                                //Testing code needed for until the server is set up
-                                //Start of testing code
-                              URL tempUrl = new URL(testURLs.get(currentImageNumber));
-                              if(currentImageNumber == testURLs.size()-1) {
-                                  currentImageNumber = 0;
-                              }
-                              else {
-                                  currentImageNumber++;
-                              }
-                                //End of testing code
+                    InputStream inputStream = tempUrl.openStream();
 
-                                InputStream inputStream = tempUrl.openStream();
+                    imageBitmap = BitmapFactory.decodeStream(inputStream);
 
-                                imageBitmap = BitmapFactory.decodeStream(inputStream);
-
-                                //Only broadcast new image if there is one.
-                                if (imageBitmap != null)
-                                    CommandService.notifyNewUasImageAvailable(context);
-
-                            } catch (MalformedURLException e) {
-                                e.printStackTrace();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    });
+                    //Only broadcast new image if there is one.
+                    if (imageBitmap != null)
+                        CommandService.notifyNewUasImageAvailable(context);
 
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                constantHandler.postDelayed(this,imageAccessDelay);
+                if(sessionActive)
+                    constantHandler.postDelayed(this, imageAccessDelay);
             }
+
         };
     }
 
@@ -338,7 +325,7 @@ public class UASCClient {
         };
     }
 
-    private void initializeLight(){
+    private void initializeLight(final boolean on){
         lightRunnable = new Runnable() {
             @Override
             public void run() {
@@ -347,11 +334,28 @@ public class UASCClient {
 
                     URL url = new URL("http://"+hostIP+":"+port+"/"+lightEndpoint);
                     //Server can detect this and act off of it.
-                    url.openConnection();
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("POST");
+
+                    JSONObject jsonObject = new JSONObject();
+
+                    jsonObject.put("LIGHT_CONTROL",on);
+
+                    String msg = jsonObject.toString();
+
+                    //Send the json message to the server (UASC)
+                    OutputStreamWriter outputStreamWriter = new OutputStreamWriter(connection.getOutputStream());
+                    outputStreamWriter.write(msg);
+                    outputStreamWriter.flush();
+                    outputStreamWriter.close();
+                    connection.disconnect();
+
 
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
                 } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (JSONException e) {
                     e.printStackTrace();
                 }
 
@@ -383,6 +387,7 @@ public class UASCClient {
 
                     if(status.equals("OK"))
                     {
+                        sessionActive = true;
                         //When the uasc is ready for gps access,image access and sending new waypoints
                         CommandService.notifyLocationUascCalibrationComplete(context);
                     }
@@ -412,8 +417,10 @@ public class UASCClient {
                 try {
 
                     URL url = new URL("http://"+hostIP+":"+port+"/"+endSessionEndpoint);
-                    //Server can detect this and act off of it.
-                    url.openConnection();
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+                    //Sever detects this as hitting the endpoint
+                    connection.getResponseCode();
 
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
