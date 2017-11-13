@@ -256,7 +256,7 @@ public class UasCommunicationService extends Service {
         Log.d(TAG, "onLocationCalibrationComplete");
 
         if (uascClient != null) {
-            uascClient.startImageAccess(imageEndpoint, "advance_image", 1000);
+            uascClient.startImageAccess(imageEndpoint, 1000);
         }
     }
 

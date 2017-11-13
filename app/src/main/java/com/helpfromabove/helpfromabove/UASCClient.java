@@ -95,6 +95,7 @@ public class UASCClient {
     //These are only for testing
     private ArrayList<String> testURLs = new ArrayList<>();
     private int currentImageNumber = 0;
+    private boolean debugging = true;
 
     public UASCClient(Context context, String hostIP, String port){
         this.context = context;
@@ -128,11 +129,11 @@ public class UASCClient {
         }
     }
 
-    public void startImageAccess(String imageEndpoint, String advanceImageEndpoint , int imageAccessDelay){
+    public void startImageAccess(String imageEndpoint, int imageAccessDelay){
 
         this.imageEndpoint = imageEndpoint;
         this.imageAccessDelay = imageAccessDelay;
-        initializeAccessServerImage(advanceImageEndpoint);
+        initializeAccessServerImage();
 
         //Need to wait at least a second before grabbing images so that
         //the session folder has time to be made in the users cloud service.
@@ -201,6 +202,31 @@ public class UASCClient {
         oneTimeHandlerThread.quitSafely();
     }
 
+    private String readStreamToString(InputStream inputStream) throws IOException {
+
+        InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+        BufferedReader reader = new BufferedReader(inputStreamReader);
+        StringBuilder stringBuilder = new StringBuilder();
+        String line;
+        while((line = reader.readLine()) != null){
+            stringBuilder.append(line);
+        }
+        reader.close();
+
+        return stringBuilder.toString();
+
+    }
+
+    private void jsonWriteToOutputSteam(JSONObject message, OutputStream outputStream) throws IOException {
+        String msg = message.toString();
+
+        //Send the json message to the server (UASC)
+        OutputStreamWriter outputStreamWriter = new OutputStreamWriter(outputStream);
+        outputStreamWriter.write(msg);
+        outputStreamWriter.flush();
+        outputStreamWriter.close();
+    }
+
     private void initializeHeartbeat(){
 
         heartbeatRunnable = new Runnable() {
@@ -241,26 +267,29 @@ public class UASCClient {
         };
     }
 
-    private void initializeAccessServerImage(final String advanceImageEndpoint) {
+    private void initializeAccessServerImage() {
         accessServerImageRunnable = new Runnable() {
 
             public void run() {
                 try {
-                    URL tempUrl = new URL("http://" + hostIP + ":" + port + "/" + imageEndpoint);
 
-                    //Testing code needed for until the server is set up
-                    //Start of testing code
-//                    URL tempUrl = new URL(testURLs.get(currentImageNumber));
-//                    if (currentImageNumber == testURLs.size() - 1) {
-//                        currentImageNumber = 0;
-//                    } else {
-//                        currentImageNumber++;
-//                    }
-                    //End of testing code
+                    URL tempUrl;
+                    if(!debugging) {
+                        tempUrl = new URL("http://" + hostIP + ":" + port + "/" + imageEndpoint);
+                    }
+                    else {
+                        //Testing code needed for until the server is set up
+                        //Start of testing code
+                        tempUrl = new URL(testURLs.get(currentImageNumber));
+                        if (currentImageNumber == testURLs.size() - 1) {
+                            currentImageNumber = 0;
+                        } else {
+                            currentImageNumber++;
+                        }
+                        //End of testing code
+                    }
 
-                    InputStream inputStream = tempUrl.openStream();
-
-                    imageBitmap = BitmapFactory.decodeStream(inputStream);
+                    imageBitmap = BitmapFactory.decodeStream(tempUrl.openStream());
 
                     //Only broadcast new image if there is one.
                     if (imageBitmap != null)
@@ -285,16 +314,9 @@ public class UASCClient {
                 try {
                     URL url = new URL("http://"+hostIP+":"+port+"/"+gpsEndpoint);
 
-                    InputStreamReader inputStreamReader = new InputStreamReader(url.openStream());
-                    BufferedReader reader = new BufferedReader(inputStreamReader);
-                    StringBuilder stringBuilder = new StringBuilder();
-                    String line;
-                    while((line = reader.readLine()) != null){
-                        stringBuilder.append(line);
-                    }
-                    reader.close();
+                    String serverMessage = readStreamToString(url.openStream());
 
-                    JSONObject jsonObject = new JSONObject(stringBuilder.toString());
+                    JSONObject jsonObject = new JSONObject(serverMessage);
 
                     String status = jsonObject.getString(STATUS);
 
@@ -341,15 +363,6 @@ public class UASCClient {
 
                     jsonObject.put("LIGHT_CONTROL",on);
 
-                    String msg = jsonObject.toString();
-
-                    //Send the json message to the server (UASC)
-                    OutputStreamWriter outputStreamWriter = new OutputStreamWriter(connection.getOutputStream());
-                    outputStreamWriter.write(msg);
-                    outputStreamWriter.flush();
-                    outputStreamWriter.close();
-                    connection.disconnect();
-
 
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
@@ -372,16 +385,9 @@ public class UASCClient {
 
                     URL url = new URL("http://"+hostIP+":"+port+"/"+startSessionEndpoint);
 
-                    InputStreamReader inputStreamReader = new InputStreamReader(url.openStream());
-                    BufferedReader reader = new BufferedReader(inputStreamReader);
-                    StringBuilder stringBuilder = new StringBuilder();
-                    String line;
-                    while((line = reader.readLine()) != null){
-                        stringBuilder.append(line);
-                    }
-                    reader.close();
+                    String serverMessage = readStreamToString(url.openStream());
 
-                    JSONObject jsonObject = new JSONObject(stringBuilder.toString());
+                    JSONObject jsonObject = new JSONObject(serverMessage);
 
                     String status = jsonObject.getString(STATUS);
 
@@ -458,16 +464,7 @@ public class UASCClient {
                     object.put(LONGITUDE,longitude);
                     object.put(LATITUDE,latitude);
 
-                    String msg = object.toString();
-
-                    //Send the json message to the server (UASC)
-                    OutputStreamWriter outputStreamWriter = new OutputStreamWriter(connection.getOutputStream());
-                    outputStreamWriter.write(msg);
-                    outputStreamWriter.flush();
-                    outputStreamWriter.close();
-                    Log.d(TAG,"Waypoint "+connection.getResponseCode());
-                    connection.disconnect();
-
+                    jsonWriteToOutputSteam(object,connection.getOutputStream());
 
 
                 } catch (MalformedURLException e) {
