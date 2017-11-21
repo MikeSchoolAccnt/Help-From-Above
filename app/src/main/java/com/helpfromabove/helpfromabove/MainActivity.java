@@ -16,13 +16,10 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SwitchCompat;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -54,9 +51,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private SwitchCompat lightSwitch;
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
-    private ImageView uasImageView;
-
-    private boolean launchFullscreen = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,7 +68,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         uasHeightDownButton = (Button) findViewById(R.id.uas_height_down_button);
         uasHeightUpButton = (Button) findViewById(R.id.uas_height_up_button);
         lightSwitch = (SwitchCompat) findViewById(R.id.light_switch);
-        uasImageView = (ImageView) findViewById(R.id.uas_image_view);
     }
 
     @Override
@@ -99,7 +92,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         registerReceiver(mainActivityBroadcastReceiver, intentFilter);
 
         updateUiState();
-        //handleNewImage();
     }
 
     @Override
@@ -129,10 +121,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     public void onBackPressed() {
 
-        if(drawerLayout.isDrawerOpen(navigationView)){
+        if (drawerLayout.isDrawerOpen(navigationView)) {
             drawerLayout.closeDrawer(navigationView);
-        }
-        else {
+        } else {
             super.onBackPressed();
         }
     }
@@ -241,46 +232,48 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         commandService.handleCommandHhmdSessionEnd();
     }
 
+    private void updateButtons() {
+        Log.d(TAG, "updateButtons");
 
-    private void enableButtons(CommandService.SessionState sessionState) {
-        Log.d(TAG, "enableButtons: sessionState=" + sessionState);
-        switch (sessionState) {
-            case SESSION_STARTING:
-            case SESSION_STOPPING:
-                emergencyButton.setEnabled(false);
-                lightSwitch.setEnabled(false);
-                uasHeightUpButton.setEnabled(false);
-                uasHeightDownButton.setEnabled(false);
-                startSessionButton.setEnabled(false);
-                endSessionButton.setEnabled(false);
-                break;
-            case SESSION_RUNNING:
-                emergencyButton.setEnabled(true);
-                lightSwitch.setEnabled(true);
-                uasHeightUpButton.setEnabled(true);
-                uasHeightDownButton.setEnabled(true);
-                startSessionButton.setEnabled(false);
-                endSessionButton.setEnabled(true);
-                break;
-            case SESSION_STOPPED:
-                emergencyButton.setEnabled(false);
-                lightSwitch.setEnabled(false);
-                uasHeightUpButton.setEnabled(false);
-                uasHeightDownButton.setEnabled(false);
-                startSessionButton.setEnabled(true);
-                endSessionButton.setEnabled(false);
-                uasImageView.setImageResource(R.drawable.image_placeholder);
-                break;
-            case SESSION_EMERGENCY_STARTED:
-                emergencyButton.setEnabled(false);
-                break;
-            case SESSION_EMERGENCY_MESSAGES_SENT:
-                // TODO : Maybe add some sort of delay since messages take a while before received by contacts
-                emergencyButton.setEnabled(true);
-                break;
-            default:
-                Log.e(TAG, "enableButtons: default");
-                break;
+        if (commandService != null) {
+            CommandService.SessionState sessionState = commandService.getState().getSessionState();
+            switch (sessionState) {
+                case SESSION_STARTING:
+                case SESSION_STOPPING:
+                    emergencyButton.setEnabled(false);
+                    lightSwitch.setEnabled(false);
+                    uasHeightUpButton.setEnabled(false);
+                    uasHeightDownButton.setEnabled(false);
+                    startSessionButton.setEnabled(false);
+                    endSessionButton.setEnabled(false);
+                    break;
+                case SESSION_RUNNING:
+                    emergencyButton.setEnabled(true);
+                    lightSwitch.setEnabled(true);
+                    uasHeightUpButton.setEnabled(true);
+                    uasHeightDownButton.setEnabled(true);
+                    startSessionButton.setEnabled(false);
+                    endSessionButton.setEnabled(true);
+                    break;
+                case SESSION_STOPPED:
+                    emergencyButton.setEnabled(false);
+                    lightSwitch.setEnabled(false);
+                    uasHeightUpButton.setEnabled(false);
+                    uasHeightDownButton.setEnabled(false);
+                    startSessionButton.setEnabled(true);
+                    endSessionButton.setEnabled(false);
+                    break;
+                case SESSION_EMERGENCY_STARTED:
+                    emergencyButton.setEnabled(false);
+                    break;
+                case SESSION_EMERGENCY_MESSAGES_SENT:
+                    // TODO : Maybe add some sort of delay since messages take a while before being received
+                    emergencyButton.setEnabled(true);
+                    break;
+                default:
+                    Log.e(TAG, "updateButtons: default: " + sessionState);
+                    break;
+            }
         }
     }
 
@@ -301,7 +294,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (commandService != null) {
             CommandService.SessionState state = commandService.getState().getSessionState();
 
-            enableButtons(state);
+            updateButtons();
+            updateImageView();
 
             switch (state) {
                 case SESSION_EMERGENCY_MESSAGES_SENT:
@@ -341,14 +335,31 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
-    private void handleNewImage() {
-        Log.d(TAG, "handleNewImage");
+    private void updateImageView() {
+        Log.d(TAG, "updateImageView");
 
-        ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
-        Bitmap bitmap = commandService.getNewImage();
-
-        if ((imageView != null) && (bitmap != null)) {
-            imageView.setImageBitmap(bitmap);
+        if (commandService != null) {
+            CommandService.SessionState sessionState = commandService.getState().getSessionState();
+            ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
+            if ((sessionState != null) && (imageView != null)) {
+                switch (sessionState) {
+                    case SESSION_STARTING:
+                    case SESSION_STOPPED:
+                    case SESSION_STOPPING:
+                        imageView.setImageResource(R.drawable.image_placeholder);
+                        break;
+                    case SESSION_RUNNING:
+                    case SESSION_EMERGENCY_STARTED:
+                    case SESSION_EMERGENCY_MESSAGES_SENT:
+                        Bitmap bitmap = commandService.getNewImage();
+                        if (bitmap != null) {
+                            imageView.setImageBitmap(bitmap);
+                        }
+                        break;
+                    default:
+                        Log.e(TAG, "updateImageView: default: " + sessionState);
+                }
+            }
         }
     }
 
@@ -408,7 +419,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private class MainActivityServiceConnection implements ServiceConnection {
-
         private static final String TAG = "MainActivityServiceC...";
 
         @Override
@@ -422,7 +432,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         public void onServiceDisconnected(ComponentName name) {
             Log.d(TAG, "onServiceDisconnected");
             updateUiState();
-            handleNewImage();
         }
     }
 
@@ -445,7 +454,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         handleLocationStateChanged();
                         break;
                     case CommandService.ACTION_NEW_UAS_IMAGE:
-                        handleNewImage();
+                        updateImageView();
                         break;
                     case CommandService.ACTION_NEW_UAS_LOCATION:
                         Log.d(TAG, "onReceive: ACTION_NEW_UAS_LOCATION");

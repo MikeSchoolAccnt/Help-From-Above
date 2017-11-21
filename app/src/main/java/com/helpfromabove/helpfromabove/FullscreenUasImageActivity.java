@@ -7,7 +7,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
-import android.media.Image;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
@@ -51,8 +50,6 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
 
         IntentFilter intentFilter = new IntentFilter(CommandService.ACTION_NEW_UAS_IMAGE);
         registerReceiver(fullscreenUasImageBroadcastReceiver, intentFilter);
-        //handleNewImage();
-        updateDefaultImage();
     }
 
     @Override
@@ -71,7 +68,7 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
         unbindCommandService();
     }
 
-    private void bindCommandService(){
+    private void bindCommandService() {
         Intent commandServiceIntent = new Intent(getApplicationContext(), CommandService.class);
         startService(commandServiceIntent);
         commandServiceConnection = new FullscreenUasImageActivityServiceConnection();
@@ -84,30 +81,29 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
         unbindService(commandServiceConnection);
     }
 
-    private void handleNewImage() {
-        Log.d(TAG, "handleNewImage");
+    private void updateImageView() {
+        Log.d(TAG, "updateImageView");
 
-        ImageView imageView = (ImageView) findViewById(R.id.fullscreen_uas_image_view);
-        Bitmap bitmap = commandService.getNewImage();
-
-        if ((imageView != null) && (bitmap != null)) {
-            imageView.setImageBitmap(bitmap);
-        }
-    }
-
-
-    //This doesn't work
-    private void updateDefaultImage(){
-
-        //Michael: This is always null and I'm not sure why
-        //Trying to set the image on full screen to the default image
-        //after a previous session.
-        if(commandService != null){
-            Log.d(TAG,"Not NULL");
-            if(commandService.getState().getSessionState() == CommandService.SessionState.SESSION_STOPPED){
-                ImageView imageView = (ImageView) findViewById(R.id.fullscreen_uas_image_view);
-                if(imageView != null){
-                    imageView.setImageResource(R.drawable.image_placeholder);
+        if (commandService != null) {
+            CommandService.SessionState sessionState = commandService.getState().getSessionState();
+            ImageView imageView = (ImageView) findViewById(R.id.fullscreen_uas_image_view);
+            if ((sessionState != null) && (imageView != null)) {
+                switch (sessionState) {
+                    case SESSION_STARTING:
+                    case SESSION_STOPPED:
+                    case SESSION_STOPPING:
+                        imageView.setImageResource(R.drawable.image_placeholder);
+                        break;
+                    case SESSION_RUNNING:
+                    case SESSION_EMERGENCY_STARTED:
+                    case SESSION_EMERGENCY_MESSAGES_SENT:
+                        Bitmap bitmap = commandService.getNewImage();
+                        if (bitmap != null) {
+                            imageView.setImageBitmap(bitmap);
+                        }
+                        break;
+                    default:
+                        Log.e(TAG, "updateImageView: default: " + sessionState);
                 }
             }
         }
@@ -129,7 +125,7 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
         public void onServiceConnected(ComponentName name, IBinder service) {
             Log.d(TAG, "onServiceConnected");
             setConnectedService(service);
-            handleNewImage();
+            updateImageView();
         }
 
         @Override
@@ -137,7 +133,6 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
             Log.d(TAG, "onServiceDisconnected");
         }
     }
-
 
     /*
      * Custom BroadcastReceiver for routing intent actions to their
@@ -152,7 +147,7 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
             if (action != null) {
                 switch (action) {
                     case CommandService.ACTION_NEW_UAS_IMAGE:
-                        handleNewImage();
+                        updateImageView();
                         break;
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);
