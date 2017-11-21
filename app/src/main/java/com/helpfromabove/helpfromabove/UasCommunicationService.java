@@ -42,7 +42,15 @@ public class UasCommunicationService extends Service {
     private boolean connectedOnce = false;
 
     private UASCClient uascClient;
-    private String port = "5000";
+    private final String uascIP = "192.168.49.187";
+    private final String port = "5000";
+    private final String imageEndpoint = "static/img/img.jpg";
+    private final String gpsEndpoint = "access_gps";
+    private final String startEndpoint = "start_session";
+    private final String endEndpoint = "end_session";
+    private final String lightEndpoint = "toggle_light";
+    private final String emergencyEndpoint = "emergency";
+
 
     public UasCommunicationService() {
         super();
@@ -224,8 +232,8 @@ public class UasCommunicationService extends Service {
             //This most likely means they are trying to connect to the wrong device
             //TODO: Notify the user they are connected to the device incorrectly and to reconnect the correct way.
         }
-        else if(groupOwner.deviceName.contains("HFA")){
-            uascClient = new UASCClient(getApplicationContext(), "192.168.49.187", port);
+        else if(groupOwner.toString().contains("HFA")){
+            uascClient = new UASCClient(getApplicationContext(), uascIP, port);
             CommandService.notifyWifiP2pConnected(getApplicationContext());
         }
         //Used for testing server connection
@@ -241,14 +249,14 @@ public class UasCommunicationService extends Service {
     }
 
     protected void sendStartSession() {
-        uascClient.sendStartSession("start_session");
+        uascClient.sendStartSession(startEndpoint);
     }
 
     protected void onLocationCalibrationComplete() {
         Log.d(TAG, "onLocationCalibrationComplete");
 
         if (uascClient != null) {
-            uascClient.startImageAccess("static/img/img.jpeg", "advance_image", 1000);
+            uascClient.startImageAccess(imageEndpoint, 1000);
         }
     }
 
@@ -256,6 +264,7 @@ public class UasCommunicationService extends Service {
         Log.d(TAG, "stopSession: NOT FULLY IMPLEMENTED!");
 
         if (uascClient != null) {
+            uascClient.sendEndSession(endEndpoint);
             uascClient.stopImageAccess();
         }
     }
