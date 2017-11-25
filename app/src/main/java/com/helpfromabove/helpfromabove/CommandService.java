@@ -499,13 +499,13 @@ public class CommandService extends Service {
     //----------------------------------------------------
     //Called when all messages are sent
     private void handleSessionEmergencyMessagesSent() {
-        if(state.getSessionState() != SessionState.SESSION_EMERGENCY_MESSAGES_SENT) {
-            state.setSessionState(SessionState.SESSION_EMERGENCY_MESSAGES_SENT);
-        }
+
+        state.setSessionState(SessionState.SESSION_EMERGENCY_MESSAGES_SENT);
+
     }
     //Called when all messages are delivered
     private void handleSessionEmergencyMessageDelivered(){
-        //Make a new state and change state to all messages delivered
+        //TODO: Make a new state and change state to all messages delivered
     }
     //----------------------------------------------------
 
