@@ -1,27 +1,17 @@
 package com.helpfromabove.helpfromabove;
 
-import android.content.ContentResolver;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
 
-import com.helpfromabove.helpfromabove.CommandService;
-import com.helpfromabove.helpfromabove.UasCommunicationService;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +21,6 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 
 /**
@@ -39,37 +28,37 @@ import java.util.ArrayList;
  */
 
 public class UASCClient {
-    private static final String TAG = "Heartbeat";
+    private static final String TAG = "UASCClient";
 
     //Used for JSON Keys don't make consistent with other Strings
-    public static final String ALTITUDE = "ALTITUDE";
-    public static final String LONGITUDE = "LONGITUDE";
-    public static final String LATITUDE = "LATITUDE";
-    public static final String STATUS = "STATUS";
+    private static final String ALTITUDE = "ALTITUDE";
+    private static final String LONGITUDE = "LONGITUDE";
+    private static final String LATITUDE = "LATITUDE";
+    private static final String STATUS = "STATUS";
 
     private Context context;
     private String hostIP;
     private String port;
 
-    //Use for runnable methods that run every x seconds
-    private HandlerThread constantHandlerThread;
-    private Handler constantHandler;
+    private HandlerThread heartbeatHandlerThread;
+    private HandlerThread imageAccessHandlerThread;
+    private HandlerThread gpsAccessHandlerThread;
+    private HandlerThread waypointSendHandlerThread;
+    private HandlerThread toggleLightHandlerThread;
+    private HandlerThread sessionHandlerThread;
 
-    //Use for one time runnable methods
-    private HandlerThread oneTimeHandlerThread;
-    private Handler oneTimeHandler;
+
+    private Handler heartbeatHandler;
+    private Handler imageAccessHandler;
+    private Handler gpsAccessHandler;
+    private Handler waypointSendHandler;
+    private Handler toggleLightHandler;
+    private Handler sessionHandler;
 
 
-    //Time based runnables
     private Runnable heartbeatRunnable;
     private Runnable accessServerImageRunnable;
     private Runnable accessGPSRunnable;
-
-    //One time runnables
-    //Used for commands that don't need to get information from the server
-    //Note: lightRunnable, startSessionRunnable, and endSessionRunnable could
-    //      be combined to one runnable that takes a type but is not so that
-    //      it is more readable.
     private Runnable lightRunnable;
     private Runnable startSessionRunnable;
     private Runnable endSessionRunnable;
@@ -106,26 +95,32 @@ public class UASCClient {
         testURLs.add("https://pbs.twimg.com/profile_images/875749462957670400/T0lwiBK8.jpg");
         testURLs.add("http://mathworld.wolfram.com/images/gifs/SmallTriambicIcosahedron.gif");
 
-        constantHandlerThread = new HandlerThread("Constant-UASCClient");
-        constantHandlerThread.start();
-        constantHandler = new Handler(constantHandlerThread.getLooper());
+        startHeartbeatHandlerThread();
+        startImageAccessHandlerThread();
+        startGpsAccessHandlerThread();
+        startWaypointSendHandlerThread();
+        startToggleLightHandlerThread();
+        startSessionHandlerThread();
 
-        oneTimeHandlerThread = new HandlerThread("OneTime-UASCClient");
-        oneTimeHandlerThread.start();
-        oneTimeHandler = new Handler(oneTimeHandlerThread.getLooper());
+        heartbeatHandler = new Handler(heartbeatHandlerThread.getLooper());
+        imageAccessHandler = new Handler(imageAccessHandlerThread.getLooper());
+        gpsAccessHandler = new Handler (gpsAccessHandlerThread.getLooper());
+        waypointSendHandler = new Handler(waypointSendHandlerThread.getLooper());
+        toggleLightHandler = new Handler(toggleLightHandlerThread.getLooper());
+        sessionHandler = new Handler(sessionHandlerThread.getLooper());
     }
 
     public void startHeartbeat(int heartbeatDelay){
 
         this.heartbeatDelay = heartbeatDelay;
         initializeHeartbeat();
-        constantHandler.postDelayed(heartbeatRunnable,0);
+        heartbeatHandler.postDelayed(heartbeatRunnable,0);
 
     }
 
     public void stopHeartbeat(){
         if(heartbeatRunnable != null){
-            constantHandler.removeCallbacks(heartbeatRunnable);
+            heartbeatHandler.removeCallbacks(heartbeatRunnable);
         }
     }
 
@@ -137,13 +132,13 @@ public class UASCClient {
 
         //Need to wait at least a second before grabbing images so that
         //the session folder has time to be made in the users cloud service.
-        constantHandler.postDelayed(accessServerImageRunnable,3000);
+        imageAccessHandler.postDelayed(accessServerImageRunnable,3000);
 
     }
 
     public void stopImageAccess(){
         if(accessServerImageRunnable != null){
-            constantHandler.removeCallbacks(accessServerImageRunnable);
+            imageAccessHandler.removeCallbacks(accessServerImageRunnable);
         }
     }
 
@@ -160,47 +155,91 @@ public class UASCClient {
         this.gpsEndpoint = gpsEndpoint;
         this.gpsAccessDelay = gpsAccessDelay;
         initializeAccessGPS();
-        constantHandler.postDelayed(accessGPSRunnable,gpsAccessDelay);
+        gpsAccessHandler.postDelayed(accessGPSRunnable,gpsAccessDelay);
     }
 
     public void stopGPSAccess(){
         if(accessGPSRunnable != null){
-            constantHandler.removeCallbacks(accessGPSRunnable);
+            gpsAccessHandler.removeCallbacks(accessGPSRunnable);
         }
     }
 
     public void toogleLight(String lightEndpoint, boolean on){
         this.lightEndpoint = lightEndpoint;
         initializeLight(on);
-        oneTimeHandler.post(lightRunnable);
+        toggleLightHandler.post(lightRunnable);
     }
 
     public void sendStartSession(String startSessionEndpoint){
         this.startSessionEndpoint = startSessionEndpoint;
         initializeStartSession();
-        oneTimeHandler.post(startSessionRunnable);
+        sessionHandler.post(startSessionRunnable);
     }
 
     public void sendEndSession(String endSessionEndpoint){
         sessionActive = false;
         this.endSessionEndpoint = endSessionEndpoint;
         initializeEndSession();
-        oneTimeHandler.post(endSessionRunnable);
+        sessionHandler.post(endSessionRunnable);
     }
 
     public void sendNewWaypoint(String newWaypointEndpoint, Location waypoint){
         this.newWaypointEndpoint = newWaypointEndpoint;
         initializeNewWaypoint(waypoint);
-        oneTimeHandler.post(newWaypointRunnable);
+        waypointSendHandler.post(newWaypointRunnable);
     }
 
-    public void stopAllConstant(){
-        constantHandlerThread.quitSafely();
+    //All of the methods for starting and stopping handler threads
+    //region HandlerThreads
+    public void startHeartbeatHandlerThread(){
+        heartbeatHandlerThread = new HandlerThread("UASC-Heartbeat");
+        heartbeatHandlerThread.start();
+    }
+    public void stopHeartBeatHandlerThread(){
+        heartbeatHandlerThread.quitSafely();
     }
 
-    public void stopAllOneTime(){
-        oneTimeHandlerThread.quitSafely();
+    public void startImageAccessHandlerThread(){
+        imageAccessHandlerThread = new HandlerThread("UASC-Image_Access");
+        imageAccessHandlerThread.start();
     }
+    public void stopImageAccessHandlerThread(){
+        imageAccessHandlerThread.quitSafely();
+    }
+
+    public void startGpsAccessHandlerThread() {
+        gpsAccessHandlerThread = new HandlerThread("UASC-GPS_Access");
+        gpsAccessHandlerThread.start();
+    }
+    public void stopGpsAccessHandlerThread(){
+        gpsAccessHandlerThread.quitSafely();
+    }
+
+    public void startWaypointSendHandlerThread(){
+        waypointSendHandlerThread = new HandlerThread("UASC-Waypoint_Send");
+        waypointSendHandlerThread.start();
+    }
+    public void stopWaypointSendHandlerThread(){
+        waypointSendHandlerThread.quitSafely();
+    }
+
+    public void startToggleLightHandlerThread(){
+        toggleLightHandlerThread = new HandlerThread("UASC-Toggle_Light");
+        toggleLightHandlerThread.start();
+    }
+    public void stopToggleLightHandlerThread(){
+        toggleLightHandlerThread.quitSafely();
+    }
+
+    public void startSessionHandlerThread(){
+        sessionHandlerThread = new HandlerThread("UASC-Session");
+        sessionHandlerThread.start();
+    }
+    public void stopSessionHandlerThread(){
+        sessionHandlerThread.quitSafely();
+    }
+    //endregion
+
 
     private String readStreamToString(InputStream inputStream) throws IOException {
 
@@ -262,7 +301,7 @@ public class UASCClient {
                     Log.e(TAG,e.getMessage());
                 }
 
-                constantHandler.postDelayed(this,heartbeatDelay);
+                heartbeatHandler.postDelayed(this,heartbeatDelay);
             }
         };
     }
@@ -301,7 +340,7 @@ public class UASCClient {
                     e.printStackTrace();
                 }
                 if(sessionActive)
-                    constantHandler.postDelayed(this, imageAccessDelay);
+                    imageAccessHandler.postDelayed(this, imageAccessDelay);
             }
 
         };
@@ -318,7 +357,7 @@ public class UASCClient {
 
                     JSONObject jsonObject = new JSONObject(serverMessage);
 
-                    String status = jsonObject.getString(STATUS);
+                    //String status = jsonObject.getString(STATUS);
 
                     double altitude = jsonObject.getDouble(ALTITUDE);
                     double latitude = jsonObject.getDouble(LATITUDE);
@@ -331,7 +370,8 @@ public class UASCClient {
                     latestUASLocation.setLatitude(latitude);
                     latestUASLocation.setLongitude(longitude);
 
-                    CommandService.notifyNewWaypointAvailable(context);
+                    Log.d(TAG,"Received UAS Location.");
+                    CommandService.notifyNewUasLocationAvailable(context);
 
 
                 } catch (MalformedURLException e) {
@@ -341,7 +381,7 @@ public class UASCClient {
                 } catch (JSONException e) {
                     Log.e(TAG,e.getMessage());
                 }
-                constantHandler.postDelayed(this,gpsAccessDelay);
+                gpsAccessHandler.postDelayed(this,gpsAccessDelay);
             }
 
         };
@@ -400,7 +440,7 @@ public class UASCClient {
                     else
                     {
                         //If the uasc is not read try again in x seconds
-                        oneTimeHandler.postDelayed(this,3000);
+                        sessionHandler.postDelayed(this,3000);
                     }
 
                 } catch (MalformedURLException e) {
@@ -443,29 +483,37 @@ public class UASCClient {
             @Override
             public void run() {
 
-                Log.d(TAG,"Sending test Location");
+
 
                 try {
 
                     URL url = new URL("http://"+hostIP+":"+port+"/"+newWaypointEndpoint);
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                     connection.setRequestMethod("POST");
-                    connection.setDoInput(true);
                     connection.setDoOutput(true);
-                    connection.setUseCaches(false);
+                    connection.setRequestProperty("Content-Type", "application/json");
 
                     //Construct the json message
                     String latitude = Location.convert(waypoint.getLatitude(),Location.FORMAT_DEGREES);
                     String longitude = Location.convert(waypoint.getLongitude(),Location.FORMAT_DEGREES);
-                    String altitude = Location.convert(waypoint.getAltitude(),Location.FORMAT_DEGREES);
+                    double altitude = waypoint.getAltitude();
 
                     JSONObject object = new JSONObject();
                     object.put(ALTITUDE,altitude);
                     object.put(LONGITUDE,longitude);
                     object.put(LATITUDE,latitude);
 
-                    jsonWriteToOutputSteam(object,connection.getOutputStream());
+                    String msg = object.toString();
 
+                    Log.d(TAG,"Sending waypoint:" + msg);
+
+                    //Send the json message to the server (UASC)
+                    OutputStreamWriter outputStreamWriter = new OutputStreamWriter(connection.getOutputStream());
+                    outputStreamWriter.write(msg);
+                    outputStreamWriter.flush();
+                    outputStreamWriter.close();
+
+                    Log.d(TAG,"WaypointEndpoint Responce Code: " +connection.getResponseCode());
 
                 } catch (MalformedURLException e) {
                     Log.e(TAG,e.getMessage());

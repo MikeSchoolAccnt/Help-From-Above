@@ -45,7 +45,8 @@ public class UasCommunicationService extends Service {
     private final String uascIP = "192.168.49.187";
     private final String port = "5000";
     private final String imageEndpoint = "static/img/img.jpg";
-    private final String gpsEndpoint = "access_gps";
+    private final String gpsReceiveEndpoint = "request_location";
+    private final String gpsSendEndpoint = "update_location";
     private final String startEndpoint = "start_session";
     private final String endEndpoint = "end_session";
     private final String lightEndpoint = "toggle_light";
@@ -257,6 +258,7 @@ public class UasCommunicationService extends Service {
 
         if (uascClient != null) {
             uascClient.startImageAccess(imageEndpoint, 1000);
+            uascClient.startGPSAccess(gpsReceiveEndpoint,5000);
         }
     }
 
@@ -273,8 +275,10 @@ public class UasCommunicationService extends Service {
         Log.d(TAG, "lightOnOff: lightOnOff=" + lightOnOff + ": NOT IMPLEMENTED!");
     }
 
-    protected void sendWaypoint(Location location) {
-        Log.d(TAG, "sendWaypoint: location=" + location + ": NOT IMPLEMENTED!");
+    protected void sendWaypoint(Location waypoint) {
+        Log.d(TAG, "sendWaypoint: location=" + waypoint + ": NOT IMPLEMENTED!");
+        if(waypoint != null)
+            uascClient.sendNewWaypoint(gpsSendEndpoint,waypoint);
     }
 
     protected void startEmergency() {

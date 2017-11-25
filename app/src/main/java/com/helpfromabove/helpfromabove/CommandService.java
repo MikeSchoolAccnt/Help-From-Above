@@ -381,6 +381,10 @@ public class CommandService extends Service {
         context.sendBroadcast(new Intent(ACTION_NEW_WAYPOINT));
     }
 
+    protected static void notifyNewUasLocationAvailable(Context context){
+        context.sendBroadcast(new Intent(ACTION_NEW_UAS_LOCATION));
+    }
+
     protected static void notifyNewUasImageAvailable(Context context) {
         Log.d(TAG, "notifyNewUasImageAvailable");
 
