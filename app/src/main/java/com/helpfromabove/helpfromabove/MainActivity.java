@@ -267,6 +267,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     emergencyButton.setEnabled(false);
                     break;
                 case SESSION_EMERGENCY_MESSAGES_SENT:
+                    //This can be fixed by adding in a session state for if the messages have been delivered.
+                    //The command service now knows when the messages have all been delivered.
                     // TODO : Maybe add some sort of delay since messages take a while before being received
                     emergencyButton.setEnabled(true);
                     break;
@@ -403,6 +405,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private void displayEmergencyMessagesSent() {
         Toast.makeText(getApplicationContext(), R.string.emergency_message_sent_text, Toast.LENGTH_LONG).show();
+    }
+    private void displayEmergencyMessagesDelivered(){
+
     }
 
     private void displaySettingsDisabled() {
