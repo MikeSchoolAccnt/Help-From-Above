@@ -333,7 +333,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
 
         String link = null;
         if (cloudStorage != null) {
-            //link = cloudStorage.createShareLink(sessionFolder);
+            link = cloudStorage.createShareLink(sessionFolder);
         } else {
             Log.d(TAG, "getSessionCloudLink: No cloud storage");
         }

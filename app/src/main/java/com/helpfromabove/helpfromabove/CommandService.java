@@ -11,6 +11,8 @@ import android.graphics.Bitmap;
 import android.location.Location;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.os.Binder;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -421,12 +423,28 @@ public class CommandService extends Service {
     protected void handleCommandHhmdEmergency() {
         Log.d(TAG, "handleCommandHhmdEmergency");
 
-        state.setSessionState(SessionState.SESSION_EMERGENCY_STARTED);
 
-        //String sessionCloudLink = cloudService.getSessionCloudLink();
-        Location lastHhmdLocation = locationService.getLastHhmdLocation();
-        emergencyService.startEmergency(lastHhmdLocation, "");
-        uasCommunicationService.startEmergency();
+        HandlerThread tempHandlerThread = new HandlerThread("temp");
+        tempHandlerThread.start();
+
+        //Getting the CloudLink isn't allowed on the main UI thread so put it on
+        //another thread. Using a normal thread wouldn't work so I used a HandlerThread.
+        new Handler(tempHandlerThread.getLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                state.setSessionState(SessionState.SESSION_EMERGENCY_STARTED);
+
+                String sessionCloudLink = cloudService.getSessionCloudLink();
+                Location lastHhmdLocation = locationService.getLastHhmdLocation();
+                emergencyService.startEmergency(lastHhmdLocation, sessionCloudLink);
+
+
+                uasCommunicationService.startEmergency();
+            }
+        });
+
+        tempHandlerThread.quitSafely();
+
     }
 
     protected void handleCommandHhmdLight(boolean lightOnOff) {
