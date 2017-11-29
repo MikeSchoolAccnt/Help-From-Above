@@ -36,6 +36,7 @@ public class CommandService extends Service {
     protected static final String ACTION_NEW_WAYPOINT = "com.helpfromabove.helpfromabove.action.ACTION_NEW_WAYPOINT";
     protected static final String ACTION_NEW_UAS_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_LOCATION";
     protected static final String ACTION_NEW_HHMD_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_HHMD_LOCATION";
+    protected static final String ERROR_SAVING_LOCAL_IMAGE = "com.helpfromabove.helpfromabove.action.ERROR_SAVING_LOCAL_IMAGE";
 
     // Broadcasts for other services to use
     private static final String ACTION_WIFI_P2P_DISCONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_DISCONNECTED";
@@ -401,6 +402,11 @@ public class CommandService extends Service {
 
         receivedImagesCount++;
         context.sendBroadcast(new Intent(ACTION_NEW_UAS_IMAGE));
+    }
+
+    protected static void notifyErrorSavingLocalImage(Context context) {
+        //TODO: Have Activities handle receiving this broadcast to notify user that image was not saved locally.
+        context.sendBroadcast(new Intent(ERROR_SAVING_LOCAL_IMAGE));
     }
 
     protected static void notifySkippedWifiConnection(Context context){

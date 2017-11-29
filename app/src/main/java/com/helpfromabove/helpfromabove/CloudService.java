@@ -258,15 +258,17 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
 
             File file = new File(path);
 
-            //TODO : Have the result of this send some notification to command service
-            file.createNewFile();
-
-            FileOutputStream fos = new FileOutputStream(file);
-            fos.write(byteArray);
-            fos.flush();
-            fos.close();
+            if (file.createNewFile()) {
+                FileOutputStream fos = new FileOutputStream(file);
+                fos.write(byteArray);
+                fos.flush();
+                fos.close();
+            } else {
+                throw new IOException("Could not create new file " + path);
+            }
         } catch (IOException iOE) {
             Log.e(TAG, "saveLocalImage: IOException: " + iOE.getMessage(), iOE);
+            CommandService.notifyErrorSavingLocalImage(getApplicationContext());
         }
     }
 
