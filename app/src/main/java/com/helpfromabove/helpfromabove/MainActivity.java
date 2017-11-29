@@ -87,6 +87,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         intentFilter.addAction(CommandService.ACTION_SESSION_STATE_CHANGED);
         intentFilter.addAction(CommandService.ACTION_LOCATION_STATE_CHANGED);
         intentFilter.addAction(CommandService.ACTION_NEW_UAS_IMAGE);
+        intentFilter.addAction(CommandService.ERROR_SAVING_LOCAL_IMAGE);
         intentFilter.addAction(CommandService.ACTION_NEW_UAS_LOCATION);
         intentFilter.addAction(CommandService.ACTION_NEW_HHMD_LOCATION);
         registerReceiver(mainActivityBroadcastReceiver, intentFilter);
@@ -365,6 +366,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+    private void handleErrorSavingLocalImage() {
+        Toast.makeText(getApplicationContext(), R.string.error_saving_local_image, Toast.LENGTH_LONG).show();
+    }
+
     private void createCalibratingDialog() {
         if (calibratingAlertDialog == null) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -460,6 +465,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         break;
                     case CommandService.ACTION_NEW_UAS_IMAGE:
                         updateImageView();
+                        break;
+                    case CommandService.ERROR_SAVING_LOCAL_IMAGE:
+                        handleErrorSavingLocalImage();
                         break;
                     case CommandService.ACTION_NEW_UAS_LOCATION:
                         Log.d(TAG, "onReceive: ACTION_NEW_UAS_LOCATION");

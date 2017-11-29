@@ -18,6 +18,9 @@
     <!--Message to display to user if they try to go to settings during a session-->
     <string name="settings_disabled">Settings disabled during a session</string>
 
+    <!--Message to display when an image cannot be saved locally-->
+    <string name="error_saving_local_image">Error saving image to device.</string>
+
     <!--Dialog strings-->
     <string name="location_calibrating_dialog_title">Calibrating&#x2026;</string>
     <string name="location_hhmd_calibrated_dialog_title">Waiting on UASC&#x2026;</string>

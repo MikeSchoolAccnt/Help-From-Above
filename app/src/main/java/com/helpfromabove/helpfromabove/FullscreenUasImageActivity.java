@@ -12,6 +12,7 @@ import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 /**
  * Created by caleb on 5/9/17.
@@ -48,7 +49,9 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
         Log.d(TAG, "onResume");
         super.onResume();
 
-        IntentFilter intentFilter = new IntentFilter(CommandService.ACTION_NEW_UAS_IMAGE);
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(CommandService.ACTION_NEW_UAS_IMAGE);
+        intentFilter.addAction(CommandService.ERROR_SAVING_LOCAL_IMAGE);
         registerReceiver(fullscreenUasImageBroadcastReceiver, intentFilter);
     }
 
@@ -109,6 +112,10 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
         }
     }
 
+    private void handleErrorSavingLocalImage() {
+        Toast.makeText(getApplicationContext(), R.string.error_saving_local_image, Toast.LENGTH_LONG).show();
+    }
+
     private void setConnectedService(IBinder service) {
         Log.d(TAG, "setConnectedService");
 
@@ -148,6 +155,9 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
                 switch (action) {
                     case CommandService.ACTION_NEW_UAS_IMAGE:
                         updateImageView();
+                        break;
+                    case CommandService.ERROR_SAVING_LOCAL_IMAGE:
+                        handleErrorSavingLocalImage();
                         break;
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);

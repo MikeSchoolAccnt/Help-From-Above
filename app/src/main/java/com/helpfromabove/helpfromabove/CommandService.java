@@ -405,7 +405,6 @@ public class CommandService extends Service {
     }
 
     protected static void notifyErrorSavingLocalImage(Context context) {
-        //TODO: Have Activities handle receiving this broadcast to notify user that image was not saved locally.
         context.sendBroadcast(new Intent(ERROR_SAVING_LOCAL_IMAGE));
     }
 
