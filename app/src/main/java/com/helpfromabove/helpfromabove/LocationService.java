@@ -243,8 +243,16 @@ public class LocationService extends Service {
         Location oldHhmd;
         Location newHhmd;
 
-        if(tmpHhmdLocations.peekLast() != null && tmpHhmdLocations.peekFirst() != null){
+        //Splitting up these two if statements makes sure that there are
+        //at least 2 locations in tmpHhmdLocations
+        if(tmpHhmdLocations.peekLast() != null){
             oldHhmd = tmpHhmdLocations.getLast();
+
+        }
+        else {
+            return null;
+        }
+        if(tmpHhmdLocations.peekFirst() != null){
             newHhmd = tmpHhmdLocations.getFirst();
         }
         else {
