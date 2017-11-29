@@ -240,11 +240,28 @@ public class LocationService extends Service {
     private Location generateWaypoint() {
         Log.d(TAG, "generateWaypoint");
 
-        Location oldHhmd = tmpHhmdLocations.getLast();
-        Location newHhmd = tmpHhmdLocations.getFirst();
+        Location oldHhmd;
+        Location newHhmd;
+
+        if(tmpHhmdLocations.peekLast() != null && tmpHhmdLocations.peekFirst() != null){
+            oldHhmd = tmpHhmdLocations.getLast();
+            newHhmd = tmpHhmdLocations.getFirst();
+        }
+        else {
+            return null;
+        }
+
         Location diff = getLocationDiff(newHhmd, oldHhmd);
 
-        Location lastUas = tmpUasLocations.getLast();
+        Location lastUas;
+
+        if(tmpUasLocations.peekLast() != null){
+            lastUas = tmpUasLocations.getLast();
+        }
+        else {
+            return null;
+        }
+
         Location waypoint = addLocations(lastUas, diff);
         waypoint = addHeightOffset(waypoint);
 
