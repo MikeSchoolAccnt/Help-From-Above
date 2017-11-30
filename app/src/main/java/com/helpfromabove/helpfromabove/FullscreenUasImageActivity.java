@@ -92,6 +92,8 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
             ImageView imageView = (ImageView) findViewById(R.id.fullscreen_uas_image_view);
             if ((sessionState != null) && (imageView != null)) {
                 switch (sessionState) {
+                    case SESSION_PREPARING:
+                    case SESSION_READY:
                     case SESSION_STARTING:
                     case SESSION_STOPPED:
                     case SESSION_STOPPING:

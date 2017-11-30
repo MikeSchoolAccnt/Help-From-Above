@@ -44,6 +44,7 @@ public class CommandService extends Service {
     private static final String ACTION_WIFI_P2P_WAITING_FOR_UASC = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_WAITING_FOR_UASC";
     private static final String ACTION_WIFI_P2P_CONNECTING_FROM_UASC = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_CONNECTING_FROM_UASC";
     private static final String ACTION_WIFI_P2P_CONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_CONNECTED";
+    private static final String ACTION_CLOUD_SERVICE_PREPARED = "com.helpfromabove.helpfromabove.action.ACTION_CLOUD_SERVICE_PREPARED";
     private static final String ACTION_LOCATION_CALIBRATING = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_CALIBRATING";
     private static final String ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE";
     private static final String ACTION_LOCATION_UASC_CALIBRATION_COMPLETE = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_UASC_CALIBRATION_COMPLETE";
@@ -94,6 +95,9 @@ public class CommandService extends Service {
     }
 
     protected enum SessionState {
+        SESSION_NOT_PREPARED,
+        SESSION_PREPARING,
+        SESSION_READY,
         SESSION_STARTING,
         SESSION_RUNNING,
         SESSION_EMERGENCY_STARTED,
@@ -166,7 +170,7 @@ public class CommandService extends Service {
         Log.d(TAG, "onCreate");
         super.onCreate();
 
-        state = new State(ServicesState.SERVICES_STOPPED, WifiP2pState.WIFI_P2P_DISCONNECTED, LocationState.LOCATION_NOT_CALIBRATED, SessionState.SESSION_STOPPED);
+        state = new State(ServicesState.SERVICES_STOPPED, WifiP2pState.WIFI_P2P_DISCONNECTED, LocationState.LOCATION_NOT_CALIBRATED, SessionState.SESSION_NOT_PREPARED);
 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_WIFI_P2P_DISCONNECTED);
@@ -174,6 +178,7 @@ public class CommandService extends Service {
         intentFilter.addAction(ACTION_WIFI_P2P_WAITING_FOR_UASC);
         intentFilter.addAction(ACTION_WIFI_P2P_CONNECTING_FROM_UASC);
         intentFilter.addAction(ACTION_WIFI_P2P_CONNECTED);
+        intentFilter.addAction(ACTION_CLOUD_SERVICE_PREPARED);
         intentFilter.addAction(ACTION_LOCATION_CALIBRATING);
         intentFilter.addAction(ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE);
         intentFilter.addAction(ACTION_LOCATION_UASC_CALIBRATION_COMPLETE);
@@ -349,6 +354,12 @@ public class CommandService extends Service {
         context.sendBroadcast(new Intent(ACTION_WIFI_P2P_CONNECTED));
     }
 
+    protected static void notifyCloudServicePrepared(Context context) {
+        Log.d(TAG, "notifyCloudServicePrepared");
+
+        context.sendBroadcast(new Intent(ACTION_CLOUD_SERVICE_PREPARED));
+    }
+
     protected static void notifyLocationCalibrating(Context context) {
         Log.d(TAG, "notifyLocationCalibrating");
 
@@ -381,8 +392,8 @@ public class CommandService extends Service {
         context.sendBroadcast(new Intent(ACTION_SESSION_EMERGENCY_MESSAGES_SENT));
     }
 
-    protected static void notifyEmergencyMessagesDelivered(Context context){
-        Log.d(TAG,"notifyEmergencyMessageDelivered");
+    protected static void notifyEmergencyMessagesDelivered(Context context) {
+        Log.d(TAG, "notifyEmergencyMessageDelivered");
 
         context.sendBroadcast(new Intent(ACTION_SESSION_EMERGENCY_MESSAGES_DELIVERED));
     }
@@ -393,7 +404,7 @@ public class CommandService extends Service {
         context.sendBroadcast(new Intent(ACTION_NEW_WAYPOINT));
     }
 
-    protected static void notifyNewUasLocationAvailable(Context context){
+    protected static void notifyNewUasLocationAvailable(Context context) {
         context.sendBroadcast(new Intent(ACTION_NEW_UAS_LOCATION));
     }
 
@@ -427,7 +438,6 @@ public class CommandService extends Service {
 
     protected void handleCommandHhmdEmergency() {
         Log.d(TAG, "handleCommandHhmdEmergency");
-
 
         HandlerThread tempHandlerThread = new HandlerThread("temp");
         tempHandlerThread.start();
@@ -470,6 +480,17 @@ public class CommandService extends Service {
         locationService.decrementHeightOffset();
     }
 
+    protected void prepareSession() {
+        state.setSessionState(SessionState.SESSION_PREPARING);
+        cloudService.prepareSession();
+    }
+
+    private void handleCloudServicePrepared() {
+        Log.d(TAG, "handleCloudServicePrepared");
+
+        state.setSessionState(SessionState.SESSION_READY);
+    }
+
     protected void handleCommandHhmdSessionStart() {
         Log.d(TAG, "handleCommandHhmdSessionStart");
 
@@ -509,7 +530,6 @@ public class CommandService extends Service {
             if (receivedImagesCount == cloudService.getUploadCount()) {
                 receivedImagesCount = 0;
                 uasCommunicationService.onLocationCalibrationComplete();
-                cloudService.onLocationCalibrationComplete();
             } else {
                 Log.d(TAG, "Still uploading images form the last session");
             }
@@ -526,8 +546,9 @@ public class CommandService extends Service {
         state.setSessionState(SessionState.SESSION_EMERGENCY_MESSAGES_SENT);
 
     }
+
     //Called when all messages are delivered
-    private void handleSessionEmergencyMessageDelivered(){
+    private void handleSessionEmergencyMessageDelivered() {
         //TODO: Make a new state and change state to all messages delivered
     }
     //----------------------------------------------------
@@ -579,6 +600,9 @@ public class CommandService extends Service {
                         break;
                     case ACTION_WIFI_P2P_CONNECTED:
                         state.setWifiP2pState(WifiP2pState.WIFI_P2P_CONNECTED);
+                        break;
+                    case ACTION_CLOUD_SERVICE_PREPARED:
+                        handleCloudServicePrepared();
                         break;
                     case ACTION_LOCATION_CALIBRATING:
                         state.setLocationState(LocationState.LOCATION_CALIBRATING);

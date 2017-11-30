@@ -11,6 +11,7 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.cloudrail.si.CloudRail;
+import com.cloudrail.si.exceptions.AuthenticationException;
 import com.cloudrail.si.interfaces.CloudStorage;
 import com.cloudrail.si.services.Dropbox;
 import com.cloudrail.si.services.OneDrive;
@@ -26,7 +27,7 @@ import java.util.Calendar;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class CloudService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener {
+public class CloudService extends Service {
     private static final String TAG = "CloudService";
 
     private final static String CLOUDRAIL_LICENSE_KEY = "59c031993d7042599787c8a8";
@@ -63,21 +64,13 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         super.onCreate();
 
         LOCAL_APP_FOLDER = getFilesDir() + "/" + APP_FOLDER;
-
         CloudRail.setAppKey(CLOUDRAIL_LICENSE_KEY);
-        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).registerOnSharedPreferenceChangeListener(this);
-
-
-        initCloudStorage();
-        createAppFolder();
     }
 
     @Override
     public void onDestroy() {
         Log.d(TAG, "onDestroy");
         super.onDestroy();
-
-        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).unregisterOnSharedPreferenceChangeListener(this);
     }
 
     @Override
@@ -87,19 +80,7 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         return mBinder;
     }
 
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        Log.d(TAG, "onSharedPreferenceChanged");
-        if (key.equals(getString(R.string.pref_key_cloud_storage_provider))) {
-            Log.d(TAG, "onSharedPreferenceChanged: pref_key_cloud_storage_provider");
-
-            initCloudStorage();
-            createAppFolder();
-        }
-    }
-
     private void initCloudStorage() {
-
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         String cloudType = sharedPref.getString(getString(R.string.pref_key_cloud_storage_provider), getString(R.string.pref_value_cloud_storage_provider_default));
 
@@ -128,6 +109,23 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
 
     }
 
+    private void cloudStorageLogin() {
+        if (cloudStorage != null) {
+            try {
+                cloudStorage.login();
+            } catch (AuthenticationException aE) {
+                Log.e(TAG, aE.getLocalizedMessage());
+                Log.i(TAG, "cloudStorageLogin: Reinitializing cloudStorage to use local image storage.");
+
+                SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+                sharedPref.edit()
+                        .putString(getString(R.string.pref_key_cloud_storage_provider), getString(R.string.pref_value_cloud_storage_provider_none))
+                        .apply();
+                initCloudStorage();
+            }
+        }
+    }
+
     private void createAppFolder() {
         new Thread(new Runnable() {
             @Override
@@ -135,7 +133,6 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
                 if (cloudStorage == null) {
                     createLocalAppFolder();
                 } else {
-                    cloudStorage.login();
                     createCloudAppFolder();
                 }
             }
@@ -161,17 +158,24 @@ public class CloudService extends Service implements SharedPreferences.OnSharedP
         }
     }
 
-    protected void startSession() {
-        Log.d(TAG, "startSession: NOT YET IMPLEMENTED!");
+    protected void prepareSession() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                atomicImageUploadCount = new AtomicInteger(0);
+                compressionFormat = CompressFormat.JPEG;
+                compressionQuality = 50;
+
+                initCloudStorage();
+                cloudStorageLogin();
+                createAppFolder();
+                CommandService.notifyCloudServicePrepared(getApplicationContext());
+            }
+        }).start();
     }
 
-    protected void onLocationCalibrationComplete() {
-        Log.d(TAG, "onLocationCalibrationComplete");
-
-        atomicImageUploadCount = new AtomicInteger(0);
+    protected void startSession() {
         createSessionFolder();
-        compressionFormat = CompressFormat.JPEG;
-        compressionQuality = 50;
     }
 
     private void createSessionFolder() {

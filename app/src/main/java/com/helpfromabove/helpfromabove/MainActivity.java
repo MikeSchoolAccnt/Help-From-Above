@@ -134,26 +134,42 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
         Log.d(TAG, "onNavigationItemSelected: menuItem.toString()=" + menuItem.toString());
 
-        if ((commandService != null) && (commandService.getState().getSessionState() == CommandService.SessionState.SESSION_STOPPED)) {
-            int id = menuItem.getItemId();
-            switch (id) {
-                case R.id.cloud_storage_settings:
-                    Log.d(TAG, "onNavigationItemSelected: cloud_storage_settings");
-                    startActivity(new Intent(this, CloudPreferencesActivity.class));
-                    return true;
-                case R.id.emergency_settings:
-                    Log.d(TAG, "onNavigationItemSelected: emergency_settings");
-                    startActivity(new Intent(this, EmergencyPreferencesActivity.class));
-                    return true;
-                case R.id.session_settings:
-                    Log.d(TAG, "onNavigationItemSelected: session_settings");
-                    startActivity(new Intent(this, SessionPreferencesActivity.class));
-                    return true;
+        if (commandService != null) {
+            CommandService.SessionState sessionState = commandService.getState().getSessionState();
+            switch (sessionState) {
+                case SESSION_NOT_PREPARED:
+                case SESSION_READY:
+                case SESSION_PREPARING:
+                case SESSION_STOPPED:
+                    int id = menuItem.getItemId();
+                    switch (id) {
+                        case R.id.cloud_storage_settings:
+                            Log.d(TAG, "onNavigationItemSelected: cloud_storage_settings");
+                            startActivity(new Intent(this, CloudPreferencesActivity.class));
+                            return true;
+                        case R.id.emergency_settings:
+                            Log.d(TAG, "onNavigationItemSelected: emergency_settings");
+                            startActivity(new Intent(this, EmergencyPreferencesActivity.class));
+                            return true;
+                        case R.id.session_settings:
+                            Log.d(TAG, "onNavigationItemSelected: session_settings");
+                            startActivity(new Intent(this, SessionPreferencesActivity.class));
+                            return true;
+                        default:
+                            Log.e(TAG, "onNavigationItemSelected: default: " + id);
+                    }
+                    break;
+                case SESSION_STARTING:
+                case SESSION_RUNNING:
+                case SESSION_EMERGENCY_STARTED:
+                case SESSION_EMERGENCY_MESSAGES_SENT:
+                case SESSION_STOPPING:
+                    displaySettingsDisabled();
+                    break;
                 default:
-                    Log.e(TAG, "onNavigationItemSelected: default: " + id);
+                    Log.w(TAG, "onNavigationItemSelected: default: sessionState=" + sessionState);
+                    break;
             }
-        } else {
-            displaySettingsDisabled();
         }
 
         return false;
@@ -239,6 +255,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (commandService != null) {
             CommandService.SessionState sessionState = commandService.getState().getSessionState();
             switch (sessionState) {
+                case SESSION_NOT_PREPARED:
+                case SESSION_PREPARING:
                 case SESSION_STARTING:
                 case SESSION_STOPPING:
                     emergencyButton.setEnabled(false);
@@ -256,6 +274,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     startSessionButton.setEnabled(false);
                     endSessionButton.setEnabled(true);
                     break;
+                case SESSION_READY:
                 case SESSION_STOPPED:
                     emergencyButton.setEnabled(false);
                     lightSwitch.setEnabled(false);
@@ -312,7 +331,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private void handleLocationStateChanged() {
         if (commandService != null) {
-            switch (commandService.getState().getLocationState()) {
+            CommandService.LocationState locationState = commandService.getState().getLocationState();
+            switch (locationState) {
                 case LOCATION_CALIBRATING:
                     setCalibratingDialogTitle(R.string.location_calibrating_dialog_title);
                     showCalibratingDialog();
@@ -333,7 +353,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     dismissCalibratingDialog();
                     break;
                 default:
-                    Log.w(TAG, "handleLocationStateChanged: default");
+                    Log.w(TAG, "handleLocationStateChanged: default: locationState=" + locationState);
             }
         }
     }
@@ -346,6 +366,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
             if ((sessionState != null) && (imageView != null)) {
                 switch (sessionState) {
+                    case SESSION_NOT_PREPARED:
+                    case SESSION_PREPARING:
+                    case SESSION_READY:
                     case SESSION_STARTING:
                     case SESSION_STOPPED:
                     case SESSION_STOPPING:
@@ -411,7 +434,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private void displayEmergencyMessagesSent() {
         Toast.makeText(getApplicationContext(), R.string.emergency_message_sent_text, Toast.LENGTH_LONG).show();
     }
-    private void displayEmergencyMessagesDelivered(){
+
+    private void displayEmergencyMessagesDelivered() {
 
     }
 
@@ -436,6 +460,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             Log.d(TAG, "onServiceConnected");
             setConnectedService(service);
             updateUiState();
+            commandService.prepareSession();
         }
 
         @Override
