@@ -17,6 +17,7 @@ import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import java.util.ArrayDeque;
 import java.util.Stack;
 
 public class LocationService extends Service {
@@ -27,9 +28,11 @@ public class LocationService extends Service {
     private LocationManager locationManager;
     private LocationListener locationServiceLocationListener;
     private Criteria locationCriteria = new Criteria();
-    private Stack<Location> hhmdLocations = new Stack<>();
-    private Stack<Location> uasLocations = new Stack<>();
-    private Stack<Location> waypointLocations = new Stack<>();
+    private ArrayDeque<Location> tmpHhmdLocations = new ArrayDeque<>();
+    private ArrayDeque<Location> tmpUasLocations = new ArrayDeque<>();
+    private Stack<Location> sessionHhmdLocations = new Stack<>();
+    private Stack<Location> sessionUasLocations = new Stack<>();
+    private Stack<Location> sessionWaypointLocations = new Stack<>();
     private int heightOffset;
 
     private int accurateCount = 0;
@@ -141,9 +144,9 @@ public class LocationService extends Service {
     private void clearLocations() {
         Log.d(TAG, "clearLocations");
 
-        hhmdLocations.clear();
-        uasLocations.clear();
-        waypointLocations.clear();
+        sessionHhmdLocations.clear();
+        sessionUasLocations.clear();
+        sessionWaypointLocations.clear();
     }
 
     protected void stopSession() {
@@ -162,35 +165,24 @@ public class LocationService extends Service {
 
     protected void pushUasLocation(Location uasLocation) {
         Log.d(TAG, "pushUasLocation: uasLocation=" + uasLocation);
-        uasLocations.push(uasLocation);
-    }
-
-    private Location getLastUasLocation() {
-        Log.d(TAG, "getLastUasLocation");
-
-        Location uasLocation = null;
-        if (!uasLocations.isEmpty()) {
-            uasLocation = uasLocations.peek();
-        } else {
-            Log.w(TAG, "getLastUasLocation: uasLocations is empty.");
-        }
-
-        return uasLocation;
+        sessionUasLocations.push(uasLocation);
+        tmpUasLocations.addFirst(uasLocation);
     }
 
     private void pushHhmdLocation(Location hhmdLocation) {
         Log.d(TAG, "pushHhmdLocation: hhmdLocation=" + hhmdLocation);
-        hhmdLocations.push(hhmdLocation);
+        sessionHhmdLocations.push(hhmdLocation);
+        tmpHhmdLocations.push(hhmdLocation);
     }
 
     protected Location getLastHhmdLocation() {
         Log.d(TAG, "getLastHhmdLocation");
 
         Location hhmdLocation = null;
-        if (!hhmdLocations.isEmpty()) {
-            hhmdLocation = hhmdLocations.peek();
+        if (!sessionHhmdLocations.isEmpty()) {
+            hhmdLocation = sessionHhmdLocations.peek();
         } else {
-            Log.w(TAG, "getLastUasLocation: hhmdLocations is empty.");
+            Log.w(TAG, "getLastUasLocation: sessionHhmdLocations is empty.");
         }
 
         return hhmdLocation;
@@ -198,49 +190,44 @@ public class LocationService extends Service {
 
     private void pushWaypointLocation(Location waypoint) {
         Log.d(TAG, "pushWaypointLocation");
-        waypointLocations.push(waypoint);
+        sessionWaypointLocations.push(waypoint);
+        CommandService.notifyNewWaypointAvailable(getApplicationContext());
     }
 
     protected Location getLastWaypointLocation() {
         Log.d(TAG, "getLastWaypointLocation");
 
         Location waypoint = null;
-        if (!waypointLocations.isEmpty()) {
-            waypoint = waypointLocations.peek();
+        if (!sessionWaypointLocations.isEmpty()) {
+            waypoint = sessionWaypointLocations.peek();
         } else {
-            Log.w(TAG, "getLastWaypointLocation: waypointLocations is empty.");
+            Log.w(TAG, "getLastWaypointLocation: sessionWaypointLocations is empty.");
         }
 
         return waypoint;
     }
 
-
-    private Location getPreviousHhmdLocation() {
-        Log.d(TAG, "getPreviousHhmdLocation");
-
-        Location previousHhmdLocation = null;
-        if (hhmdLocations.size() >= 2) {
-            Location lastHhmdLocation = hhmdLocations.pop();
-            previousHhmdLocation = hhmdLocations.peek();
-            hhmdLocations.push(lastHhmdLocation);
-        } else {
-            Log.w(TAG, "getPreviousHhmdLocation: hhmdLocations does not have enough locations.");
-        }
-
-        return previousHhmdLocation;
-    }
-
-    private Location generateWaypoint() {
+    private void generateWaypoint() {
         Log.d(TAG, "generateWaypoint");
 
-        Location lastHhmd = getLastHhmdLocation();
-        Location previousHhmd = getPreviousHhmdLocation();
-        Location diff = getLocationDiff(lastHhmd, previousHhmd);
+        if ((!tmpHhmdLocations.isEmpty()) &&
+                (!tmpUasLocations.isEmpty()) &&
+                (tmpHhmdLocations.peekFirst() != null) &&
+                (tmpHhmdLocations.peekLast() != null) &&
+                (tmpHhmdLocations.peekFirst() != tmpHhmdLocations.peekLast()) &&
+                (tmpUasLocations.peekLast() != null)) {
+            Location oldHhmd = tmpHhmdLocations.getLast();
+            Location newHhmd = tmpHhmdLocations.getFirst();
+            Location diff = getLocationDiff(newHhmd, oldHhmd);
 
-        Location lastUas = getLastUasLocation();
-        Location waypoint = addLocations(lastUas, diff);
+            Location lastUas = tmpUasLocations.getLast();
+            Location waypoint = addLocations(lastUas, diff);
+            waypoint = addHeightOffset(waypoint);
 
-        return addHeightOffset(waypoint);
+            tmpUasLocations.clear();
+            tmpHhmdLocations.clear();
+            pushWaypointLocation(waypoint);
+        }
     }
 
     private Location getLocationDiff(Location newLocation, Location oldLocation) {
@@ -344,9 +331,7 @@ public class LocationService extends Service {
 
             if (isCalibrationComplete()) {
                 pushHhmdLocation(location);
-                Location waypoint = generateWaypoint();
-                pushWaypointLocation(waypoint);
-                CommandService.notifyNewWaypointAvailable(getApplicationContext());
+                generateWaypoint();
             } else {
                 testCalibration(location);
             }
