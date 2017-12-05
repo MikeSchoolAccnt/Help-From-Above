@@ -34,6 +34,7 @@ public class EmergencyService extends Service implements SharedPreferences.OnSha
     private int totalMessageCount_SENT = 0;
     private int totalMessageCount_DELIVERED = 0;
 
+    private SMSManagerBroadcastReceiver smsManagerBroadcastReceiver = new SMSManagerBroadcastReceiver();
     private final IBinder mBinder = new EmergencyServiceBinder();
     private IntentFilter smsManagerIntentFilter;
     public EmergencyService() {
@@ -54,7 +55,7 @@ public class EmergencyService extends Service implements SharedPreferences.OnSha
     public void onCreate() {
         Log.d(TAG, "onCreate");
         super.onCreate();
-        registerReceiver(new SMSManagerBroadcastReceiver(), smsManagerIntentFilter);
+        registerReceiver(smsManagerBroadcastReceiver, smsManagerIntentFilter);
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).registerOnSharedPreferenceChangeListener(this);
     }
 
@@ -64,6 +65,7 @@ public class EmergencyService extends Service implements SharedPreferences.OnSha
         super.onDestroy();
 
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).unregisterOnSharedPreferenceChangeListener(this);
+        unregisterReceiver(smsManagerBroadcastReceiver);
     }
 
     @Override
