@@ -266,13 +266,15 @@ public class UasCommunicationService extends Service {
         Log.d(TAG, "stopSession: NOT FULLY IMPLEMENTED!");
 
         if (uascClient != null) {
-            uascClient.sendEndSession(endEndpoint);
+            uascClient.stopGPSAccess();
             uascClient.stopImageAccess();
+            uascClient.sendEndSession(endEndpoint);
         }
     }
 
     protected void setLightOnOff(boolean lightOnOff) {
         Log.d(TAG, "lightOnOff: lightOnOff=" + lightOnOff + ": NOT IMPLEMENTED!");
+        uascClient.toogleLight(lightEndpoint,lightOnOff);
     }
 
     protected void sendWaypoint(Location waypoint) {
