@@ -28,15 +28,13 @@ public class EmergencyService extends Service implements SharedPreferences.OnSha
     private static final String EXTRA_NUMBER = "com.helpfromabove.helpfromabove.extra.EXTRA_NUMBER";
     private static final String EXTRA_MESSAGE = "com.helpfromabove.helpfromabove.extra.EXTRA_MESSAGE";
 
-    private static PendingIntent sentPendingIntent;
-    private static PendingIntent deliveredPindingIntent;
-
     private int totalMessageCount_SENT = 0;
     private int totalMessageCount_DELIVERED = 0;
 
     private SMSManagerBroadcastReceiver smsManagerBroadcastReceiver = new SMSManagerBroadcastReceiver();
     private final IBinder mBinder = new EmergencyServiceBinder();
     private IntentFilter smsManagerIntentFilter;
+
     public EmergencyService() {
         super();
         Log.d(TAG, "EmergencyService");
@@ -152,10 +150,10 @@ public class EmergencyService extends Service implements SharedPreferences.OnSha
         try {
             SmsManager smsManager = SmsManager.getDefault();
 
-            sentPendingIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_SENT).putExtra(EXTRA_NUMBER,recipientNumber).putExtra(EXTRA_MESSAGE,message),0);
-            deliveredPindingIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_DELIVERED).putExtra(EXTRA_NUMBER,recipientNumber).putExtra(EXTRA_MESSAGE,message),0);
+            PendingIntent sentPendingIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_SENT).putExtra(EXTRA_NUMBER, recipientNumber).putExtra(EXTRA_MESSAGE, message), 0);
+            PendingIntent deliveredPendingIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_DELIVERED).putExtra(EXTRA_NUMBER, recipientNumber).putExtra(EXTRA_MESSAGE, message), 0);
 
-            smsManager.sendTextMessage(recipientNumber, null, message, sentPendingIntent, deliveredPindingIntent);
+            smsManager.sendTextMessage(recipientNumber, null, message, sentPendingIntent, deliveredPendingIntent);
         } catch (IllegalArgumentException e) {
             Log.e(TAG, "sendSMSMessage:" + e.getMessage());
         }
@@ -171,56 +169,55 @@ public class EmergencyService extends Service implements SharedPreferences.OnSha
         }
     }
 
-    private class SMSManagerBroadcastReceiver extends BroadcastReceiver{
-
+    private class SMSManagerBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-
             String action = intent.getAction();
-            switch (action){
-                case ACTION_SENT:
-                    if(getResultCode() == Activity.RESULT_OK){
-                        totalMessageCount_SENT = totalMessageCount_SENT - 1;
+            if (action != null) {
+                switch (action) {
+                    case ACTION_SENT:
+                        if (getResultCode() == Activity.RESULT_OK) {
+                            totalMessageCount_SENT = totalMessageCount_SENT - 1;
 
-                        //If all messages have been sent notify the CommandService
-                        if(totalMessageCount_SENT == 0) {
-                            CommandService.notifyEmergencyMessagesSent(getApplicationContext());
+                            //If all messages have been sent notify the CommandService
+                            if (totalMessageCount_SENT == 0) {
+                                CommandService.notifyEmergencyMessagesSent(getApplicationContext());
+                            }
                         }
-                    }
-                    if(getResultCode() == Activity.RESULT_CANCELED){
-                        //Only decrementing for testing. Maybe try to resend to the current number with x amount of tries
-                        totalMessageCount_SENT = totalMessageCount_SENT - 1;
+                        if (getResultCode() == Activity.RESULT_CANCELED) {
+                            //Only decrementing for testing. Maybe try to resend to the current number with x amount of tries
+                            totalMessageCount_SENT = totalMessageCount_SENT - 1;
 
-                        //How to resend
-                        //Note: No way to tell how many times resending has been tried.
+                            //How to resend
+                            //Note: No way to tell how many times resending has been tried.
 
-                        //String number = intent.getStringExtra(EXTRA_NUMBER);
-                        //String msg = intent.getStringExtra(EXTRA_MESSAGE);
-                        //sendSMSMessage(number,msg);
-                    }
-                    break;
-                case ACTION_DELIVERED:
-                    if(getResultCode() == Activity.RESULT_OK){
-                        totalMessageCount_DELIVERED = totalMessageCount_DELIVERED - 1;
-
-                        //If all messages have been delivered notify the CommandService
-                        if(totalMessageCount_DELIVERED == 0) {
-                            CommandService.notifyEmergencyMessagesDelivered(getApplicationContext());
+                            //String number = intent.getStringExtra(EXTRA_NUMBER);
+                            //String msg = intent.getStringExtra(EXTRA_MESSAGE);
+                            //sendSMSMessage(number,msg);
                         }
-                    }
-                    if(getResultCode() == Activity.RESULT_CANCELED){
-                        //Only decrementing for testing. Maybe try to resend to the current number with x amount of tries
-                        totalMessageCount_DELIVERED = totalMessageCount_DELIVERED - 1;
+                        break;
+                    case ACTION_DELIVERED:
+                        if (getResultCode() == Activity.RESULT_OK) {
+                            totalMessageCount_DELIVERED = totalMessageCount_DELIVERED - 1;
 
-                        //How to resend
-                        //Note: No way to tell how many times resending has been tried.
+                            //If all messages have been delivered notify the CommandService
+                            if (totalMessageCount_DELIVERED == 0) {
+                                CommandService.notifyEmergencyMessagesDelivered(getApplicationContext());
+                            }
+                        }
+                        if (getResultCode() == Activity.RESULT_CANCELED) {
+                            //Only decrementing for testing. Maybe try to resend to the current number with x amount of tries
+                            totalMessageCount_DELIVERED = totalMessageCount_DELIVERED - 1;
 
-                        //String number = intent.getStringExtra(EXTRA_NUMBER);
-                        //String msg = intent.getStringExtra(EXTRA_MESSAGE);
-                        //sendSMSMessage(number,msg);
-                    }
-                    break;
+                            //How to resend
+                            //Note: No way to tell how many times resending has been tried.
 
+                            //String number = intent.getStringExtra(EXTRA_NUMBER);
+                            //String msg = intent.getStringExtra(EXTRA_MESSAGE);
+                            //sendSMSMessage(number,msg);
+                        }
+                        break;
+                }
             }
         }
     }
