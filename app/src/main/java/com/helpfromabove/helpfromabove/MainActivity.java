@@ -389,6 +389,27 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
+    private void prepareSessionIfNotPrepared() {
+        CommandService.SessionState sessionState = commandService.getState().getSessionState();
+        switch (sessionState) {
+            case SESSION_PREPARING:
+            case SESSION_READY:
+            case SESSION_STOPPING:
+            case SESSION_EMERGENCY_STARTED:
+            case SESSION_RUNNING:
+            case SESSION_EMERGENCY_MESSAGES_SENT:
+            case SESSION_STARTING:
+            case SESSION_STOPPED:
+                break;
+            case SESSION_NOT_PREPARED:
+                commandService.prepareSession();
+                break;
+            default:
+                Log.w(TAG, "prepareSessionIfNotPrepared: default: sessionState=" + sessionState);
+                break;
+        }
+    }
+
     private void handleErrorSavingLocalImage() {
         Toast.makeText(getApplicationContext(), R.string.error_saving_local_image, Toast.LENGTH_LONG).show();
     }
@@ -460,7 +481,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             Log.d(TAG, "onServiceConnected");
             setConnectedService(service);
             updateUiState();
-            commandService.prepareSession();
+            prepareSessionIfNotPrepared();
         }
 
         @Override
