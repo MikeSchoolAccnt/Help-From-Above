@@ -3,13 +3,13 @@
     <string-array name="pref_entries_cloud_storage_provider">
         <item>@string/pref_entry_cloud_storage_provider_none</item>
         <item>@string/pref_entry_cloud_storage_provider_dropbox</item>
-        <item>@string/pref_entry_cloud_storage_provider_google_drive</item>
+        <!--<item>@string/pref_entry_cloud_storage_provider_google_drive</item>-->
         <item>@string/pref_entry_cloud_storage_provider_one_drive</item>
     </string-array>
     <string-array name="pref_values_cloud_storage_provider">
         <item>@string/pref_value_cloud_storage_provider_none</item>
         <item>@string/pref_value_cloud_storage_provider_dropbox</item>
-        <item>@string/pref_value_cloud_storage_provider_google_drive</item>
+        <!--<item>@string/pref_value_cloud_storage_provider_google_drive</item>-->
         <item>@string/pref_value_cloud_storage_provider_one_drive</item>
     </string-array>
 
