@@ -120,7 +120,7 @@ public class CloudService extends Service {
 
                 SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
                 sharedPref.edit()
-                        .putString(getString(R.string.pref_key_cloud_storage_provider), getString(R.string.pref_value_cloud_storage_provider_none))
+                        .putString(getString(R.string.pref_key_cloud_storage_provider), getString(R.string.pref_value_cloud_storage_provider_local))
                         .apply();
                 initCloudStorage();
             }
