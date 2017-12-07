@@ -21,12 +21,10 @@ import java.util.Set;
  */
 
 public class HFAPreferenceActivity extends AppCompatPreferenceActivity implements SharedPreferences.OnSharedPreferenceChangeListener{
-    private static final String TAG = "HFAPreferenceActivity";
     private Preference.OnPreferenceChangeListener bindPreferenceSummaryToValueListener = new SettingsOnPreferenceChangeListener();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
         setupActionBar();
     }
@@ -44,8 +42,6 @@ public class HFAPreferenceActivity extends AppCompatPreferenceActivity implement
     }
 
     private void setupActionBar() {
-        Log.d(TAG, "setupActionBar");
-
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
@@ -66,8 +62,6 @@ public class HFAPreferenceActivity extends AppCompatPreferenceActivity implement
     }
 
     protected void bindPreferenceSummaryToValue(Preference preference) {
-        Log.d(TAG, "bindPreferenceSummaryToValue");
-
         preference.setOnPreferenceChangeListener(bindPreferenceSummaryToValueListener);
 
         if (preference instanceof MultiSelectListPreference) {
@@ -87,8 +81,6 @@ public class HFAPreferenceActivity extends AppCompatPreferenceActivity implement
     private class SettingsOnPreferenceChangeListener implements Preference.OnPreferenceChangeListener {
         @Override
         public boolean onPreferenceChange(Preference preference, Object value) {
-            Log.d(TAG, "onPreferenceChange: preference.getKey()=" + preference.getKey());
-
             if (preference instanceof ListPreference) {
                 ListPreference listPreference = (ListPreference) preference;
                 int index = listPreference.findIndexOfValue(value.toString());

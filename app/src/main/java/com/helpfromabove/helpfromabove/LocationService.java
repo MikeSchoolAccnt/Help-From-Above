@@ -44,7 +44,6 @@ public class LocationService extends Service {
 
     public LocationService() {
         super();
-        Log.d(TAG, "LocationService");
     }
 
     @Override
@@ -55,7 +54,6 @@ public class LocationService extends Service {
 
     @Override
     public void onCreate() {
-        Log.d(TAG, "onCreate");
         super.onCreate();
 
         locationCriteria.setAccuracy(Criteria.ACCURACY_FINE);
@@ -66,13 +64,10 @@ public class LocationService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        Log.d(TAG, "onBind");
         return mBinder;
     }
 
     protected void startSession() {
-        Log.d(TAG, "startSession");
-
         setCalibrationComplete(false);
         resetHeightOffset();
         clearLocations();
@@ -80,8 +75,6 @@ public class LocationService extends Service {
     }
 
     protected void onLocationCalibrationComplete() {
-        Log.d(TAG, "onLocationCalibrationComplete");
-
         setCalibrationComplete(true);
     }
 
@@ -94,8 +87,6 @@ public class LocationService extends Service {
     }
 
     private void testCalibration(Location location) {
-        Log.d(TAG, "testCalibration: location.getAccuracy()=" + location.getAccuracy());
-
         if (location.getAccuracy() <= MIN_ACCURACY_DISTANCE) {
             accurateCount++;
         } else {
@@ -108,22 +99,17 @@ public class LocationService extends Service {
     }
 
     private void resetHeightOffset() {
-        Log.d(TAG, "resetHeightOffset");
-
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         int startHeight = Integer.parseInt(sharedPref.getString(getString(R.string.pref_key_uas_start_height), getString(R.string.pref_value_uas_start_height_default)));
         setHeightOffset(startHeight);
     }
 
     private void askLocationPermissionsAndRequestLocationUpdates() {
-        Log.d(TAG, "askLocationPermissionsAndRequestLocationUpdates");
-
         locationServiceLocationListener = new LocationServiceLocationListener();
 
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             int response = getApplicationContext().checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION);
             if (response == PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "onCreate: permission FEATURE_LOCATION is GRANTED");
                 CommandService.notifyLocationCalibrating(getApplicationContext());
                 locationManager.requestLocationUpdates(1000 * CONSTANT_LOCATION_UPDATE_SECONDS, 0, locationCriteria, locationServiceLocationListener, getMainLooper());
             } else {
@@ -142,42 +128,32 @@ public class LocationService extends Service {
     }
 
     private void clearLocations() {
-        Log.d(TAG, "clearLocations");
-
         sessionHhmdLocations.clear();
         sessionUasLocations.clear();
         sessionWaypointLocations.clear();
     }
 
     protected void stopSession() {
-        Log.d(TAG, "stopSession");
-
         calibrationComplete = false;
         accurateCount = 0;
         stopLocationUpdates();
     }
 
     private void stopLocationUpdates() {
-        Log.d(TAG, "stopLocationUpdates");
-
         locationManager.removeUpdates(locationServiceLocationListener);
     }
 
     protected void pushUasLocation(Location uasLocation) {
-        Log.d(TAG, "pushUasLocation: uasLocation=" + uasLocation);
         sessionUasLocations.push(uasLocation);
         tmpUasLocations.addFirst(uasLocation);
     }
 
     private void pushHhmdLocation(Location hhmdLocation) {
-        Log.d(TAG, "pushHhmdLocation: hhmdLocation=" + hhmdLocation);
         sessionHhmdLocations.push(hhmdLocation);
         tmpHhmdLocations.push(hhmdLocation);
     }
 
     protected Location getLastHhmdLocation() {
-        Log.d(TAG, "getLastHhmdLocation");
-
         Location hhmdLocation = null;
         if (!sessionHhmdLocations.isEmpty()) {
             hhmdLocation = sessionHhmdLocations.peek();
@@ -189,14 +165,11 @@ public class LocationService extends Service {
     }
 
     private void pushWaypointLocation(Location waypoint) {
-        Log.d(TAG, "pushWaypointLocation");
         sessionWaypointLocations.push(waypoint);
         CommandService.notifyNewWaypointAvailable(getApplicationContext());
     }
 
     protected Location getLastWaypointLocation() {
-        Log.d(TAG, "getLastWaypointLocation");
-
         Location waypoint = null;
         if (!sessionWaypointLocations.isEmpty()) {
             waypoint = sessionWaypointLocations.peek();
@@ -208,8 +181,6 @@ public class LocationService extends Service {
     }
 
     private void generateWaypoint() {
-        Log.d(TAG, "generateWaypoint");
-
         if ((!tmpHhmdLocations.isEmpty()) &&
                 (!tmpUasLocations.isEmpty()) &&
                 (tmpHhmdLocations.peekFirst() != null) &&
@@ -224,6 +195,15 @@ public class LocationService extends Service {
             Location waypoint = addLocations(lastUas, diff);
             waypoint = addHeightOffset(waypoint);
 
+            Log.i(TAG, "----------------------------------------");
+            Log.i(TAG, "New Waypoint Generated");
+            Log.i(TAG, "----------------------------------------");
+            Log.i(TAG, "HHMD Location 1          = (" + oldHhmd.getLatitude() + ", " + oldHhmd.getLongitude() +") Accuracy = " + oldHhmd.getAccuracy() + "m");
+            Log.i(TAG, "HHMD Location n          = (" + newHhmd.getLatitude() + ", " + newHhmd.getLongitude() +") Accuracy = " + newHhmd.getAccuracy() + "m");
+            Log.i(TAG, "HHMD Location difference = (" + diff.getLatitude() + ", " + diff.getLongitude() +")");
+            Log.i(TAG, "Waypoint Location        = (" + waypoint.getLatitude() + ", " + waypoint.getLongitude() +")");
+            Log.i(TAG, "----------------------------------------");
+
             tmpUasLocations.clear();
             tmpHhmdLocations.clear();
             pushWaypointLocation(waypoint);
@@ -231,8 +211,6 @@ public class LocationService extends Service {
     }
 
     private Location getLocationDiff(Location newLocation, Location oldLocation) {
-        Log.d(TAG, "getLocationDiff");
-
         Location diff = null;
         if (newLocation != null && oldLocation != null) {
             diff = new Location(getClass().getName());
@@ -254,8 +232,6 @@ public class LocationService extends Service {
     }
 
     private Location addLocations(Location location1, Location location2) {
-        Log.d(TAG, "addLocations");
-
         Location sum = null;
         if (location1 != null && location2 != null) {
             sum = new Location(getClass().getName());
@@ -268,7 +244,6 @@ public class LocationService extends Service {
             sum.setLatitude(retLat);
             sum.setAltitude(retAlt);
             sum.setAccuracy(retAcc);
-
         } else {
             Log.e(TAG, "addLocations: Locations cannot be added because a location object is null.");
         }
@@ -277,8 +252,6 @@ public class LocationService extends Service {
     }
 
     private Location addHeightOffset(Location location) {
-        Log.d(TAG, "addHeightOffset");
-
         if (location != null) {
             location.setAltitude(location.getAltitude() + getHeightOffset());
             clearHeightOffset();
@@ -287,32 +260,22 @@ public class LocationService extends Service {
     }
 
     private synchronized int getHeightOffset() {
-        Log.d(TAG, "getHeightOffset");
-
         return heightOffset;
     }
 
     private synchronized void clearHeightOffset() {
-        Log.d(TAG, "clearHeightOffset");
-
         setHeightOffset(0);
     }
 
     private synchronized void setHeightOffset(int i) {
-        Log.d(TAG, "setHeightOffset: i=" + i);
-
         heightOffset = i;
     }
 
     protected void incrementHeightOffset() {
-        Log.d(TAG, "incrementHeightOffset");
-
         setHeightOffset(++heightOffset);
     }
 
     protected void decrementHeightOffset() {
-        Log.d(TAG, "decrementHeightOffset");
-
         setHeightOffset(--heightOffset);
     }
 
@@ -323,12 +286,8 @@ public class LocationService extends Service {
     }
 
     private class LocationServiceLocationListener implements LocationListener {
-        private static final String TAG = "LocationServ...Listener";
-
         @Override
         public void onLocationChanged(Location location) {
-            Log.d(TAG, "onLocationChanged");
-
             if (isCalibrationComplete()) {
                 pushHhmdLocation(location);
                 generateWaypoint();
@@ -339,17 +298,14 @@ public class LocationService extends Service {
 
         @Override
         public void onStatusChanged(String provider, int status, Bundle extras) {
-            Log.d(TAG, "onStatusChanged: status=" + status);
         }
 
         @Override
         public void onProviderEnabled(String provider) {
-            Log.d(TAG, "onProviderEnabled: provider=" + provider);
         }
 
         @Override
         public void onProviderDisabled(String provider) {
-            Log.d(TAG, "onProviderDisabled: provider=" + provider);
         }
     }
 

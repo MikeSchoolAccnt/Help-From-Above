@@ -54,7 +54,6 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         adapter = new ArrayAdapter<WifiP2pDevice>(getApplicationContext(), R.layout.wifi_p2p_device, R.id.wifi_p2p_device_name) {
             @Override
             public void notifyDataSetChanged() {
-                Log.d(TAG, "notifyDataSetChanged");
                 super.notifyDataSetChanged();
 
                 onArrayAdapterDataSetChanged();
@@ -80,7 +79,6 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
             devicesListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    Log.d(TAG, "onItemClick");
                     wifiP2pDeviceOnClick(position);
                 }
             });
@@ -107,15 +105,12 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
 
     @Override
     protected void onStart() {
-        Log.d(TAG, "onStart");
         super.onStart();
-
         bindCommandService();
     }
 
     @Override
     protected void onResume() {
-        Log.d(TAG, "onResume");
         super.onResume();
 
         broadcastReceiver = new WifiP2pConnectActivityBroadcastReceiver();
@@ -126,31 +121,23 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
 
     @Override
     protected void onPause() {
-        Log.d(TAG, "onPause");
         super.onPause();
-
         unregisterReceiver(broadcastReceiver);
     }
 
     @Override
     protected void onStop() {
-        Log.d(TAG, "onStop");
         super.onStop();
-
         unbindCommandService();
     }
 
     @Override
     protected void onDestroy() {
-        Log.d(TAG, "onDestroy");
         super.onDestroy();
-
         dismissWifiP2pConnectingDialog();
     }
 
     private void setupActionBar() {
-        Log.d(TAG, "setupActionBar");
-
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(false);
@@ -158,7 +145,6 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
     }
 
     private void bindCommandService() {
-        Log.d(TAG, "bindCommandService");
         Intent commandServiceIntent = new Intent(getApplicationContext(), CommandService.class);
         startService(commandServiceIntent);
         commandServiceConnection = new WifiP2pConnectActivityServiceConnection();
@@ -166,14 +152,10 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
     }
 
     private void unbindCommandService() {
-        Log.d(TAG, "unbindCommandService");
-
         unbindService(commandServiceConnection);
     }
 
     private void setConnectedService(IBinder service) {
-        Log.d(TAG, "setConnectedService");
-
         String serviceClassName = service.getClass().getName();
         if (serviceClassName.equals(CommandService.CommandServiceBinder.class.getName())) {
             commandService = ((CommandService.CommandServiceBinder) service).getService();
@@ -182,8 +164,6 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
     }
 
     public void wifiP2pDeviceOnClick(int position) {
-        Log.d(TAG, "wifiP2pDeviceOnClick: position=" + position);
-
         try {
             WifiP2pDevice device = adapter.getItem(position);
             displayConfirmDialog(device);
@@ -195,8 +175,6 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
     }
 
     private void displayConfirmDialog(final WifiP2pDevice device) {
-        Log.d(TAG, "displayConfirmDialog");
-
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(getString(R.string.wifi_p2p_connect_to_device_dialog_title, device.deviceName))
                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
@@ -248,22 +226,16 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
     }
 
     private void onArrayAdapterDataSetChanged() {
-        Log.d(TAG, "onArrayAdapterDataSetChanged");
-
         updateProgressBar();
     }
 
     private void updateProgressBar() {
-        Log.d(TAG, "updateProgressBar");
-
         try {
             View loadingProgressBar = findViewById(R.id.wifi_p2p_connect_progressbar);
             ListAdapter adapter = devicesListView.getAdapter();
             if (adapter.isEmpty()) {
-                Log.d(TAG, "updateProgressBar: Setting loadingProgressBar visibility to VISIBLE");
                 loadingProgressBar.setVisibility(View.VISIBLE);
             } else {
-                Log.d(TAG, "updateProgressBar: Setting loadingProgressBar visibility to INVISIBLE");
                 loadingProgressBar.setVisibility(View.INVISIBLE);
             }
         } catch (NullPointerException nPE) {
@@ -272,11 +244,8 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
     }
 
     private void handleWifiP2pPeersChanged(Collection<WifiP2pDevice> devices) {
-        Log.d(TAG, "handleWifiP2pPeersChanged");
-
         adapter.clear();
         for (WifiP2pDevice device : devices) {
-            Log.d(TAG, "handleWifiP2pPeersChanged: device.toString()=" + device.toString());
             adapter.add(device);
         }
     }
@@ -310,8 +279,6 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
     private class WifiP2pConnectActivityBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.d(TAG, "onReceive");
-
             String action = intent.getAction();
             if (action != null) {
                 switch (action) {
@@ -335,13 +302,11 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
 
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            Log.d(TAG, "onServiceConnected");
             setConnectedService(service);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            Log.d(TAG, "onServiceDisconnected");
         }
     }
 }

@@ -54,7 +54,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
@@ -72,15 +71,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     protected void onStart() {
-        Log.d(TAG, "onStart");
         super.onStart();
-
         bindCommandService();
     }
 
     @Override
     protected void onResume() {
-        Log.d(TAG, "onResume");
         super.onResume();
 
         IntentFilter intentFilter = new IntentFilter();
@@ -88,8 +84,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         intentFilter.addAction(CommandService.ACTION_LOCATION_STATE_CHANGED);
         intentFilter.addAction(CommandService.ACTION_NEW_UAS_IMAGE);
         intentFilter.addAction(CommandService.ERROR_SAVING_LOCAL_IMAGE);
-        intentFilter.addAction(CommandService.ACTION_NEW_UAS_LOCATION);
-        intentFilter.addAction(CommandService.ACTION_NEW_HHMD_LOCATION);
         registerReceiver(mainActivityBroadcastReceiver, intentFilter);
 
         updateUiState();
@@ -97,31 +91,24 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     protected void onPause() {
-        Log.d(TAG, "onPause");
         super.onPause();
-
         unregisterReceiver(mainActivityBroadcastReceiver);
     }
 
     @Override
     protected void onStop() {
-        Log.d(TAG, "onStop");
         super.onStop();
-
         unbindCommandService();
     }
 
     @Override
     protected void onDestroy() {
-        Log.d(TAG, "onDestroy");
         super.onDestroy();
-
         dismissCalibratingDialog();
     }
 
     @Override
     public void onBackPressed() {
-
         if (drawerLayout.isDrawerOpen(navigationView)) {
             drawerLayout.closeDrawer(navigationView);
         } else {
@@ -132,8 +119,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
-        Log.d(TAG, "onNavigationItemSelected: menuItem.toString()=" + menuItem.toString());
-
         if (commandService != null) {
             CommandService.SessionState sessionState = commandService.getState().getSessionState();
             switch (sessionState) {
@@ -144,15 +129,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     int id = menuItem.getItemId();
                     switch (id) {
                         case R.id.cloud_storage_settings:
-                            Log.d(TAG, "onNavigationItemSelected: cloud_storage_settings");
                             startActivity(new Intent(this, CloudPreferencesActivity.class));
                             return true;
                         case R.id.emergency_settings:
-                            Log.d(TAG, "onNavigationItemSelected: emergency_settings");
                             startActivity(new Intent(this, EmergencyPreferencesActivity.class));
                             return true;
                         case R.id.session_settings:
-                            Log.d(TAG, "onNavigationItemSelected: session_settings");
                             startActivity(new Intent(this, SessionPreferencesActivity.class));
                             return true;
                         default:
@@ -188,8 +170,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void unbindCommandService() {
-        Log.d(TAG, "unbindCommandService");
-
         unbindService(commandServiceConnection);
     }
 
@@ -197,18 +177,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
      * OnClick handler methods
      */
     public void uasImageViewOnClick(View view) {
-        Log.d(TAG, "uasImageViewOnClick");
-
         fullscreenUasImage();
     }
 
     public void emergencyButtonOnClick(View view) {
-        Log.d(TAG, "emergencyButtonOnClick");
-
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             int response = getApplicationContext().checkSelfPermission(Manifest.permission.SEND_SMS);
             if (response == PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "onCreate: permission SEND_SMS is GRANTED");
                 commandService.handleCommandHhmdEmergency();
             } else {
                 ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.SEND_SMS}, 0);
@@ -219,39 +194,27 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     public void lightSwitchOnClick(View view) {
-        Log.d(TAG, "lightSwitchOnClick");
-
         boolean isChecked = ((SwitchCompat) view).isChecked();
         commandService.handleCommandHhmdLight(isChecked);
     }
 
     public void uasHeightUpButtonOnClick(View view) {
-        Log.d(TAG, "uasHeightUpButtonOnClick ");
-
         commandService.handleCommandHhmdUasHeightUp();
     }
 
     public void uasHeightDownButtonOnClick(View view) {
-        Log.d(TAG, "uasHeightDownButtonOnClick");
-
         commandService.handleCommandHhmdUasHeightDown();
     }
 
     public void sessionStartButtonOnCLick(View view) {
-        Log.d(TAG, "sessionStartButtonOnCLick");
-
         commandService.handleCommandHhmdSessionStart();
     }
 
     public void sessionEndButtonOnCLick(View view) {
-        Log.d(TAG, "sessionEndButtonOnCLick");
-
         commandService.handleCommandHhmdSessionEnd();
     }
 
     private void updateButtons() {
-        Log.d(TAG, "updateButtons");
-
         if (commandService != null) {
             CommandService.SessionState sessionState = commandService.getState().getSessionState();
             switch (sessionState) {
@@ -303,8 +266,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
      * Method for starting the fullscreen activity
      */
     private void fullscreenUasImage() {
-        Log.d(TAG, "fullscreenUasImage");
-
         Intent fullscreenUasImageActivityIntent = new Intent(getApplicationContext(), FullscreenUasImageActivity.class);
         startActivity(fullscreenUasImageActivityIntent);
     }
@@ -320,6 +281,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             updateImageView();
 
             switch (state) {
+                case SESSION_STOPPED:
+                case SESSION_STARTING:
+                case SESSION_RUNNING:
+                case SESSION_EMERGENCY_STARTED:
+                case SESSION_STOPPING:
+                case SESSION_PREPARING:
+                case SESSION_READY:
+                case SESSION_NOT_PREPARED:
+                    break;
                 case SESSION_EMERGENCY_MESSAGES_SENT:
                     displayEmergencyMessagesSent();
                     break;
@@ -359,8 +329,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void updateImageView() {
-        Log.d(TAG, "updateImageView");
-
         if (commandService != null) {
             CommandService.SessionState sessionState = commandService.getState().getSessionState();
             ImageView imageView = (ImageView) findViewById(R.id.uas_image_view);
@@ -465,8 +433,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void setConnectedService(IBinder service) {
-        Log.d(TAG, "setConnectedService");
-
         String serviceClassName = service.getClass().getName();
         if (serviceClassName.equals(CommandService.CommandServiceBinder.class.getName())) {
             commandService = ((CommandService.CommandServiceBinder) service).getService();
@@ -474,11 +440,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private class MainActivityServiceConnection implements ServiceConnection {
-        private static final String TAG = "MainActivityServiceC...";
-
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            Log.d(TAG, "onServiceConnected");
             setConnectedService(service);
             updateUiState();
             prepareSessionIfNotPrepared();
@@ -486,7 +449,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            Log.d(TAG, "onServiceDisconnected");
             updateUiState();
         }
     }
@@ -498,8 +460,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private class MainActivityBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.d(TAG, "onReceive");
-
             String action = intent.getAction();
             if (action != null) {
                 switch (action) {
@@ -514,24 +474,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         break;
                     case CommandService.ERROR_SAVING_LOCAL_IMAGE:
                         handleErrorSavingLocalImage();
-                        break;
-                    case CommandService.ACTION_NEW_UAS_LOCATION:
-                        Log.d(TAG, "onReceive: ACTION_NEW_UAS_LOCATION");
-
-                        /*
-                         * If we add the Google maps overlay to the
-                         * UAS image, this is where we would get the
-                         * UAS location
-                         */
-                        break;
-                    case CommandService.ACTION_NEW_HHMD_LOCATION:
-                        Log.d(TAG, "onReceive: ACTION_NEW_HHMD_LOCATION");
-
-                        /*
-                         * If we add the Google maps overlay to the
-                         * UAS image, this is where we would receive
-                         * the HHMD location
-                         */
                         break;
                     default:
                         Log.w(TAG, "onReceive: default: action=" + action);

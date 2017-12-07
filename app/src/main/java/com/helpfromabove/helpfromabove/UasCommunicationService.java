@@ -55,8 +55,6 @@ public class UasCommunicationService extends Service {
 
     public UasCommunicationService() {
         super();
-
-        Log.d(TAG, "UasCommunicationService");
     }
 
     @Override
@@ -67,14 +65,10 @@ public class UasCommunicationService extends Service {
 
     @Override
     public void onCreate() {
-        Log.d(TAG, "onCreate");
         super.onCreate();
 
         IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION);
-        intentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
         intentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
-        intentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
         intentFilter.addAction(CommandService.ACTION_SKIPPED_WIFI_CONNECTION);
 
         broadcastReceiver = new UasCommunicationServiceBroadcastReceiver();
@@ -87,9 +81,7 @@ public class UasCommunicationService extends Service {
 
     @Override
     public void onDestroy() {
-        Log.d(TAG, "onDestroy");
         super.onDestroy();
-
         unregisterReceiver(broadcastReceiver);
     }
 
@@ -100,30 +92,22 @@ public class UasCommunicationService extends Service {
     }
 
     private void setWifiManager() {
-        Log.d(TAG, "setWifiManager");
-
         wifiManager = (WifiManager) this.getSystemService(Context.WIFI_SERVICE);
     }
 
     private void turnOnWifi() {
-        Log.d(TAG, "turnOnWifi");
-
         if (!wifiManager.isWifiEnabled()) {
             wifiManager.setWifiEnabled(true);
         }
     }
 
     protected void startScanning() {
-        Log.d(TAG, "startScanning");
-
         wifiP2pManager = (WifiP2pManager) this.getSystemService(Context.WIFI_P2P_SERVICE);
         wifiP2pChannel = wifiP2pManager.initialize(this, getMainLooper(), null);
         wifiP2pManager.discoverPeers(wifiP2pChannel, wifiP2pScanListener);
     }
 
     protected void connectToDevice(WifiP2pDevice device) {
-        Log.d(TAG, "connectToDevice: device.toString()=" + device.toString());
-
         CommandService.notifyWifiP2pConnectingToUasc(getApplicationContext());
 
         WifiP2pConfig config = new WifiP2pConfig();
@@ -137,8 +121,6 @@ public class UasCommunicationService extends Service {
         //This check also allows for testing with other test servers so we don't
         //always need the UASC for testing.
         if (device.toString().contains("HFA") && !connectedOnce) {
-            Log.d(TAG, "Disconnecting");
-
             CommandService.notifyWifiP2pWaitingForUasc(getApplicationContext());
 
             //Waiting to do this after 3 seconds to make sure the UASC has received our information.
@@ -155,42 +137,7 @@ public class UasCommunicationService extends Service {
         }
     }
 
-    private void handleDiscoveryStateChanged(int state) {
-        switch (state) {
-            case WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED:
-                Log.d(TAG, "handleDiscoveryStateChanged: WIFI_P2P_DISCOVERY_STARTED");
-                break;
-            case WifiP2pManager.WIFI_P2P_DISCOVERY_STOPPED:
-                Log.d(TAG, "handleDiscoveryStateChanged: WIFI_P2P_DISCOVERY_STOPPED");
-                break;
-            default:
-                Log.w(TAG, "handleDiscoveryStateChanged: default: state=" + state);
-                break;
-        }
-    }
-
-    private void handleWifiP2pStateChanged(int state) {
-        switch (state) {
-            case WifiP2pManager.WIFI_P2P_STATE_ENABLED:
-                Log.d(TAG, "handleWifiP2pStateChanged: WIFI_P2P_STATE_ENABLED");
-                break;
-            case WifiP2pManager.WIFI_P2P_STATE_DISABLED:
-                Log.d(TAG, "handleWifiP2pStateChanged: WIFI_P2P_STATE_DISABLED");
-                break;
-            default:
-                Log.w(TAG, "handleWifiP2pStateChanged: default: state=" + state);
-                break;
-        }
-    }
-
     private void handleWifiP2pConnectionChangedAction(WifiP2pInfo wifiP2pInfo, NetworkInfo networkInfo, WifiP2pGroup wifiP2pGroup) {
-        Log.d(TAG, "handleWifiP2pConnectionChangedAction");
-
-        Log.d(TAG, "handleWifiP2pConnectionChangedAction: groupFormed=" + wifiP2pInfo.groupFormed);
-        Log.d(TAG, "handleWifiP2pConnectionChangedAction: groupOwnerAddress=" + wifiP2pInfo.groupOwnerAddress);
-        Log.d(TAG, "handleWifiP2pConnectionChangedAction: networkInfo=" + networkInfo);
-        Log.d(TAG, "handleWifiP2pConnectionChangedAction: wifiP2pGroup=" + wifiP2pGroup);
-
         if (networkInfo.getState() == NetworkInfo.State.CONNECTING && connectedOnce) {
             CommandService.notifyWifiP2pConnectingFromUasc(getApplicationContext());
         } else if (networkInfo.getState() == NetworkInfo.State.CONNECTED) {
@@ -219,10 +166,6 @@ public class UasCommunicationService extends Service {
         uascClient.startHeartbeat(10000);
     }
 
-    private void handleThisDeviceDetailsChanged() {
-        Log.d(TAG, "handleThisDeviceDetailsChanged");
-    }
-
     private void initUascClient(){
 
         WifiP2pDevice groupOwner =  wifiP2pGroup.getOwner();
@@ -245,17 +188,11 @@ public class UasCommunicationService extends Service {
 
     }
 
-    protected void startSession() {
-        Log.d(TAG, "startSession: NOT FULLY IMPLEMENTED!");
-    }
-
     protected void sendStartSession() {
         uascClient.sendStartSession(startEndpoint);
     }
 
     protected void onLocationCalibrationComplete() {
-        Log.d(TAG, "onLocationCalibrationComplete");
-
         if (uascClient != null) {
             uascClient.startImageAccess(imageEndpoint, 1000);
             uascClient.startGPSAccess(gpsReceiveEndpoint,5000);
@@ -263,8 +200,6 @@ public class UasCommunicationService extends Service {
     }
 
     protected void stopSession() {
-        Log.d(TAG, "stopSession: NOT FULLY IMPLEMENTED!");
-
         if (uascClient != null) {
             uascClient.stopGPSAccess();
             uascClient.stopImageAccess();
@@ -273,18 +208,12 @@ public class UasCommunicationService extends Service {
     }
 
     protected void setLightOnOff(boolean lightOnOff) {
-        Log.d(TAG, "lightOnOff: lightOnOff=" + lightOnOff + ": NOT IMPLEMENTED!");
         uascClient.toogleLight(lightEndpoint,lightOnOff);
     }
 
     protected void sendWaypoint(Location waypoint) {
-        Log.d(TAG, "sendWaypoint: location=" + waypoint + ": NOT IMPLEMENTED!");
         if(waypoint != null)
             uascClient.sendNewWaypoint(gpsSendEndpoint,waypoint);
-    }
-
-    protected void startEmergency() {
-        Log.d(TAG, "startEmergency: NOT IMPLEMENTED!");
     }
 
     public Bitmap getNewImage() {
@@ -314,27 +243,14 @@ public class UasCommunicationService extends Service {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.d(TAG, "onReceive");
-
             String action = intent.getAction();
             if (action != null) {
                 switch (action) {
-                    case WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION:
-                        int discoveryState = intent.getIntExtra(WifiP2pManager.EXTRA_DISCOVERY_STATE, -1);
-                        handleDiscoveryStateChanged(discoveryState);
-                        break;
-                    case WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION:
-                        int wifiState = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1);
-                        handleWifiP2pStateChanged(wifiState);
-                        break;
                     case WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION:
                         WifiP2pInfo wifiP2pInfo = intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_INFO);
                         NetworkInfo networkInfo = intent.getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
                         WifiP2pGroup wifiP2pGroup = intent.getParcelableExtra(WifiP2pManager.EXTRA_WIFI_P2P_GROUP);
                         handleWifiP2pConnectionChangedAction(wifiP2pInfo, networkInfo, wifiP2pGroup);
-                        break;
-                    case WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION:
-                        handleThisDeviceDetailsChanged();
                         break;
                     case CommandService.ACTION_SKIPPED_WIFI_CONNECTION:
                         initUascClient();
@@ -351,12 +267,10 @@ public class UasCommunicationService extends Service {
 
         @Override
         public void onSuccess() {
-            Log.d(TAG, "onSuccess");
         }
 
         @Override
         public void onFailure(int reasonCode) {
-            Log.d(TAG, "onFailure: reasonCode=" + reasonCode);
             switch (reasonCode) {
                 case WifiP2pManager.P2P_UNSUPPORTED:
                     Log.w(TAG, "onFailure: P2P_UNSUPPORTED");
@@ -390,12 +304,10 @@ public class UasCommunicationService extends Service {
 
         @Override
         public void onSuccess() {
-            Log.d(TAG, "onSuccess");
         }
 
         @Override
         public void onFailure(int reasonCode) {
-            Log.d(TAG, "onFailure: reasonCode=" + reasonCode);
             switch (reasonCode) {
                 case WifiP2pManager.P2P_UNSUPPORTED:
                     Log.w(TAG, "onFailure: P2P_UNSUPPORTED");

@@ -147,7 +147,6 @@ public class UASCClient {
     }
 
     protected Location getNewUasLocation() {
-        Log.d(TAG, "getNewUasLocation: NOT YET IMPLEMENTED!");
         return latestUASLocation;
     }
 

@@ -62,7 +62,6 @@ public class CloudService extends Service {
 
     @Override
     public void onCreate() {
-        Log.d(TAG, "onCreate");
         super.onCreate();
 
         CloudRail.setAppKey(CLOUDRAIL_LICENSE_KEY);
@@ -70,14 +69,11 @@ public class CloudService extends Service {
 
     @Override
     public void onDestroy() {
-        Log.d(TAG, "onDestroy");
         super.onDestroy();
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        Log.d(TAG, "onBind");
-
         return mBinder;
     }
 
@@ -141,8 +137,6 @@ public class CloudService extends Service {
     }
 
     private void createLocalAppFolder() {
-        Log.d(TAG, "createLocalAppFolder");
-
         File directory = new File(LOCAL_APP_FOLDER);
         if (!directory.mkdirs()) {
             Log.e(TAG, "Could not make directory: " + LOCAL_APP_FOLDER);
@@ -150,8 +144,6 @@ public class CloudService extends Service {
     }
 
     private void createCloudAppFolder() {
-        Log.d(TAG, "createCloudAppFolder");
-
         try {
             cloudStorage.createFolder(CLOUD_APP_FOLDER);
         } catch (com.cloudrail.si.exceptions.HttpException hE) {
@@ -193,8 +185,6 @@ public class CloudService extends Service {
     }
 
     private void createCloudSessionFolder() {
-        Log.d(TAG, "createCloudSessionFolder");
-
         sessionFolder = CLOUD_APP_FOLDER + "/" + getDateTime();
 
         try {
@@ -205,8 +195,6 @@ public class CloudService extends Service {
     }
 
     private void createLocalSessionFolder() {
-        Log.d(TAG, "createLocalSessionFolder");
-
         sessionFolder = LOCAL_APP_FOLDER + "/" + getDateTime();
         File directory = new File(sessionFolder);
         if (!directory.mkdirs()) {
@@ -238,8 +226,6 @@ public class CloudService extends Service {
     }
 
     protected void saveImage(final Bitmap bitmap) {
-        Log.d(TAG, "saveImage");
-
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -256,8 +242,6 @@ public class CloudService extends Service {
     }
 
     private void saveLocalImage(Bitmap bitmap, final String path) {
-        Log.d(TAG, "saveLocalImage");
-
         try {
             byte[] byteArray = convertBitmapToByteArray(bitmap, compressionFormat, compressionQuality);
 
@@ -291,8 +275,6 @@ public class CloudService extends Service {
     }
 
     private void saveCloudImage(Bitmap bitmap, final String path) {
-        Log.d(TAG, "saveCloudImage");
-
         ByteArrayInputStream byteArrayInputStream = convertDataToByteArrayInputStream(bitmap, compressionFormat, compressionQuality);
 
         try {
@@ -318,8 +300,6 @@ public class CloudService extends Service {
     }
 
     private static ByteArrayInputStream convertDataToByteArrayInputStream(Bitmap bitmap, CompressFormat format, int quality) {
-        Log.d(TAG, "convertDataToBitmap");
-
         ByteArrayInputStream byteArrayInputStream;
 
         if (bitmap == null || bitmap.getByteCount() == 0) {
@@ -336,8 +316,6 @@ public class CloudService extends Service {
     }
 
     protected String getSessionCloudLink() {
-        Log.d(TAG, "getSessionCloudLink");
-
         String link = null;
         if (cloudStorage != null) {
             link = cloudStorage.createShareLink(sessionFolder);
@@ -349,11 +327,7 @@ public class CloudService extends Service {
     }
 
     protected class CloudServiceBinder extends Binder {
-        private static final String TAG = "CloudServiceBinder";
-
         protected CloudService getService() {
-            Log.d(TAG, "getService");
-
             return CloudService.this;
         }
     }

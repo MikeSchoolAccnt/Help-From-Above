@@ -20,7 +20,7 @@ import android.util.Log;
 import java.util.HashSet;
 import java.util.Set;
 
-public class EmergencyService extends Service implements SharedPreferences.OnSharedPreferenceChangeListener {
+public class EmergencyService extends Service {
     private static final String TAG = "EmergencyService";
 
     private static final String ACTION_SENT = "com.helpfromabove.helpfromabove.action.ACTION_SENT";
@@ -37,7 +37,6 @@ public class EmergencyService extends Service implements SharedPreferences.OnSha
 
     public EmergencyService() {
         super();
-        Log.d(TAG, "EmergencyService");
         smsManagerIntentFilter = new IntentFilter();
         smsManagerIntentFilter.addAction(ACTION_SENT);
         smsManagerIntentFilter.addAction(ACTION_DELIVERED);
@@ -51,43 +50,22 @@ public class EmergencyService extends Service implements SharedPreferences.OnSha
 
     @Override
     public void onCreate() {
-        Log.d(TAG, "onCreate");
         super.onCreate();
         registerReceiver(smsManagerBroadcastReceiver, smsManagerIntentFilter);
-        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).registerOnSharedPreferenceChangeListener(this);
     }
 
     @Override
     public void onDestroy() {
-        Log.d(TAG, "onDestroy");
         super.onDestroy();
-
-        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).unregisterOnSharedPreferenceChangeListener(this);
         unregisterReceiver(smsManagerBroadcastReceiver);
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        Log.d(TAG, "onBind");
-
         return mBinder;
     }
 
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        Log.d(TAG, "onSharedPreferenceChanged");
-        if (key.equals(getString(R.string.pref_key_emergency_message_name))) {
-            Log.d(TAG, "onSharedPreferenceChanged: pref_key_emergency_message_name");
-        } else if (key.equals(getString(R.string.pref_key_emergency_message_text))) {
-            Log.d(TAG, "onSharedPreferenceChanged: pref_key_emergency_message_text");
-        } else if (key.equals(getString(R.string.pref_key_emergency_contacts))) {
-            Log.d(TAG, "onSharedPreferenceChanged: pref_key_emergency_contacts");
-        }
-    }
-
     protected void startEmergency(Location location, String cloudLink) {
-        Log.d(TAG, "startEmergency: location=" + location + ", cloudLink=" + cloudLink);
-
         checkPermissionAndSendSmsMessages(location, cloudLink);
     }
 
@@ -123,7 +101,6 @@ public class EmergencyService extends Service implements SharedPreferences.OnSha
     }
 
     private String getFormattedEmergencyMessage(Location location, String cloudLink) {
-        Log.d(TAG, "getFormattedEmergencyMessage");
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         String name = sharedPref.getString(getString(R.string.pref_key_emergency_message_name), getString(R.string.pref_value_emergency_message_name_default));
 
@@ -142,7 +119,7 @@ public class EmergencyService extends Service implements SharedPreferences.OnSha
             emergencyMessage = emergencyMessage.replace("\nImages: (Cloud Link)", "");
         }
 
-        Log.w(TAG, emergencyMessage);
+        Log.w(TAG, "emergencyMessage=" + emergencyMessage);
         return emergencyMessage;
     }
 
@@ -160,11 +137,7 @@ public class EmergencyService extends Service implements SharedPreferences.OnSha
     }
 
     protected class EmergencyServiceBinder extends Binder {
-        private static final String TAG = "EmergencyServiceBinder";
-
         protected EmergencyService getService() {
-            Log.d(TAG, "getService");
-
             return EmergencyService.this;
         }
     }

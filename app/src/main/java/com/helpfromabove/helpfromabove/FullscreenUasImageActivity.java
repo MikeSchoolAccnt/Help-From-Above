@@ -30,23 +30,18 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_fullscreen_uas_image);
     }
 
     @Override
     protected void onStart() {
-        Log.d(TAG, "onStart");
         super.onStart();
-
         bindCommandService();
     }
 
     @Override
     protected void onResume() {
-        Log.d(TAG, "onResume");
         super.onResume();
 
         IntentFilter intentFilter = new IntentFilter();
@@ -57,17 +52,13 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
 
     @Override
     protected void onPause() {
-        Log.d(TAG, "onPause");
         super.onPause();
-
         unregisterReceiver(fullscreenUasImageBroadcastReceiver);
     }
 
     @Override
     protected void onStop() {
-        Log.d(TAG, "onStop");
         super.onStop();
-
         unbindCommandService();
     }
 
@@ -79,14 +70,10 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
     }
 
     private void unbindCommandService() {
-        Log.d(TAG, "unbindCommandService");
-
         unbindService(commandServiceConnection);
     }
 
     private void updateImageView() {
-        Log.d(TAG, "updateImageView");
-
         if (commandService != null) {
             CommandService.SessionState sessionState = commandService.getState().getSessionState();
             ImageView imageView = (ImageView) findViewById(R.id.fullscreen_uas_image_view);
@@ -119,8 +106,6 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
     }
 
     private void setConnectedService(IBinder service) {
-        Log.d(TAG, "setConnectedService");
-
         String serviceClassName = service.getClass().getName();
         if (serviceClassName.equals(CommandService.CommandServiceBinder.class.getName())) {
             commandService = ((CommandService.CommandServiceBinder) service).getService();
@@ -128,18 +113,14 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
     }
 
     private class FullscreenUasImageActivityServiceConnection implements ServiceConnection {
-        private static final String TAG = "FullscreenUasImageAc...";
-
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            Log.d(TAG, "onServiceConnected");
             setConnectedService(service);
             updateImageView();
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            Log.d(TAG, "onServiceDisconnected");
         }
     }
 
@@ -150,8 +131,6 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
     private class FullscreenUasImageBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.d(TAG, "onReceive");
-
             String action = intent.getAction();
             if (action != null) {
                 switch (action) {

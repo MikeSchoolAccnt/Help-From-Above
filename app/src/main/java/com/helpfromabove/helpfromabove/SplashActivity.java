@@ -41,7 +41,6 @@ public class SplashActivity extends Activity {
     private boolean animationComplete = false;
 
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_splash);
@@ -74,7 +73,6 @@ public class SplashActivity extends Activity {
 
     @Override
     protected void onStart() {
-        Log.d(TAG, "onStart: ");
         super.onStart();
 
         splash.startAnimation(tempAnim);
@@ -83,7 +81,6 @@ public class SplashActivity extends Activity {
 
     @Override
     protected void onResume() {
-        Log.d(TAG, "onResume");
         super.onResume();
 
         registerReceiver(splashActivityBroadcastReceiver, new IntentFilter(CommandService.ACTION_SERVICES_STATE_CHANGED));
@@ -91,15 +88,12 @@ public class SplashActivity extends Activity {
 
     @Override
     protected void onPause() {
-        Log.d(TAG, "onPause");
         super.onPause();
-
         unregisterReceiver(splashActivityBroadcastReceiver);
     }
 
     @Override
     protected void onStop() {
-        Log.d(TAG, "onStop");
         super.onStop();
 
         unbindCommandService();
@@ -113,14 +107,10 @@ public class SplashActivity extends Activity {
     }
 
     private void unbindCommandService() {
-        Log.d(TAG, "unbindCommandService");
-
         unbindService(commandServiceConnection);
     }
 
     private void askForPermissions() {
-        Log.d(TAG, "askForPermissions");
-
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             final int PERMISSION_ACCESS_LOCATION = getApplicationContext().checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION);
             final int PERMISSION_READ_CONTACTS = getApplicationContext().checkSelfPermission(Manifest.permission.READ_CONTACTS);
@@ -159,8 +149,6 @@ public class SplashActivity extends Activity {
     }
 
     private void transitionIfReady() {
-        Log.d(TAG, "transitionIfReady");
-
         if (commandService != null) {
             if ((commandService.getState().getServicesState() == CommandService.ServicesState.SERVICES_STARTED) && animationComplete) {
                 if (commandService.getState().getWifiP2pState() == CommandService.WifiP2pState.WIFI_P2P_CONNECTED) {
@@ -182,7 +170,6 @@ public class SplashActivity extends Activity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        Log.d(TAG, "onRequestPermissionsResult");
         //super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         switch (requestCode) {
@@ -200,7 +187,6 @@ public class SplashActivity extends Activity {
                             Log.d(TAG, "Permission Declined: " + permissions[i]);
                         }
                     }
-
                 }
         }
 
@@ -208,8 +194,6 @@ public class SplashActivity extends Activity {
     }
 
     private void setConnectedService(IBinder service) {
-        Log.d(TAG, "setConnectedService");
-
         String serviceClassName = service.getClass().getName();
         if (serviceClassName.equals(CommandService.CommandServiceBinder.class.getName())) {
             commandService = ((CommandService.CommandServiceBinder) service).getService();
@@ -217,27 +201,20 @@ public class SplashActivity extends Activity {
     }
 
     private class SplashActivityServiceConnection implements ServiceConnection {
-
-        private static final String TAG = "SplashActivityServic...";
-
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            Log.d(TAG, "onServiceConnected");
             setConnectedService(service);
             transitionIfReady();
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            Log.d(TAG, "onServiceDisconnected");
         }
     }
 
     private class SplashActivityBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.d(TAG, "onReceive");
-
             String action = intent.getAction();
             if (action != null) {
                 switch (action) {

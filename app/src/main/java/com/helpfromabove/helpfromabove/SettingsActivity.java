@@ -2,12 +2,10 @@ package com.helpfromabove.helpfromabove;
 
 import android.annotation.TargetApi;
 import android.content.ContentResolver;
-import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.ListPreference;
@@ -23,7 +21,6 @@ import android.support.v7.app.ActionBar;
 import android.util.Log;
 import android.view.MenuItem;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,7 +37,6 @@ import java.util.List;
  * API Guide</a> for more information on developing a Settings UI.
  */
 public class SettingsActivity extends AppCompatPreferenceActivity {
-    private static final String TAG = "SettingsActivity";
     //This is needed for getting contact information.
     public static ContentResolver resolver;
     //This is used to keep the Emergency Contacts Setting screen after leaving it.
@@ -53,8 +49,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     private static Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener = new Preference.OnPreferenceChangeListener() {
         @Override
         public boolean onPreferenceChange(Preference preference, Object value) {
-            Log.d(TAG, "onPreferenceChange: preference.getKey()=" + preference.getKey() + ", value.toString()=" + value.toString());
-
             String stringValue = value.toString();
             if (preference instanceof ListPreference) {
                 // For list preferences, look up the correct display value in
@@ -95,8 +89,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
      * @see #sBindPreferenceSummaryToValueListener
      */
     private static void bindPreferenceSummaryToValue(Preference preference) {
-        Log.d(TAG, "bindPreferenceSummaryToValue");
-
         // Set the listener to watch for value changes.
         preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
 
@@ -110,7 +102,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
         resolver = getContentResolver();
         setupActionBar();
@@ -120,8 +111,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
      * Set up the {@link android.app.ActionBar}, if the API is available.
      */
     private void setupActionBar() {
-        Log.d(TAG, "setupActionBar");
-
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             // Show the Up button in the action bar.
@@ -131,8 +120,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
     @Override
     public boolean onMenuItemSelected(int featureId, MenuItem item) {
-        Log.d(TAG, "onMenuItemSelected");
-
         int id = item.getItemId();
         if (id == android.R.id.home) {
             if (!super.onMenuItemSelected(featureId, item)) {
@@ -177,11 +164,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
      */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static class CloudPreferenceFragment extends PreferenceFragment {
-        private static final String TAG = "CloudPreferenceFragment";
-
         @Override
         public void onCreate(Bundle savedInstanceState) {
-            Log.d(TAG, "onCreate");
             super.onCreate(savedInstanceState);
 
             addPreferencesFromResource(R.xml.pref_cloud);
@@ -196,8 +180,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
         @Override
         public boolean onOptionsItemSelected(MenuItem item) {
-            Log.d(TAG, "onOptionsItemSelected");
-
             int id = item.getItemId();
             if (id == android.R.id.home) {
                 startActivity(new Intent(getActivity(), SettingsActivity.class));
@@ -216,12 +198,10 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         private static final String TAG = "EmergencyPreferenceF...";
 
         ArrayList<ContactInfo> contactInfos = new ArrayList<>();
-
-        ContactInfo emergencyContact = new ContactInfo(null, "Local Emergency Dispatch", "911", null);
+        ContactInfo emergencyContact = new ContactInfo("Local Emergency Dispatch", "911");
 
         @Override
         public void onCreate(Bundle savedInstanceState) {
-            Log.d(TAG, "onCreate");
             super.onCreate(savedInstanceState);
 
             addPreferencesFromResource(R.xml.pref_emergency);
@@ -237,8 +217,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
         @Override
         public boolean onOptionsItemSelected(MenuItem item) {
-            Log.d(TAG, "onOptionsItemSelected");
-
             int id = item.getItemId();
             if (id == android.R.id.home) {
                 startActivity(new Intent(getActivity(), SettingsActivity.class));
@@ -249,7 +227,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
         @Override
         public void onStart() {
-            Log.d(TAG, "onStart");
             super.onStart();
 
             updateContactsArrayList();
@@ -257,7 +234,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         }
 
         private void refreshContactsList() {
-            Log.d(TAG, "refreshContactsList");
             try {
                 MultiSelectListPreference contactsListPreference = (MultiSelectListPreference) findPreference(getString(R.string.pref_key_emergency_contacts));
                 contactsListPreference.setEntries(getContactInfoCharSequenceArray());
@@ -268,12 +244,9 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         }
 
         private void updateContactsArrayList() {
-            Log.d(TAG, "updateContactsArrayList");
-
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-
                     ArrayList<ContactInfo> newContacts = new ArrayList<>();
 
                     ContentResolver resolver = SettingsActivity.resolver;
@@ -285,12 +258,9 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
                                 ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?", new String[]{currentID}, null);
 
                         while (phoneNumberCursor.moveToNext()) {
-                            Long id = phoneNumberCursor.getLong(phoneNumberCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.CONTACT_ID));
                             String name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
                             String number = phoneNumberCursor.getString(phoneNumberCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                            Uri uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, id);
-                            InputStream photo = ContactsContract.Contacts.openContactPhotoInputStream(resolver, uri);
-                            newContacts.add(new ContactInfo(id, name, number, photo));
+                            newContacts.add(new ContactInfo(name, number));
                         }
                     }
 
@@ -305,7 +275,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         }
 
         private CharSequence[] getContactInfoCharSequenceArray() {
-            Log.d(TAG, "getContactInfoCharSequenceArray");
             CharSequence[] contactCharSequences = new CharSequence[contactInfos.size()];
             for (int i = 0; i < contactInfos.size(); i++) {
                 contactCharSequences[i] = contactInfos.get(i).toString();
@@ -315,7 +284,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         }
 
         private CharSequence[] getContactIdCharSequenceArray() {
-            Log.d(TAG, "getContactIdCharSequenceArray");
             CharSequence[] contactCharSequences = new CharSequence[contactInfos.size()];
             for (int i = 0; i < contactInfos.size(); i++) {
                 contactCharSequences[i] = contactInfos.get(i).number;
@@ -325,16 +293,12 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
         }
 
         private class ContactInfo implements Comparable<ContactInfo> {
-            private Long contactId;
             private String name;
             private String number;
-            private InputStream contactPhoto;
 
-            ContactInfo(Long _contactId, String _name, String _number, InputStream _contactPhoto) {
-                contactId = _contactId;
+            ContactInfo(String _name, String _number) {
                 name = _name;
                 number = _number;
-                contactPhoto = _contactPhoto;
             }
 
             @Override
@@ -355,11 +319,8 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
      */
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static class SessionStartPreferenceFragment extends PreferenceFragment {
-        private static final String TAG = "SessionStartPreferen...";
-
         @Override
         public void onCreate(Bundle savedInstanceState) {
-            Log.d(TAG, "onCreate");
             super.onCreate(savedInstanceState);
 
             addPreferencesFromResource(R.xml.pref_session_start);
@@ -374,8 +335,6 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
         @Override
         public boolean onOptionsItemSelected(MenuItem item) {
-            Log.d(TAG, "onOptionsItemSelected");
-
             int id = item.getItemId();
             if (id == android.R.id.home) {
                 startActivity(new Intent(getActivity(), SettingsActivity.class));

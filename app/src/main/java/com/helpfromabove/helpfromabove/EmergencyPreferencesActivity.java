@@ -19,7 +19,6 @@ public class EmergencyPreferencesActivity extends HFAPreferenceActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
 
         this.addPreferencesFromResource(R.xml.pref_emergency);
@@ -65,7 +64,6 @@ public class EmergencyPreferencesActivity extends HFAPreferenceActivity {
     }
 
     private void refreshContactsList() {
-        Log.d(TAG, "refreshContactsList");
         try {
             MultiSelectListPreference contactsListPreference = (MultiSelectListPreference) findPreference(getString(R.string.pref_key_emergency_contacts));
             contactsListPreference.setEntries(getContactInfoCharSequenceArray());
@@ -77,7 +75,6 @@ public class EmergencyPreferencesActivity extends HFAPreferenceActivity {
     }
 
     private CharSequence[] getContactInfoCharSequenceArray() {
-        Log.d(TAG, "getContactInfoCharSequenceArray");
         CharSequence[] contactCharSequences = new CharSequence[contacts.size()];
         for (int i = 0; i < contacts.size(); i++) {
             contactCharSequences[i] = contacts.get(i).toString();
@@ -87,7 +84,6 @@ public class EmergencyPreferencesActivity extends HFAPreferenceActivity {
     }
 
     private CharSequence[] getContactIdCharSequenceArray() {
-        Log.d(TAG, "getContactIdCharSequenceArray");
         CharSequence[] contactCharSequences = new CharSequence[contacts.size()];
         for (int i = 0; i < contacts.size(); i++) {
             contactCharSequences[i] = contacts.get(i).number;

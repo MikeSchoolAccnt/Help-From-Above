@@ -198,7 +198,6 @@ public class CommandService extends Service {
 
     @Override
     public void onDestroy() {
-        Log.d(TAG, "onDestroy");
         super.onDestroy();
 
         stopServices();
@@ -224,8 +223,6 @@ public class CommandService extends Service {
     }
 
     private void startUasCommunicationService() {
-        Log.d(TAG, "startUasCommunicationService");
-
         Intent uasCommunicationServiceIntent = new Intent(getApplicationContext(), UasCommunicationService.class);
         startService(uasCommunicationServiceIntent);
         uasCommunicationServiceConnection = new CommandServiceConnection();
@@ -233,8 +230,6 @@ public class CommandService extends Service {
     }
 
     private void startLocationService() {
-        Log.d(TAG, "startLocationService");
-
         Intent locationServiceIntent = new Intent(getApplicationContext(), LocationService.class);
         startService(locationServiceIntent);
         locationServiceConnection = new CommandServiceConnection();
@@ -242,28 +237,20 @@ public class CommandService extends Service {
     }
 
     private void startEmergencyService() {
-        Log.d(TAG, "startEmergencyService");
-
         Intent emergencyServiceIntent = new Intent(getApplicationContext(), EmergencyService.class);
         startService(emergencyServiceIntent);
         emergencyServiceConnection = new CommandServiceConnection();
         bindService(emergencyServiceIntent, emergencyServiceConnection, Context.BIND_NOT_FOREGROUND);
-
     }
 
     private void startNetworkService() {
-        Log.d(TAG, "startNetworkService");
-
         Intent cloudServiceIntent = new Intent(getApplicationContext(), CloudService.class);
         startService(cloudServiceIntent);
         cloudServiceConnection = new CommandServiceConnection();
         bindService(cloudServiceIntent, cloudServiceConnection, Context.BIND_NOT_FOREGROUND);
-
     }
 
     private void setConnectedService(IBinder service) {
-        Log.d(TAG, "setConnectedService");
-
         String serviceClassName = service.getClass().getName();
 
         if (serviceClassName.equals(UasCommunicationService.UasCommunicationServiceBinder.class.getName())) {
@@ -284,8 +271,6 @@ public class CommandService extends Service {
     }
 
     private void stopServices() {
-        Log.d(TAG, "stopServices");
-
         unbindService(uasCommunicationServiceConnection);
         uasCommunicationService = null;
         unbindService(locationServiceConnection);
@@ -299,60 +284,42 @@ public class CommandService extends Service {
     }
 
     protected void startWifiP2pScanning() {
-        Log.d(TAG, "startScanning");
         uasCommunicationService.startScanning();
     }
 
     protected void connectToWifiP2pDevice(WifiP2pDevice device) {
-        Log.d(TAG, "connectToDevice: device.toString()=" + device.toString());
         uasCommunicationService.connectToDevice(device);
     }
 
     private static void notifyServicesStateChanged(Context context) {
-        Log.d(TAG, "notifyServicesStateChanged");
-
         context.sendBroadcast(new Intent(ACTION_SERVICES_STATE_CHANGED));
     }
 
     private static void notifyWifiP2pStateChanged(Context context) {
-        Log.d(TAG, "notifyWifiP2pStateChanged");
-
         context.sendBroadcast(new Intent(ACTION_WIFI_P2P_STATE_CHANGED));
     }
 
     private static void notifyLocationStateChanged(Context context) {
-        Log.d(TAG, "notifyLocationStateChanged");
-
         context.sendBroadcast(new Intent(ACTION_LOCATION_STATE_CHANGED));
     }
 
     private static void notifySessionStateChanged(Context context) {
-        Log.d(TAG, "notifySessionStateChanged");
-
         context.sendBroadcast(new Intent(ACTION_SESSION_STATE_CHANGED));
     }
 
     protected static void notifyWifiP2pConnectingToUasc(Context context) {
-        Log.d(TAG, "notifyWifiP2pConnectingToUasc");
-
         context.sendBroadcast(new Intent(ACTION_WIFI_P2P_CONNECTING_TO_UASC));
     }
 
     protected static void notifyWifiP2pWaitingForUasc(Context context) {
-        Log.d(TAG, "notifyWifiP2pWaitingForUasc");
-
         context.sendBroadcast(new Intent(ACTION_WIFI_P2P_WAITING_FOR_UASC));
     }
 
     protected static void notifyWifiP2pConnectingFromUasc(Context context) {
-        Log.d(TAG, "notifyWifiP2pConnectingFromUasc");
-
         context.sendBroadcast(new Intent(ACTION_WIFI_P2P_CONNECTING_FROM_UASC));
     }
 
     protected static void notifyWifiP2pConnected(Context context) {
-        Log.d(TAG, "notifyWifiP2pConnected");
-
         context.sendBroadcast(new Intent(ACTION_WIFI_P2P_CONNECTED));
     }
 
@@ -361,52 +328,36 @@ public class CommandService extends Service {
     }
 
     protected static void notifyCloudServicePrepared(Context context) {
-        Log.d(TAG, "notifyCloudServicePrepared");
-
         context.sendBroadcast(new Intent(ACTION_CLOUD_SERVICE_PREPARED));
     }
 
     protected static void notifyLocationCalibrating(Context context) {
-        Log.d(TAG, "notifyLocationCalibrating");
-
         context.sendBroadcast(new Intent(ACTION_LOCATION_CALIBRATING));
 
     }
 
     protected static void notifyLocationHhmdCalibrationComplete(Context context) {
-        Log.d(TAG, "notifyLocationHhmdCalibrationComplete");
-
         startAllSessions = true;
         context.sendBroadcast(new Intent(ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE));
     }
 
     protected static void notifyLocationUascCalibrationComplete(Context context) {
-        Log.d(TAG, "notifyLocationUascCalibrationComplete");
-
         context.sendBroadcast(new Intent(ACTION_LOCATION_UASC_CALIBRATION_COMPLETE));
     }
 
     protected static void notifyLocationCalibrationComplete(Context context) {
-        Log.d(TAG, "notifyLocationCalibrationComplete");
-
         context.sendBroadcast(new Intent(ACTION_LOCATION_CALIBRATION_COMPLETE));
     }
 
     protected static void notifyEmergencyMessagesSent(Context context) {
-        Log.d(TAG, "notifyEmergencyMessageSent");
-
         context.sendBroadcast(new Intent(ACTION_SESSION_EMERGENCY_MESSAGES_SENT));
     }
 
     protected static void notifyEmergencyMessagesDelivered(Context context) {
-        Log.d(TAG, "notifyEmergencyMessageDelivered");
-
         context.sendBroadcast(new Intent(ACTION_SESSION_EMERGENCY_MESSAGES_DELIVERED));
     }
 
     protected static void notifyNewWaypointAvailable(Context context) {
-        Log.d(TAG, "notifyNewWaypointAvailable");
-
         context.sendBroadcast(new Intent(ACTION_NEW_WAYPOINT));
     }
 
@@ -415,8 +366,6 @@ public class CommandService extends Service {
     }
 
     protected static void notifyNewUasImageAvailable(Context context) {
-        Log.d(TAG, "notifyNewUasImageAvailable");
-
         receivedImagesCount++;
         context.sendBroadcast(new Intent(ACTION_NEW_UAS_IMAGE));
     }
@@ -436,15 +385,11 @@ public class CommandService extends Service {
     }
 
     private void handleNewWaypoint() {
-        Log.d(TAG, "handleNewWaypoint");
-
         Location waypoint = locationService.getLastWaypointLocation();
         uasCommunicationService.sendWaypoint(waypoint);
     }
 
     protected void handleCommandHhmdEmergency() {
-        Log.d(TAG, "handleCommandHhmdEmergency");
-
         HandlerThread tempHandlerThread = new HandlerThread("temp");
         tempHandlerThread.start();
 
@@ -458,31 +403,21 @@ public class CommandService extends Service {
                 String sessionCloudLink = cloudService.getSessionCloudLink();
                 Location lastHhmdLocation = locationService.getLastHhmdLocation();
                 emergencyService.startEmergency(lastHhmdLocation, sessionCloudLink);
-
-
-                uasCommunicationService.startEmergency();
             }
         });
 
         tempHandlerThread.quitSafely();
-
     }
 
     protected void handleCommandHhmdLight(boolean lightOnOff) {
-        Log.d(TAG, "handleCommandHhmdLight: lightOnOff=" + lightOnOff);
-
         uasCommunicationService.setLightOnOff(lightOnOff);
     }
 
     protected void handleCommandHhmdUasHeightUp() {
-        Log.d(TAG, "handleCommandHhmdUasHeightUp");
-
         locationService.incrementHeightOffset();
     }
 
     protected void handleCommandHhmdUasHeightDown() {
-        Log.d(TAG, "handleCommandHhmdUasHeightDown");
-
         locationService.decrementHeightOffset();
     }
 
@@ -496,17 +431,12 @@ public class CommandService extends Service {
     }
 
     private void handleCloudServicePrepared() {
-        Log.d(TAG, "handleCloudServicePrepared");
-
         state.setSessionState(SessionState.SESSION_READY);
     }
 
     protected void handleCommandHhmdSessionStart() {
-        Log.d(TAG, "handleCommandHhmdSessionStart");
-
         state.setSessionState(SessionState.SESSION_STARTING);
 
-        uasCommunicationService.startSession();
         cloudService.startSession();
         locationService.startSession();
     }
@@ -530,8 +460,6 @@ public class CommandService extends Service {
 
 
     private void handleLocationCalibrationComplete() {
-        Log.d(TAG, "handleLocationCalibrationComplete");
-
         state.setLocationState(LocationState.LOCATION_CALIBRATED);
 
         locationService.onLocationCalibrationComplete();
@@ -564,8 +492,6 @@ public class CommandService extends Service {
     //----------------------------------------------------
 
     protected void handleCommandHhmdSessionEnd() {
-        Log.d(TAG, "handleCommandHhmdSessionEnd");
-
         state.setSessionState(SessionState.SESSION_STOPPING);
 
         uasCommunicationService.stopSession();
@@ -575,15 +501,11 @@ public class CommandService extends Service {
     }
 
     private void handleNewUasLocation() {
-        Log.d(TAG, "handleNewUasLocation");
-
         Location uasLocation = uasCommunicationService.getNewUasLocation();
         locationService.pushUasLocation(uasLocation);
     }
 
     private void handleNewUasImage() {
-        Log.d(TAG, "handleNewUasImage");
-
         Bitmap bitmap = uasCommunicationService.getNewImage();
         cloudService.saveImage(bitmap);
     }
@@ -591,8 +513,6 @@ public class CommandService extends Service {
     private class CommandServiceBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.d(TAG, "onReceive");
-
             String action = intent.getAction();
             if (action != null) {
                 switch (action) {
@@ -656,17 +576,13 @@ public class CommandService extends Service {
     }
 
     protected class CommandServiceConnection implements ServiceConnection {
-        private static final String TAG = "CommandServiceConnec...";
-
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            Log.d(TAG, "onServiceConnected");
             setConnectedService(service);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            Log.d(TAG, "onServiceDisconnected");
         }
     }
 }
