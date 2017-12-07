@@ -126,6 +126,7 @@ public class SplashActivity extends Activity {
             final int PERMISSION_READ_CONTACTS = getApplicationContext().checkSelfPermission(Manifest.permission.READ_CONTACTS);
             final int PERMISSION_SEND_SMS = getApplicationContext().checkSelfPermission(Manifest.permission.SEND_SMS);
             final int PERMISSION_READ_PHONE_STATE = getApplicationContext().checkSelfPermission(Manifest.permission.READ_PHONE_STATE);
+            final int PERMISSION_WRITE_EXTERNAL_STORAGE = getApplicationContext().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
 
             ArrayList<String> permissions = new ArrayList<>();
 
@@ -140,6 +141,9 @@ public class SplashActivity extends Activity {
             }
             if (PERMISSION_READ_PHONE_STATE == PackageManager.PERMISSION_DENIED) {
                 permissions.add(Manifest.permission.READ_PHONE_STATE);
+            }
+            if (PERMISSION_WRITE_EXTERNAL_STORAGE == PackageManager.PERMISSION_DENIED) {
+                permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
             }
 
             if (permissions.size() != 0) {

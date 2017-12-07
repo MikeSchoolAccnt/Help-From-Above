@@ -1,5 +1,6 @@
 package com.helpfromabove.helpfromabove;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.ListPreference;
 import android.preference.MultiSelectListPreference;
@@ -19,7 +20,7 @@ import java.util.Set;
  * This is used to make sure the other preference activities are consistent.
  */
 
-public class HFAPreferenceActivity extends AppCompatPreferenceActivity {
+public class HFAPreferenceActivity extends AppCompatPreferenceActivity implements SharedPreferences.OnSharedPreferenceChangeListener{
     private static final String TAG = "HFAPreferenceActivity";
     private Preference.OnPreferenceChangeListener bindPreferenceSummaryToValueListener = new SettingsOnPreferenceChangeListener();
 
@@ -28,6 +29,18 @@ public class HFAPreferenceActivity extends AppCompatPreferenceActivity {
         Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
         setupActionBar();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).registerOnSharedPreferenceChangeListener(this);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).unregisterOnSharedPreferenceChangeListener(this);
     }
 
     private void setupActionBar() {
@@ -64,6 +77,11 @@ public class HFAPreferenceActivity extends AppCompatPreferenceActivity {
             bindPreferenceSummaryToValueListener.onPreferenceChange(preference,
                     PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).getString(preference.getKey(), ""));
         }
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
+        CommandService.notifySessionNotPrepared(getApplicationContext());
     }
 
     private class SettingsOnPreferenceChangeListener implements Preference.OnPreferenceChangeListener {

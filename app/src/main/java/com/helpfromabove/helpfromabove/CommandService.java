@@ -44,6 +44,7 @@ public class CommandService extends Service {
     private static final String ACTION_WIFI_P2P_WAITING_FOR_UASC = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_WAITING_FOR_UASC";
     private static final String ACTION_WIFI_P2P_CONNECTING_FROM_UASC = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_CONNECTING_FROM_UASC";
     private static final String ACTION_WIFI_P2P_CONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_CONNECTED";
+    private static final String ACTION_SESSION_NOT_PREPARED = "com.helpfromabove.helpfromabove.action.ACTION_SESSION_NOT_PREPARED";
     private static final String ACTION_CLOUD_SERVICE_PREPARED = "com.helpfromabove.helpfromabove.action.ACTION_CLOUD_SERVICE_PREPARED";
     private static final String ACTION_LOCATION_CALIBRATING = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_CALIBRATING";
     private static final String ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE";
@@ -178,6 +179,7 @@ public class CommandService extends Service {
         intentFilter.addAction(ACTION_WIFI_P2P_WAITING_FOR_UASC);
         intentFilter.addAction(ACTION_WIFI_P2P_CONNECTING_FROM_UASC);
         intentFilter.addAction(ACTION_WIFI_P2P_CONNECTED);
+        intentFilter.addAction(ACTION_SESSION_NOT_PREPARED);
         intentFilter.addAction(ACTION_CLOUD_SERVICE_PREPARED);
         intentFilter.addAction(ACTION_LOCATION_CALIBRATING);
         intentFilter.addAction(ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE);
@@ -354,6 +356,10 @@ public class CommandService extends Service {
         context.sendBroadcast(new Intent(ACTION_WIFI_P2P_CONNECTED));
     }
 
+    protected static void notifySessionNotPrepared(Context context) {
+        context.sendBroadcast(new Intent(ACTION_SESSION_NOT_PREPARED));
+    }
+
     protected static void notifyCloudServicePrepared(Context context) {
         Log.d(TAG, "notifyCloudServicePrepared");
 
@@ -485,6 +491,10 @@ public class CommandService extends Service {
         cloudService.prepareSession();
     }
 
+    protected void handleSessionNotPrepared() {
+        state.setSessionState(SessionState.SESSION_NOT_PREPARED);
+    }
+
     private void handleCloudServicePrepared() {
         Log.d(TAG, "handleCloudServicePrepared");
 
@@ -600,6 +610,9 @@ public class CommandService extends Service {
                         break;
                     case ACTION_WIFI_P2P_CONNECTED:
                         state.setWifiP2pState(WifiP2pState.WIFI_P2P_CONNECTED);
+                        break;
+                    case ACTION_SESSION_NOT_PREPARED:
+                        handleSessionNotPrepared();
                         break;
                     case ACTION_CLOUD_SERVICE_PREPARED:
                         handleCloudServicePrepared();

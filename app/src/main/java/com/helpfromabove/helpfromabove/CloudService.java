@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
 import android.os.Binder;
+import android.os.Environment;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -41,7 +42,7 @@ public class CloudService extends Service {
     private final IBinder mBinder = new CloudServiceBinder();
 
     private static final String APP_FOLDER = "Help_From_Above";
-    private static String LOCAL_APP_FOLDER;
+    private static final String LOCAL_APP_FOLDER = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + "/" + APP_FOLDER;
     private static final String CLOUD_APP_FOLDER = "/" + APP_FOLDER;
     private String sessionFolder;
     private CompressFormat compressionFormat;
@@ -55,6 +56,7 @@ public class CloudService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
+
         return START_NOT_STICKY;
     }
 
@@ -63,7 +65,6 @@ public class CloudService extends Service {
         Log.d(TAG, "onCreate");
         super.onCreate();
 
-        LOCAL_APP_FOLDER = getFilesDir() + "/" + APP_FOLDER;
         CloudRail.setAppKey(CLOUDRAIL_LICENSE_KEY);
     }
 
