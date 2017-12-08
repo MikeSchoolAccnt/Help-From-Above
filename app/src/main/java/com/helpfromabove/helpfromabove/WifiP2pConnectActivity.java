@@ -298,8 +298,6 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
     }
 
     protected class WifiP2pConnectActivityServiceConnection implements ServiceConnection {
-        private static final String TAG = "CommandServiceConnec...";
-
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             setConnectedService(service);

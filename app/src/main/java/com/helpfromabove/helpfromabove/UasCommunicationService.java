@@ -153,6 +153,19 @@ public class UasCommunicationService extends Service {
                 uascClient = new UASCClient(getApplicationContext(), wifiP2pInfo.groupOwnerAddress.getHostAddress(), port);
                 CommandService.notifyWifiP2pConnected(getApplicationContext());
             }
+
+            Log.i(TAG, "----------------------------------------");
+            Log.i(TAG, "HHMD and UASC Connected");
+            Log.i(TAG, "----------------------------------------");
+            WifiP2pDevice owner = wifiP2pGroup.getOwner();
+            Log.i(TAG, "Owner                    = " + owner.deviceName + " : " + owner.deviceAddress);
+            Log.i(TAG, "----------------------------------------");
+            for (WifiP2pDevice client : wifiP2pGroup.getClientList()) {
+                Log.i(TAG, "Client                   = " + client.deviceName + " : " + client.deviceAddress);
+            }
+            Log.i(TAG, "----------------------------------------");
+
+
             startHeartbeat();
         } else {
             if (uascClient != null) {
@@ -166,17 +179,15 @@ public class UasCommunicationService extends Service {
         uascClient.startHeartbeat(10000);
     }
 
-    private void initUascClient(){
+    private void initUascClient() {
+        WifiP2pDevice groupOwner = wifiP2pGroup.getOwner();
 
-        WifiP2pDevice groupOwner =  wifiP2pGroup.getOwner();
-
-        if(wifiP2pInfo.isGroupOwner){
+        if (wifiP2pInfo.isGroupOwner) {
             //If the users device is the group owner connections will not work properly
 
             //This most likely means they are trying to connect to the wrong device
             //TODO: Notify the user they are connected to the device incorrectly and to reconnect the correct way.
-        }
-        else if(groupOwner.toString().contains("HFA")){
+        } else if (groupOwner.toString().contains("HFA")) {
             uascClient = new UASCClient(getApplicationContext(), uascIP, port);
             CommandService.notifyWifiP2pConnected(getApplicationContext());
         }
@@ -195,7 +206,7 @@ public class UasCommunicationService extends Service {
     protected void onLocationCalibrationComplete() {
         if (uascClient != null) {
             uascClient.startImageAccess(imageEndpoint, 1000);
-            uascClient.startGPSAccess(gpsReceiveEndpoint,5000);
+            uascClient.startGPSAccess(gpsReceiveEndpoint, 5000);
         }
     }
 
@@ -208,12 +219,12 @@ public class UasCommunicationService extends Service {
     }
 
     protected void setLightOnOff(boolean lightOnOff) {
-        uascClient.toogleLight(lightEndpoint,lightOnOff);
+        uascClient.toogleLight(lightEndpoint, lightOnOff);
     }
 
     protected void sendWaypoint(Location waypoint) {
-        if(waypoint != null)
-            uascClient.sendNewWaypoint(gpsSendEndpoint,waypoint);
+        if (waypoint != null)
+            uascClient.sendNewWaypoint(gpsSendEndpoint, waypoint);
     }
 
     public Bitmap getNewImage() {

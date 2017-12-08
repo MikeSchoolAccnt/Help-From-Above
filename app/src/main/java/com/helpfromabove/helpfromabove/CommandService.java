@@ -56,7 +56,7 @@ public class CommandService extends Service {
 
     protected static final String ACTION_SKIPPED_WIFI_CONNECTION = "com.helpfromabove.helpfromabove.action.ACTION_SKIPPED_WIFI_CONNECTION";
 
-    private final static String TAG = "CommandService";
+    private static final String TAG = "CommandService";
 
     private final IBinder mBinder = new CommandServiceBinder();
     ServiceConnection uasCommunicationServiceConnection;
@@ -168,7 +168,6 @@ public class CommandService extends Service {
 
     @Override
     public void onCreate() {
-        Log.d(TAG, "onCreate");
         super.onCreate();
 
         state = new State(ServicesState.SERVICES_STOPPED, WifiP2pState.WIFI_P2P_DISCONNECTED, LocationState.LOCATION_NOT_CALIBRATED, SessionState.SESSION_NOT_PREPARED);
@@ -374,7 +373,7 @@ public class CommandService extends Service {
         context.sendBroadcast(new Intent(ERROR_SAVING_LOCAL_IMAGE));
     }
 
-    protected static void notifySkippedWifiConnection(Context context){
+    protected static void notifySkippedWifiConnection(Context context) {
 
         context.sendBroadcast(new Intent(ACTION_SKIPPED_WIFI_CONNECTION));
     }
@@ -468,8 +467,6 @@ public class CommandService extends Service {
             if (receivedImagesCount == cloudService.getUploadCount()) {
                 receivedImagesCount = 0;
                 uasCommunicationService.onLocationCalibrationComplete();
-            } else {
-                Log.d(TAG, "Still uploading images form the last session");
             }
         }
 

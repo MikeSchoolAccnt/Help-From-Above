@@ -27,12 +27,10 @@ public class EmergencyService extends Service {
     private static final String ACTION_DELIVERED = "com.helpfromabove.helpfromabove.action.ACTION_DELIVERED";
     private static final String EXTRA_NUMBER = "com.helpfromabove.helpfromabove.extra.EXTRA_NUMBER";
     private static final String EXTRA_MESSAGE = "com.helpfromabove.helpfromabove.extra.EXTRA_MESSAGE";
-
+    private final IBinder mBinder = new EmergencyServiceBinder();
     private int totalMessageCount_SENT = 0;
     private int totalMessageCount_DELIVERED = 0;
-
     private SMSManagerBroadcastReceiver smsManagerBroadcastReceiver = new SMSManagerBroadcastReceiver();
-    private final IBinder mBinder = new EmergencyServiceBinder();
     private IntentFilter smsManagerIntentFilter;
 
     public EmergencyService() {
@@ -88,8 +86,6 @@ public class EmergencyService extends Service {
 //        totalMessageCount_SENT = contactsSet.size();
 //        totalMessageCount_DELIVERED = contactsSet.size();
 //        for (String emergencyContactNumber : contactsSet) {
-//            Log.d(TAG, "emergencyContactNumber=" + emergencyContactNumber);
-//            Log.d(TAG, "emergencyMessage= " + emergencyMessage);
 //            sendSMSMessage(emergencyContactNumber, emergencyMessage);
 //        }
 

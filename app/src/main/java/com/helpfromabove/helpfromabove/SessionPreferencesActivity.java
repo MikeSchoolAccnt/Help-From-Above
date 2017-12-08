@@ -1,7 +1,6 @@
 package com.helpfromabove.helpfromabove;
 
 import android.os.Bundle;
-import android.util.Log;
 
 public class SessionPreferencesActivity extends HFAPreferenceActivity {
     @Override

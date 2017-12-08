@@ -162,8 +162,6 @@ public class SplashActivity extends Activity {
                     finish();
                     overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
                 }
-            } else {
-                Log.d(TAG, "transition: not ready to start WifiP2pConnectActivity");
             }
         }
     }
@@ -181,10 +179,8 @@ public class SplashActivity extends Activity {
                     }
 
                     for (int i = 0; i < permissionAcceptance.length; i++) {
-                        if (permissionAcceptance[i]) {
-                            Log.d(TAG, "Permission Accepted: " + permissions[i]);
-                        } else {
-                            Log.d(TAG, "Permission Declined: " + permissions[i]);
+                        if (!permissionAcceptance[i]) {
+                            Log.w(TAG, "Permission Denied: " + permissions[i]);
                         }
                     }
                 }

@@ -22,9 +22,10 @@ import java.util.Stack;
 
 public class LocationService extends Service {
     private static final String TAG = "LocationService";
-
+    private static final int MIN_ACCURACY_DISTANCE = 1000;
+    private static final int MIN_ACCURATE_COUNT = 3;
+    private static final int CONSTANT_LOCATION_UPDATE_SECONDS = 3;
     private final IBinder mBinder = new LocationServiceBinder();
-
     private LocationManager locationManager;
     private LocationListener locationServiceLocationListener;
     private Criteria locationCriteria = new Criteria();
@@ -34,13 +35,8 @@ public class LocationService extends Service {
     private Stack<Location> sessionUasLocations = new Stack<>();
     private Stack<Location> sessionWaypointLocations = new Stack<>();
     private int heightOffset;
-
     private int accurateCount = 0;
     private boolean calibrationComplete = false;
-
-    private static final int MIN_ACCURACY_DISTANCE = 1000;
-    private static final int MIN_ACCURATE_COUNT = 3;
-    protected static final int CONSTANT_LOCATION_UPDATE_SECONDS = 3;
 
     public LocationService() {
         super();
@@ -198,10 +194,10 @@ public class LocationService extends Service {
             Log.i(TAG, "----------------------------------------");
             Log.i(TAG, "New Waypoint Generated");
             Log.i(TAG, "----------------------------------------");
-            Log.i(TAG, "HHMD Location 1          = (" + oldHhmd.getLatitude() + ", " + oldHhmd.getLongitude() +") Accuracy = " + oldHhmd.getAccuracy() + "m");
-            Log.i(TAG, "HHMD Location n          = (" + newHhmd.getLatitude() + ", " + newHhmd.getLongitude() +") Accuracy = " + newHhmd.getAccuracy() + "m");
-            Log.i(TAG, "HHMD Location difference = (" + diff.getLatitude() + ", " + diff.getLongitude() +")");
-            Log.i(TAG, "Waypoint Location        = (" + waypoint.getLatitude() + ", " + waypoint.getLongitude() +")");
+            Log.i(TAG, "HHMD Location 1          = (" + oldHhmd.getLatitude() + ", " + oldHhmd.getLongitude() + ") Accuracy = " + oldHhmd.getAccuracy() + "m");
+            Log.i(TAG, "HHMD Location n          = (" + newHhmd.getLatitude() + ", " + newHhmd.getLongitude() + ") Accuracy = " + newHhmd.getAccuracy() + "m");
+            Log.i(TAG, "HHMD Location difference = (" + diff.getLatitude() + ", " + diff.getLongitude() + ")");
+            Log.i(TAG, "Waypoint Location        = (" + waypoint.getLatitude() + ", " + waypoint.getLongitude() + ")");
             Log.i(TAG, "----------------------------------------");
 
             tmpUasLocations.clear();
@@ -263,12 +259,12 @@ public class LocationService extends Service {
         return heightOffset;
     }
 
-    private synchronized void clearHeightOffset() {
-        setHeightOffset(0);
-    }
-
     private synchronized void setHeightOffset(int i) {
         heightOffset = i;
+    }
+
+    private synchronized void clearHeightOffset() {
+        setHeightOffset(0);
     }
 
     protected void incrementHeightOffset() {

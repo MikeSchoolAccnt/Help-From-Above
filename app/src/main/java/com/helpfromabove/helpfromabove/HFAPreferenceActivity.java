@@ -8,7 +8,6 @@ import android.preference.Preference;
 import android.preference.PreferenceManager;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBar;
-import android.util.Log;
 import android.view.MenuItem;
 
 import java.util.HashSet;
@@ -20,7 +19,7 @@ import java.util.Set;
  * This is used to make sure the other preference activities are consistent.
  */
 
-public class HFAPreferenceActivity extends AppCompatPreferenceActivity implements SharedPreferences.OnSharedPreferenceChangeListener{
+public class HFAPreferenceActivity extends AppCompatPreferenceActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
     private Preference.OnPreferenceChangeListener bindPreferenceSummaryToValueListener = new SettingsOnPreferenceChangeListener();
 
     @Override

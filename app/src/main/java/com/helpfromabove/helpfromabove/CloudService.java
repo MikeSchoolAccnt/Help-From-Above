@@ -38,12 +38,10 @@ public class CloudService extends Service {
     private final static String GOOGLE_DRIVE_APP_SECRET = "";
     private final static String ONE_DRIVE_APP_KEY = "8c273966-c62c-48b0-8500-d42b849bbf18";
     private final static String ONE_DRIVE_APP_SECRET = "3tGij2AmL0dGx7pHkukgK9o";
-
-    private final IBinder mBinder = new CloudServiceBinder();
-
     private static final String APP_FOLDER = "Help_From_Above";
     private static final String LOCAL_APP_FOLDER = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + "/" + APP_FOLDER;
     private static final String CLOUD_APP_FOLDER = "/" + APP_FOLDER;
+    private final IBinder mBinder = new CloudServiceBinder();
     private String sessionFolder;
     private CompressFormat compressionFormat;
     private int compressionQuality;
@@ -52,6 +50,35 @@ public class CloudService extends Service {
     private AtomicInteger atomicImageUploadCount = new AtomicInteger(0);
 
     private CloudStorage cloudStorage;
+
+    private static byte[] convertBitmapToByteArray(Bitmap bitmap, CompressFormat format, int quality) {
+        byte[] byteArray;
+        if (bitmap == null) {
+            byteArray = null;
+        } else {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            bitmap.compress(format, quality, bos);
+            byteArray = bos.toByteArray();
+        }
+
+        return byteArray;
+    }
+
+    private static ByteArrayInputStream convertDataToByteArrayInputStream(Bitmap bitmap, CompressFormat format, int quality) {
+        ByteArrayInputStream byteArrayInputStream;
+
+        if (bitmap == null || bitmap.getByteCount() == 0) {
+            byteArrayInputStream = null;
+        } else {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            bitmap.compress(format, quality, byteArrayOutputStream);
+
+            byte[] imageBytes = byteArrayOutputStream.toByteArray();
+            byteArrayInputStream = new ByteArrayInputStream(imageBytes);
+        }
+
+        return byteArrayInputStream;
+    }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -83,20 +110,16 @@ public class CloudService extends Service {
 
         switch (cloudType) {
             case "-1":
-                Log.d(TAG, "initCloudStorage: None specified");
                 cloudStorage = null;
                 break;
             case "0":
-                Log.d(TAG, "initCloudStorage: Dropbox specified");
                 cloudStorage = new Dropbox(this, DROPBOX_APP_KEY, DROPBOX_APP_SECRET);
                 break;
             case "1":
-                Log.d(TAG, "initCloudStorage: Google Drive specified");
 //                cloudStorage = new GoogleDrive();
 //                createCloudAppFolder();
                 break;
             case "2":
-                Log.d(TAG, "initCloudStorage: OneDrive specified");
                 cloudStorage = new OneDrive(this, ONE_DRIVE_APP_KEY, ONE_DRIVE_APP_SECRET);
                 break;
             default:
@@ -261,19 +284,6 @@ public class CloudService extends Service {
         }
     }
 
-    private static byte[] convertBitmapToByteArray(Bitmap bitmap, CompressFormat format, int quality) {
-        byte[] byteArray;
-        if (bitmap == null) {
-            byteArray = null;
-        } else {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            bitmap.compress(format, quality, bos);
-            byteArray = bos.toByteArray();
-        }
-
-        return byteArray;
-    }
-
     private void saveCloudImage(Bitmap bitmap, final String path) {
         ByteArrayInputStream byteArrayInputStream = convertDataToByteArrayInputStream(bitmap, compressionFormat, compressionQuality);
 
@@ -299,28 +309,10 @@ public class CloudService extends Service {
         atomicImageUploadCount.getAndIncrement();
     }
 
-    private static ByteArrayInputStream convertDataToByteArrayInputStream(Bitmap bitmap, CompressFormat format, int quality) {
-        ByteArrayInputStream byteArrayInputStream;
-
-        if (bitmap == null || bitmap.getByteCount() == 0) {
-            byteArrayInputStream = null;
-        } else {
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            bitmap.compress(format, quality, byteArrayOutputStream);
-
-            byte[] imageBytes = byteArrayOutputStream.toByteArray();
-            byteArrayInputStream = new ByteArrayInputStream(imageBytes);
-        }
-
-        return byteArrayInputStream;
-    }
-
     protected String getSessionCloudLink() {
         String link = null;
         if (cloudStorage != null) {
             link = cloudStorage.createShareLink(sessionFolder);
-        } else {
-            Log.d(TAG, "getSessionCloudLink: No cloud storage");
         }
 
         return link;
