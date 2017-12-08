@@ -9,8 +9,8 @@
         android:id="@+id/wifi_p2p_connect_progressbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:visibility="visible"
-        android:paddingTop="?attr/actionBarSize"/>
+        android:paddingTop="?attr/actionBarSize"
+        android:visibility="visible"/>
 
     <include layout="@layout/content_wifi_p2p_connect" />
 

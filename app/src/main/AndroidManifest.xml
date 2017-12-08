@@ -80,6 +80,7 @@
         <activity
             android:name=".WifiP2pConnectActivity"
             android:label="@string/title_activity_wifi_p2p_connect" />
+
         <service
             android:name=".CommandService"
             android:enabled="true"

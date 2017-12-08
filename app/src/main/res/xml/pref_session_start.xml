@@ -10,5 +10,5 @@
         android:persistent="true"
         android:positiveButtonText="@null"
         android:title="@string/pref_title_uas_start_height" />
-    
+
 </PreferenceScreen>

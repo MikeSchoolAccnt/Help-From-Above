@@ -76,7 +76,7 @@
     <string name="pref_header_emergency_contacts">Emergency Contacts</string>
     <string name="pref_key_emergency_contacts">pref_key_emergency_contacts</string>
     <string name="pref_title_emergency_contacts">Emergency Contacts</string>
-    <string-array name="empty_array"/>
+    <string-array name="empty_array" />
 
     <!-- Session Start -->
     <string name="pref_header_session_start">Session Start</string>
