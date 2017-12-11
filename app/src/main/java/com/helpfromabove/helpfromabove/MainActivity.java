@@ -32,7 +32,8 @@ import android.widget.Toast;
  * <p>
  * The MainActivity is the main screen for Help From Above.
  * It contains the user commands, the view for displaying images from
- * the UAS, and holding the menu for accessing the SettingsActivity.
+ * the UAS, and holding the navigation menu to access the preference
+ * activities for app settings.
  */
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {

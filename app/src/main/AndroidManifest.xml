@@ -46,14 +46,6 @@
                 android:value=".MainActivity" />
         </activity>
         <activity
-            android:name=".SettingsActivity"
-            android:label="@string/title_activity_settings"
-            android:parentActivityName=".MainActivity">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.helpfromabove.helpfromabove.MainActivity" />
-        </activity>
-        <activity
             android:name=".CloudPreferencesActivity"
             android:label="@string/pref_header_cloud_storage"
             android:parentActivityName=".MainActivity">
