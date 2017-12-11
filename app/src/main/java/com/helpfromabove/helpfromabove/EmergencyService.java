@@ -87,17 +87,11 @@ public class EmergencyService extends Service {
             CommandService.notifySessionEmergencyEnd(getApplicationContext());
         }
         else {
-            // TODO : Uncomment after testing complete
-//        totalMessageCount_SENT = contactsSet.size();
-//        totalMessageCount_DELIVERED = contactsSet.size();
-//        for (String emergencyContactNumber : contactsSet) {
-//            sendSMSMessage(emergencyContactNumber, emergencyMessage);
-//        }
-
-            // TODO: Remove after testing complete
-//        totalMessageCount_SENT = 1;
-//        totalMessageCount_DELIVERED = 1;
-//        sendSMSMessage("your number here", emergencyMessage);
+            totalMessageCount_SENT = contactsSet.size();
+            totalMessageCount_DELIVERED = contactsSet.size();
+            for (String emergencyContactNumber : contactsSet) {
+                sendSMSMessage(emergencyContactNumber, emergencyMessage);
+            }
         }
     }
 

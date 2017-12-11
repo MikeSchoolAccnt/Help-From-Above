@@ -55,9 +55,7 @@ public class EmergencyPreferencesActivity extends HFAPreferenceActivity {
 
                 Collections.sort(newContacts);
                 contacts = newContacts;
-
-                //TODO : Enable this in final version. This is commented out so that we do not accidentally text during testing
-//              contacts.add(0, emergencyContact);
+                contacts.add(0, emergencyContact);
                 refreshContactsList();
             }
         }).start();
