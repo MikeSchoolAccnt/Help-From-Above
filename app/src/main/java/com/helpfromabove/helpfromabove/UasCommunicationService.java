@@ -44,7 +44,7 @@ public class UasCommunicationService extends Service {
     private UASCClient uascClient;
     private final String uascIP = "192.168.49.187";
     private final String port = "5000";
-    private final String imageEndpoint = "static/img/img.jpg";
+    private final String imageEndpoint = "static/img/img.jpeg";
     private final String gpsReceiveEndpoint = "request_location";
     private final String gpsSendEndpoint = "update_location";
     private final String startEndpoint = "start_session";

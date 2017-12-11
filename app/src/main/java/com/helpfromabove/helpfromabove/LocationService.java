@@ -22,7 +22,7 @@ import java.util.Stack;
 
 public class LocationService extends Service {
     private static final String TAG = "LocationService";
-    private static final int MIN_ACCURACY_DISTANCE = 1000;
+    private static final int MIN_ACCURACY_DISTANCE = 15;
     private static final int MIN_ACCURATE_COUNT = 3;
     private static final int CONSTANT_LOCATION_UPDATE_SECONDS = 3;
     private final IBinder mBinder = new LocationServiceBinder();

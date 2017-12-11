@@ -84,7 +84,7 @@ public class UASCClient {
     //These are only for testing
     private ArrayList<String> testURLs = new ArrayList<>();
     private int currentImageNumber = 0;
-    private boolean debugging = true;
+    private boolean debugging = false;
 
     public UASCClient(Context context, String hostIP, String port){
         this.context = context;
@@ -402,6 +402,16 @@ public class UASCClient {
 
                     jsonObject.put("LIGHT_CONTROL",on);
 
+                    String msg = jsonObject.toString();
+
+                    Log.d(TAG, "Sending light toggle.");
+
+                    OutputStreamWriter outputStreamWriter = new OutputStreamWriter(connection.getOutputStream());
+                    outputStreamWriter.write(msg);
+                    outputStreamWriter.flush();
+                    outputStreamWriter.close();
+
+                    connection.getResponseCode();
 
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
