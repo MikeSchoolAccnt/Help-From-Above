@@ -88,7 +88,7 @@ public class FullscreenUasImageActivity extends AppCompatActivity {
                         break;
                     case SESSION_RUNNING:
                     case SESSION_EMERGENCY_STARTED:
-                    case SESSION_EMERGENCY_MESSAGES_SENT:
+                    case SESSION_EMERGENCY_END:
                         Bitmap bitmap = commandService.getNewImage();
                         if (bitmap != null) {
                             imageView.setImageBitmap(bitmap);

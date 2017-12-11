@@ -90,9 +90,9 @@ public class EmergencyService extends Service {
 //        }
 
         // TODO: Remove after testing complete
-        totalMessageCount_SENT = 1;
-        totalMessageCount_DELIVERED = 1;
-        //sendSMSMessage("your number here", emergencyMessage);
+//        totalMessageCount_SENT = 1;
+//        totalMessageCount_DELIVERED = 1;
+//        sendSMSMessage("your number here", emergencyMessage);
 
     }
 
@@ -123,8 +123,8 @@ public class EmergencyService extends Service {
         try {
             SmsManager smsManager = SmsManager.getDefault();
 
-            PendingIntent sentPendingIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_SENT).putExtra(EXTRA_NUMBER, recipientNumber).putExtra(EXTRA_MESSAGE, message), 0);
-            PendingIntent deliveredPendingIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_DELIVERED).putExtra(EXTRA_NUMBER, recipientNumber).putExtra(EXTRA_MESSAGE, message), 0);
+            PendingIntent sentPendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, new Intent(ACTION_SENT).putExtra(EXTRA_NUMBER, recipientNumber).putExtra(EXTRA_MESSAGE, message), 0);
+            PendingIntent deliveredPendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, new Intent(ACTION_DELIVERED).putExtra(EXTRA_NUMBER, recipientNumber).putExtra(EXTRA_MESSAGE, message), 0);
 
             smsManager.sendTextMessage(recipientNumber, null, message, sentPendingIntent, deliveredPendingIntent);
         } catch (IllegalArgumentException e) {
@@ -145,46 +145,36 @@ public class EmergencyService extends Service {
             if (action != null) {
                 switch (action) {
                     case ACTION_SENT:
-                        if (getResultCode() == Activity.RESULT_OK) {
-                            totalMessageCount_SENT = totalMessageCount_SENT - 1;
+                        switch (getResultCode()) {
+                            case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
+                            case SmsManager.RESULT_ERROR_RADIO_OFF:
+                            case SmsManager.RESULT_ERROR_NULL_PDU:
+                                String number = intent.getStringExtra(EXTRA_NUMBER);
+                                Log.w(TAG, "Error sending SMS message to " + number);
+                            case Activity.RESULT_OK:
+                                totalMessageCount_SENT = totalMessageCount_SENT - 1;
 
-                            //If all messages have been sent notify the CommandService
-                            if (totalMessageCount_SENT == 0) {
-                                CommandService.notifyEmergencyMessagesSent(getApplicationContext());
-                            }
-                        }
-                        if (getResultCode() == Activity.RESULT_CANCELED) {
-                            //Only decrementing for testing. Maybe try to resend to the current number with x amount of tries
-                            totalMessageCount_SENT = totalMessageCount_SENT - 1;
-
-                            //How to resend
-                            //Note: No way to tell how many times resending has been tried.
-
-                            //String number = intent.getStringExtra(EXTRA_NUMBER);
-                            //String msg = intent.getStringExtra(EXTRA_MESSAGE);
-                            //sendSMSMessage(number,msg);
+                                //If all messages have been sent notify the CommandService
+                                if (totalMessageCount_SENT == 0) {
+                                    CommandService.notifyEmergencyMessagesSent(getApplicationContext());
+                                    CommandService.notifySessionEmergencyEnd(getApplicationContext());
+                                }
+                                break;
+                            default:
+                                Log.w(TAG, "onReceive: default: action=" + action);
+                                break;
                         }
                         break;
                     case ACTION_DELIVERED:
-                        if (getResultCode() == Activity.RESULT_OK) {
-                            totalMessageCount_DELIVERED = totalMessageCount_DELIVERED - 1;
+                        totalMessageCount_DELIVERED = totalMessageCount_DELIVERED - 1;
 
-                            //If all messages have been delivered notify the CommandService
-                            if (totalMessageCount_DELIVERED == 0) {
-                                CommandService.notifyEmergencyMessagesDelivered(getApplicationContext());
-                            }
+                        //If all messages have been delivered notify the CommandService
+                        if (totalMessageCount_DELIVERED == 0) {
+                             CommandService.notifyEmergencyMessagesDelivered(getApplicationContext());
                         }
-                        if (getResultCode() == Activity.RESULT_CANCELED) {
-                            //Only decrementing for testing. Maybe try to resend to the current number with x amount of tries
-                            totalMessageCount_DELIVERED = totalMessageCount_DELIVERED - 1;
-
-                            //How to resend
-                            //Note: No way to tell how many times resending has been tried.
-
-                            //String number = intent.getStringExtra(EXTRA_NUMBER);
-                            //String msg = intent.getStringExtra(EXTRA_MESSAGE);
-                            //sendSMSMessage(number,msg);
-                        }
+                        break;
+                    default:
+                        Log.w(TAG, "onReceive: default: action=" + action);
                         break;
                 }
             }

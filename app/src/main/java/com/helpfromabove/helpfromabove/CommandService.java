@@ -37,6 +37,9 @@ public class CommandService extends Service {
     protected static final String ACTION_NEW_UAS_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_UAS_LOCATION";
     protected static final String ACTION_NEW_HHMD_LOCATION = "com.helpfromabove.helpfromabove.action.ACTION_NEW_HHMD_LOCATION";
     protected static final String ERROR_SAVING_LOCAL_IMAGE = "com.helpfromabove.helpfromabove.action.ERROR_SAVING_LOCAL_IMAGE";
+    protected static final String ACTION_SKIPPED_WIFI_CONNECTION = "com.helpfromabove.helpfromabove.action.ACTION_SKIPPED_WIFI_CONNECTION";
+    protected static final String ACTION_SESSION_EMERGENCY_MESSAGES_SENT = "com.helpfromabove.helpfromabove.action.ACTION_SESSION_EMERGENCY_MESSAGE_SENT";
+    protected static final String ACTION_SESSION_EMERGENCY_MESSAGES_DELIVERED = "com.helpfromabove.helpfromabove.action.ACTION_SESSION_EMERGENCY_MESSAGE_DELIVERED";
 
     // Broadcasts for other services to use
     private static final String ACTION_WIFI_P2P_DISCONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_DISCONNECTED";
@@ -45,16 +48,12 @@ public class CommandService extends Service {
     private static final String ACTION_WIFI_P2P_CONNECTING_FROM_UASC = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_CONNECTING_FROM_UASC";
     private static final String ACTION_WIFI_P2P_CONNECTED = "com.helpfromabove.helpfromabove.action.ACTION_WIFI_P2P_CONNECTED";
     private static final String ACTION_SESSION_NOT_PREPARED = "com.helpfromabove.helpfromabove.action.ACTION_SESSION_NOT_PREPARED";
+    private static final String ACTION_SESSION_EMERGENCY_END = "com.helpfromabove.helpfromabove.action.ACTION_SESSION_EMERGENCY_MESSAGE_DELIVERED";
     private static final String ACTION_CLOUD_SERVICE_PREPARED = "com.helpfromabove.helpfromabove.action.ACTION_CLOUD_SERVICE_PREPARED";
     private static final String ACTION_LOCATION_CALIBRATING = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_CALIBRATING";
     private static final String ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE";
     private static final String ACTION_LOCATION_UASC_CALIBRATION_COMPLETE = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_UASC_CALIBRATION_COMPLETE";
     private static final String ACTION_LOCATION_CALIBRATION_COMPLETE = "com.helpfromabove.helpfromabove.action.ACTION_LOCATION_CALIBRATION_COMPLETE";
-    private static final String ACTION_SESSION_EMERGENCY_MESSAGES_SENT = "com.helpfromabove.helpfromabove.action.ACTION_SESSION_EMERGENCY_MESSAGE_SENT";
-    private static final String ACTION_SESSION_EMERGENCY_MESSAGES_DELIVERED = "com.helpfromabove.helpfromabove.action.ACTION_SESSION_EMERGENCY_MESSAGE_DELIVERED";
-
-
-    protected static final String ACTION_SKIPPED_WIFI_CONNECTION = "com.helpfromabove.helpfromabove.action.ACTION_SKIPPED_WIFI_CONNECTION";
 
     private static final String TAG = "CommandService";
 
@@ -102,7 +101,7 @@ public class CommandService extends Service {
         SESSION_STARTING,
         SESSION_RUNNING,
         SESSION_EMERGENCY_STARTED,
-        SESSION_EMERGENCY_MESSAGES_SENT,
+        SESSION_EMERGENCY_END,
         SESSION_STOPPING,
         SESSION_STOPPED,
     }
@@ -179,13 +178,12 @@ public class CommandService extends Service {
         intentFilter.addAction(ACTION_WIFI_P2P_CONNECTING_FROM_UASC);
         intentFilter.addAction(ACTION_WIFI_P2P_CONNECTED);
         intentFilter.addAction(ACTION_SESSION_NOT_PREPARED);
+        intentFilter.addAction(ACTION_SESSION_EMERGENCY_END);
         intentFilter.addAction(ACTION_CLOUD_SERVICE_PREPARED);
         intentFilter.addAction(ACTION_LOCATION_CALIBRATING);
         intentFilter.addAction(ACTION_LOCATION_HHMD_CALIBRATION_COMPLETE);
         intentFilter.addAction(ACTION_LOCATION_UASC_CALIBRATION_COMPLETE);
         intentFilter.addAction(ACTION_LOCATION_CALIBRATION_COMPLETE);
-        intentFilter.addAction(ACTION_SESSION_EMERGENCY_MESSAGES_SENT);
-        intentFilter.addAction(ACTION_SESSION_EMERGENCY_MESSAGES_DELIVERED);
         intentFilter.addAction(ACTION_NEW_WAYPOINT);
         intentFilter.addAction(ACTION_NEW_UAS_LOCATION);
         intentFilter.addAction(ACTION_NEW_UAS_IMAGE);
@@ -326,13 +324,16 @@ public class CommandService extends Service {
         context.sendBroadcast(new Intent(ACTION_SESSION_NOT_PREPARED));
     }
 
+    protected static void notifySessionEmergencyEnd(Context context) {
+        context.sendBroadcast(new Intent(ACTION_SESSION_EMERGENCY_END));
+    }
+
     protected static void notifyCloudServicePrepared(Context context) {
         context.sendBroadcast(new Intent(ACTION_CLOUD_SERVICE_PREPARED));
     }
 
     protected static void notifyLocationCalibrating(Context context) {
         context.sendBroadcast(new Intent(ACTION_LOCATION_CALIBRATING));
-
     }
 
     protected static void notifyLocationHhmdCalibrationComplete(Context context) {
@@ -374,7 +375,6 @@ public class CommandService extends Service {
     }
 
     protected static void notifySkippedWifiConnection(Context context) {
-
         context.sendBroadcast(new Intent(ACTION_SKIPPED_WIFI_CONNECTION));
     }
 
@@ -392,8 +392,6 @@ public class CommandService extends Service {
         HandlerThread tempHandlerThread = new HandlerThread("temp");
         tempHandlerThread.start();
 
-        //Getting the CloudLink isn't allowed on the main UI thread so put it on
-        //another thread. Using a normal thread wouldn't work so I used a HandlerThread.
         new Handler(tempHandlerThread.getLooper()).post(new Runnable() {
             @Override
             public void run() {
@@ -457,7 +455,6 @@ public class CommandService extends Service {
         }
     }
 
-
     private void handleLocationCalibrationComplete() {
         state.setLocationState(LocationState.LOCATION_CALIBRATED);
 
@@ -473,20 +470,9 @@ public class CommandService extends Service {
         state.setSessionState(SessionState.SESSION_RUNNING);
     }
 
-    //Not sure how session states work so cannot implement both of these methods completely
-    //----------------------------------------------------
-    //Called when all messages are sent
-    private void handleSessionEmergencyMessagesSent() {
-
-        state.setSessionState(SessionState.SESSION_EMERGENCY_MESSAGES_SENT);
-
+    private void handleSessionEmergencyEnd() {
+        state.setSessionState(SessionState.SESSION_EMERGENCY_END);
     }
-
-    //Called when all messages are delivered
-    private void handleSessionEmergencyMessageDelivered() {
-        //TODO: Make a new state and change state to all messages delivered
-    }
-    //----------------------------------------------------
 
     protected void handleCommandHhmdSessionEnd() {
         state.setSessionState(SessionState.SESSION_STOPPING);
@@ -531,6 +517,9 @@ public class CommandService extends Service {
                     case ACTION_SESSION_NOT_PREPARED:
                         handleSessionNotPrepared();
                         break;
+                    case ACTION_SESSION_EMERGENCY_END:
+                        handleSessionEmergencyEnd();
+                        break;
                     case ACTION_CLOUD_SERVICE_PREPARED:
                         handleCloudServicePrepared();
                         break;
@@ -545,9 +534,6 @@ public class CommandService extends Service {
                         break;
                     case ACTION_LOCATION_CALIBRATION_COMPLETE:
                         handleLocationCalibrationComplete();
-                        break;
-                    case ACTION_SESSION_EMERGENCY_MESSAGES_SENT:
-                        handleSessionEmergencyMessagesSent();
                         break;
                     case ACTION_NEW_WAYPOINT:
                         handleNewWaypoint();

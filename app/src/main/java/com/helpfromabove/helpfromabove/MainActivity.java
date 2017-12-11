@@ -82,6 +82,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(CommandService.ACTION_SESSION_STATE_CHANGED);
         intentFilter.addAction(CommandService.ACTION_LOCATION_STATE_CHANGED);
+        intentFilter.addAction(CommandService.ACTION_SESSION_EMERGENCY_MESSAGES_SENT);
+        intentFilter.addAction(CommandService.ACTION_SESSION_EMERGENCY_MESSAGES_DELIVERED);
         intentFilter.addAction(CommandService.ACTION_NEW_UAS_IMAGE);
         intentFilter.addAction(CommandService.ERROR_SAVING_LOCAL_IMAGE);
         registerReceiver(mainActivityBroadcastReceiver, intentFilter);
@@ -144,7 +146,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 case SESSION_STARTING:
                 case SESSION_RUNNING:
                 case SESSION_EMERGENCY_STARTED:
-                case SESSION_EMERGENCY_MESSAGES_SENT:
+                case SESSION_EMERGENCY_END:
                 case SESSION_STOPPING:
                     displaySettingsDisabled();
                     break;
@@ -249,10 +251,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 case SESSION_EMERGENCY_STARTED:
                     emergencyButton.setEnabled(false);
                     break;
-                case SESSION_EMERGENCY_MESSAGES_SENT:
-                    //This can be fixed by adding in a session state for if the messages have been delivered.
-                    //The command service now knows when the messages have all been delivered.
-                    // TODO : Maybe add some sort of delay since messages take a while before being received
+                case SESSION_EMERGENCY_END:
                     emergencyButton.setEnabled(true);
                     break;
                 default:
@@ -275,27 +274,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
      */
     private void handleSessionStateChanged() {
         if (commandService != null) {
-            CommandService.SessionState state = commandService.getState().getSessionState();
-
             updateButtons();
             updateImageView();
-
-            switch (state) {
-                case SESSION_STOPPED:
-                case SESSION_STARTING:
-                case SESSION_RUNNING:
-                case SESSION_EMERGENCY_STARTED:
-                case SESSION_STOPPING:
-                case SESSION_PREPARING:
-                case SESSION_READY:
-                case SESSION_NOT_PREPARED:
-                    break;
-                case SESSION_EMERGENCY_MESSAGES_SENT:
-                    displayEmergencyMessagesSent();
-                    break;
-                default:
-                    Log.w(TAG, "handleSessionStateChanged: default: " + state);
-            }
         }
     }
 
@@ -312,10 +292,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     showCalibratingDialog();
                     break;
                 case LOCATION_UASC_CALIBRATED:
-                    // This never gets displayed (or if it does, it's extremely brief)
-                    // this is because when once the hhmd and uasc are calibrated, it
-                    // immediately goes to the LOCATION_CALIBRATED state.
-                    // TODO : Maybe delay time between state change?
                     setCalibratingDialogTitle(R.string.location_uasc_calibrated_dialog_title);
                     showCalibratingDialog();
                     break;
@@ -344,7 +320,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         break;
                     case SESSION_RUNNING:
                     case SESSION_EMERGENCY_STARTED:
-                    case SESSION_EMERGENCY_MESSAGES_SENT:
+                    case SESSION_EMERGENCY_END:
                         Bitmap bitmap = commandService.getNewImage();
                         if (bitmap != null) {
                             imageView.setImageBitmap(bitmap);
@@ -362,11 +338,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         switch (sessionState) {
             case SESSION_PREPARING:
             case SESSION_READY:
-            case SESSION_STOPPING:
-            case SESSION_EMERGENCY_STARTED:
-            case SESSION_RUNNING:
-            case SESSION_EMERGENCY_MESSAGES_SENT:
             case SESSION_STARTING:
+            case SESSION_RUNNING:
+            case SESSION_EMERGENCY_STARTED:
+            case SESSION_EMERGENCY_END:
+            case SESSION_STOPPING:
             case SESSION_STOPPED:
                 break;
             case SESSION_NOT_PREPARED:
@@ -409,7 +385,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
-
     private void dismissCalibratingDialog() {
         if (calibratingAlertDialog == null) {
             createCalibratingDialog();
@@ -425,7 +400,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void displayEmergencyMessagesDelivered() {
-
+        Toast.makeText(getApplicationContext(), R.string.emergency_message_delivered_text, Toast.LENGTH_LONG).show();
     }
 
     private void displaySettingsDisabled() {
@@ -468,6 +443,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         break;
                     case CommandService.ACTION_LOCATION_STATE_CHANGED:
                         handleLocationStateChanged();
+                        break;
+                    case CommandService.ACTION_SESSION_EMERGENCY_MESSAGES_SENT:
+                        displayEmergencyMessagesSent();
+                        break;
+                    case CommandService.ACTION_SESSION_EMERGENCY_MESSAGES_DELIVERED:
+                        displayEmergencyMessagesDelivered();
                         break;
                     case CommandService.ACTION_NEW_UAS_IMAGE:
                         updateImageView();

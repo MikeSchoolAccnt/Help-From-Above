@@ -14,6 +14,7 @@
 
     <!--Message to display to user after sending emergency message-->
     <string name="emergency_message_sent_text">Emergency messages sent</string>
+    <string name="emergency_message_delivered_text">Emergency messages delivered</string>
 
     <!--Message to display to user if they try to go to settings during a session-->
     <string name="settings_disabled">Settings disabled during a session</string>
