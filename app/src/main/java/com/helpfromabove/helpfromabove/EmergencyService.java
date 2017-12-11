@@ -82,18 +82,23 @@ public class EmergencyService extends Service {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         Set<String> contactsSet = sharedPref.getStringSet(getString(R.string.pref_key_emergency_contacts), new HashSet<String>());
 
-        // TODO : Uncomment after testing complete
+        if (contactsSet.isEmpty()) {
+            Log.i(TAG, "No emergency contacts selected. Ending emergency.");
+            CommandService.notifySessionEmergencyEnd(getApplicationContext());
+        }
+        else {
+            // TODO : Uncomment after testing complete
 //        totalMessageCount_SENT = contactsSet.size();
 //        totalMessageCount_DELIVERED = contactsSet.size();
 //        for (String emergencyContactNumber : contactsSet) {
 //            sendSMSMessage(emergencyContactNumber, emergencyMessage);
 //        }
 
-        // TODO: Remove after testing complete
+            // TODO: Remove after testing complete
 //        totalMessageCount_SENT = 1;
 //        totalMessageCount_DELIVERED = 1;
 //        sendSMSMessage("your number here", emergencyMessage);
-
+        }
     }
 
     private String getFormattedEmergencyMessage(Location location, String cloudLink) {
