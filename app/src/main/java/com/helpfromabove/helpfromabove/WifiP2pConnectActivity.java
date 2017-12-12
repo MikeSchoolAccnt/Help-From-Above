@@ -212,6 +212,9 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         if (!wifiP2pConnectingDialog.isShowing()) {
             wifiP2pConnectingDialog.show();
         }
+
+        hideDeviceListView();
+        hideDeviceListViewLoadingProgressBar();
     }
 
 
@@ -223,6 +226,8 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
         if (wifiP2pConnectingDialog.isShowing()) {
             wifiP2pConnectingDialog.dismiss();
         }
+
+        showDeviceListView();
     }
 
     private void onArrayAdapterDataSetChanged() {
@@ -231,15 +236,54 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
 
     private void updateProgressBar() {
         try {
-            View loadingProgressBar = findViewById(R.id.wifi_p2p_connect_progressbar);
             ListAdapter adapter = devicesListView.getAdapter();
             if (adapter.isEmpty()) {
-                loadingProgressBar.setVisibility(View.VISIBLE);
+                hideDeviceListView();
+                showDeviceListViewLoadingProgressBar();
             } else {
-                loadingProgressBar.setVisibility(View.INVISIBLE);
+                hideDeviceListViewLoadingProgressBar();
+                showDeviceListView();
             }
         } catch (NullPointerException nPE) {
             Log.e(TAG, "updateProgressBar: NullPointerException: " + nPE.getMessage(), nPE);
+        }
+    }
+
+    private void showDeviceListView() {
+        try {
+            View connectListView = findViewById(R.id.wifi_p2p_connect_listview);
+            connectListView.setVisibility(View.VISIBLE);
+        } catch (NullPointerException nPE) {
+            Log.e(TAG, "showDeviceListView: NullPointerException: " + nPE.getMessage(), nPE);
+        }
+
+    }
+
+    private void hideDeviceListView() {
+        try {
+            View connectListView = findViewById(R.id.wifi_p2p_connect_listview);
+            connectListView.setVisibility(View.INVISIBLE);
+        } catch (NullPointerException nPE) {
+            Log.e(TAG, "hideDeviceListView: NullPointerException: " + nPE.getMessage(), nPE);
+        }
+
+    }
+
+    private void showDeviceListViewLoadingProgressBar() {
+        try {
+            View loadingProgressBar = findViewById(R.id.wifi_p2p_connect_progressbar);
+            loadingProgressBar.setVisibility(View.VISIBLE);
+        } catch (NullPointerException nPE) {
+            Log.e(TAG, "showDeviceListViewLoadingProgressBar: NullPointerException: " + nPE.getMessage(), nPE);
+        }
+    }
+
+    private void hideDeviceListViewLoadingProgressBar() {
+        try {
+            View loadingProgressBar = findViewById(R.id.wifi_p2p_connect_progressbar);
+            loadingProgressBar.setVisibility(View.INVISIBLE);
+        } catch (NullPointerException nPE) {
+            Log.e(TAG, "hideDeviceListViewLoadingProgressBar: NullPointerException: " + nPE.getMessage(), nPE);
         }
     }
 
