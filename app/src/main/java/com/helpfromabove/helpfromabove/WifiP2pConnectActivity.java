@@ -83,21 +83,6 @@ public class WifiP2pConnectActivity extends AppCompatActivity {
                 }
             });
             devicesListView.setAdapter(adapter);
-
-            // This is for ListView items testing. Remove once testing is complete
-            WifiP2pDevice test123 = new WifiP2pDevice();
-            test123.deviceName = "test123";
-            test123.deviceAddress = "123";
-            WifiP2pDevice test456 = new WifiP2pDevice();
-            test456.deviceName = "test456";
-            test456.deviceAddress = "456";
-            WifiP2pDevice test789 = new WifiP2pDevice();
-            test789.deviceName = "test789";
-            test789.deviceAddress = "789";
-
-            adapter.add(test123);
-            adapter.add(test456);
-            adapter.add(test789);
         } catch (NullPointerException nPE) {
             Log.e(TAG, "onCreate: NullPointerException: " + nPE.getMessage(), nPE);
         }
