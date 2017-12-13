@@ -230,17 +230,19 @@ public class LocationService extends Service {
     //Maybe better way to generate a waypoint?
     private Location calculateWaypoint(Location newLocation, Location oldLocation, Location uasLocation){
         double distance = oldLocation.distanceTo(newLocation);
-        double bearing = oldLocation.bearingTo(newLocation);
+        double bearing = Math.toRadians(oldLocation.bearingTo(newLocation));
         double earthRadius = 6371000;
         double distOverRadius = distance/earthRadius;
+        double uasLat = Math.toRadians(uasLocation.getLatitude());
+        double uasLong = Math.toRadians(uasLocation.getLongitude());
 
-        double latitude = Math.asin(Math.sin(uasLocation.getLatitude()) * Math.cos(distOverRadius) + Math.cos(uasLocation.getLatitude()) * Math.sin(distOverRadius) * Math.cos(bearing));
-        double longitude = uasLocation.getLatitude() + Math.atan2(Math.sin(bearing) * Math.sin(distOverRadius) * Math.cos(uasLocation.getLongitude()),Math.cos(distOverRadius) - Math.sin(uasLocation.getLongitude()) * Math.sin(latitude));
+        double latitude = Math.asin(Math.sin(uasLat) * Math.cos(distOverRadius) + Math.cos(uasLat) * Math.sin(distOverRadius) * Math.cos(bearing));
+        double longitude = uasLong + Math.atan2(Math.sin(bearing) * Math.sin(distOverRadius) * Math.cos(uasLat),Math.cos(distOverRadius) - Math.sin(uasLat) * Math.sin(latitude));
 
         Location newUasLocation = new Location(getClass().getName());
 
-        newUasLocation.setLatitude(latitude);
-        newUasLocation.setLongitude(longitude);
+        newUasLocation.setLatitude(Math.toDegrees(latitude));
+        newUasLocation.setLongitude(Math.toDegrees(longitude));
         newUasLocation = addHeightOffset(newUasLocation);
 
         return newUasLocation;
