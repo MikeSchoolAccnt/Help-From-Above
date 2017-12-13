@@ -197,6 +197,7 @@ public class LocationService extends Service {
             Log.i(TAG, "HHMD Location 1          = (" + oldHhmd.getLatitude() + ", " + oldHhmd.getLongitude() + ") Accuracy = " + oldHhmd.getAccuracy() + "m");
             Log.i(TAG, "HHMD Location n          = (" + newHhmd.getLatitude() + ", " + newHhmd.getLongitude() + ") Accuracy = " + newHhmd.getAccuracy() + "m");
             //Log.i(TAG, "HHMD Location difference = (" + diff.getLatitude() + ", " + diff.getLongitude() + ")");
+            Log.i(TAG, "Last UAS Location        = (" + lastUas.getLatitude() + ", " + lastUas.getLongitude() + ")");
             Log.i(TAG, "Waypoint Location        = (" + waypoint.getLatitude() + ", " + waypoint.getLongitude() + ")");
             Log.i(TAG, "----------------------------------------");
 
@@ -241,8 +242,11 @@ public class LocationService extends Service {
 
         Location newUasLocation = new Location(getClass().getName());
 
-        newUasLocation.setLatitude(Math.toDegrees(latitude));
-        newUasLocation.setLongitude(Math.toDegrees(longitude));
+        latitude = Location.convert(String.format("%.7f", Math.toDegrees(latitude)));
+        longitude = Location.convert(String.format("%.7f",Math.toDegrees(longitude)));
+
+        newUasLocation.setLatitude(latitude);
+        newUasLocation.setLongitude(longitude);
         newUasLocation = addHeightOffset(newUasLocation);
 
         return newUasLocation;
