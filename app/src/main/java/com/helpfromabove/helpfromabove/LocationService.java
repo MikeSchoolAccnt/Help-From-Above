@@ -185,18 +185,18 @@ public class LocationService extends Service {
                 (tmpUasLocations.peekLast() != null)) {
             Location oldHhmd = tmpHhmdLocations.getLast();
             Location newHhmd = tmpHhmdLocations.getFirst();
-            Location diff = getLocationDiff(newHhmd, oldHhmd);
+            //Location diff = getLocationDiff(newHhmd, oldHhmd);
 
             Location lastUas = tmpUasLocations.getLast();
-            Location waypoint = addLocations(lastUas, diff);
-            waypoint = addHeightOffset(waypoint);
+            //Location waypoint = addLocations(lastUas, diff);
+            Location waypoint = calculateWaypoint(newHhmd,oldHhmd,lastUas);
 
             Log.i(TAG, "----------------------------------------");
             Log.i(TAG, "New Waypoint Generated");
             Log.i(TAG, "----------------------------------------");
             Log.i(TAG, "HHMD Location 1          = (" + oldHhmd.getLatitude() + ", " + oldHhmd.getLongitude() + ") Accuracy = " + oldHhmd.getAccuracy() + "m");
             Log.i(TAG, "HHMD Location n          = (" + newHhmd.getLatitude() + ", " + newHhmd.getLongitude() + ") Accuracy = " + newHhmd.getAccuracy() + "m");
-            Log.i(TAG, "HHMD Location difference = (" + diff.getLatitude() + ", " + diff.getLongitude() + ")");
+            //Log.i(TAG, "HHMD Location difference = (" + diff.getLatitude() + ", " + diff.getLongitude() + ")");
             Log.i(TAG, "Waypoint Location        = (" + waypoint.getLatitude() + ", " + waypoint.getLongitude() + ")");
             Log.i(TAG, "----------------------------------------");
 
@@ -225,6 +225,25 @@ public class LocationService extends Service {
         }
 
         return diff;
+    }
+
+    //Maybe better way to generate a waypoint?
+    private Location calculateWaypoint(Location newLocation, Location oldLocation, Location uasLocation){
+        double distance = oldLocation.distanceTo(newLocation);
+        double bearing = oldLocation.bearingTo(newLocation);
+        double earthRadius = 6371000;
+        double distOverRadius = distance/earthRadius;
+
+        double latitude = Math.asin(Math.sin(uasLocation.getLatitude()) * Math.cos(distOverRadius) + Math.cos(uasLocation.getLatitude()) * Math.sin(distOverRadius) * Math.cos(bearing));
+        double longitude = uasLocation.getLatitude() + Math.atan2(Math.sin(bearing) * Math.sin(distOverRadius) * Math.cos(uasLocation.getLongitude()),Math.cos(distOverRadius) - Math.sin(uasLocation.getLongitude()) * Math.sin(latitude));
+
+        Location newUasLocation = new Location(getClass().getName());
+
+        newUasLocation.setLatitude(latitude);
+        newUasLocation.setLongitude(longitude);
+        newUasLocation = addHeightOffset(newUasLocation);
+
+        return newUasLocation;
     }
 
     private Location addLocations(Location location1, Location location2) {
