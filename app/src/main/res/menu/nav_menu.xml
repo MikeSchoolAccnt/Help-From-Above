@@ -15,4 +15,9 @@
         android:id="@+id/session_settings"
         android:icon="@drawable/ic_start_session_black"
         android:title="@string/pref_header_session_start" />
+
+    <item
+        android:id="@+id/app_credits"
+        android:icon="@drawable/ic_info_black_24dp"
+        android:title="@string/app_credits_header" />
 </menu>

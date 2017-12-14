@@ -140,6 +140,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         case R.id.session_settings:
                             startActivity(new Intent(this, SessionPreferencesActivity.class));
                             return true;
+                        case R.id.app_credits:
+                            startActivity(new Intent(this, CreditsActivity.class));
                         default:
                             Log.e(TAG, "onNavigationItemSelected: default: " + id);
                     }

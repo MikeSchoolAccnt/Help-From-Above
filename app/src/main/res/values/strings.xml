@@ -79,6 +79,9 @@
     <string name="pref_title_emergency_contacts">Emergency Contacts</string>
     <string-array name="empty_array" />
 
+    <string name="app_credits_header">Credits</string>
+    <string name="app_credits">Developers:\nCaleb Smith\nMichael Purcell\nMichael Partin\nNouf Bosalha\n\n\nCloud Integration: https://cloudrail.com/\nUAS Image: http://logomakr.com\n</string>
+
     <!-- Session Start -->
     <string name="pref_header_session_start">Session Start</string>
     <string name="pref_title_uas_start_height">UAS start height</string>
